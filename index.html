@@ -1161,6 +1161,7 @@ const POLICY_FINANCING_PRODUCTS = [
 
 const STORAGE_KEY = 'insuranceFinancingScenario';
 const IMPORT_BONDS_KEY = 'selectedBonds';
+const IMPORT_FLAG_KEY = 'insuranceFinancingAutoImport';
 const fundProducts = typeof externalFundProducts !== 'undefined' ? externalFundProducts : [];
 const DEFAULT_EXCHANGE_RATES = {
   USD: 32.0,
@@ -2155,7 +2156,8 @@ function clearFunds() {
 }
 
 function openBondScreeningTool() {
-  window.open('beautified-bond-tool.html', '_blank');
+  const returnUrl = encodeURIComponent(window.location.href);
+  window.location.href = `beautified-bond-tool.html?returnUrl=${returnUrl}`;
 }
 
 function resetScenario() {
@@ -2307,6 +2309,20 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   goToStep(state.currentStep || 1);
   fetchRate();
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const shouldAutoImport = params.get('autoImportBonds') === '1' || localStorage.getItem(IMPORT_FLAG_KEY) === '1';
+    if (shouldAutoImport && localStorage.getItem(IMPORT_BONDS_KEY)) {
+      importSelectedBonds();
+      localStorage.removeItem(IMPORT_FLAG_KEY);
+      if (params.get('autoImportBonds') === '1') {
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    }
+  } catch (e) {
+    console.warn('Auto import skipped:', e);
+  }
 });
 
 document.getElementById('bondModal').addEventListener('click', function(e) {
