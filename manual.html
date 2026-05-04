@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>質借試算工具 - 操作手冊</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --accent-color: #e74c3c;
+      --success-color: #2ecc71;
+      --warning-color: #f39c12;
+      --info-color: #4AA0E4;
+      --light-color: #ecf0f1;
+      --dark-color: #34495e;
+      --gray-color: #95a5a6;
+      --bg-color: #f5f7fa;
+      --card-bg: #ffffff;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 1px 3px rgba(0,0,0,0.08);
+      --transition: all 0.3s ease;
+    }
+    body {
+      font-family: 'Noto Sans TC', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--dark-color);
+      line-height: 1.8;
+      padding: 20px;
+      margin: 0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      background-color: var(--card-bg);
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    h1, h2, h3 {
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      border-bottom: 2px solid var(--light-color);
+      padding-bottom: 1rem;
+    }
+    h2 {
+      font-size: 1.6rem;
+      color: var(--secondary-color);
+      border-left: 4px solid var(--secondary-color);
+      padding-left: 10px;
+      margin-top: 2rem;
+    }
+    h3 {
+        font-size: 1.3rem;
+        color: var(--success-color);
+        margin-top: 1.5rem;
+    }
+    p, li {
+      margin-bottom: 0.8rem;
+      font-size: 1rem;
+    }
+    ul, ol {
+      padding-left: 25px;
+    }
+    strong {
+      font-weight: 600;
+      color: var(--dark-color);
+    }
+    code {
+      background-color: #f0f0f0;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--accent-color);
+    }
+    .note {
+      background-color: #e8f4fd;
+      border-left: 5px solid var(--info-color);
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: var(--border-radius);
+    }
+    .note strong {
+        color: var(--info-color);
+    }
+    .warning {
+      background-color: #fff3cd;
+      border-left: 5px solid var(--warning-color);
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: var(--border-radius);
+    }
+    .warning strong {
+        color: var(--warning-color);
+    }
+    .nav-link {
+        display: inline-block;
+        margin-top: 20px;
+        padding: 10px 20px;
+        background-color: var(--secondary-color);
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+    .nav-link:hover {
+        background-color: #2980b9;
+    }
+    .toc {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: var(--border-radius);
+        margin-bottom: 20px;
+        border: 1px solid #eee;
+    }
+    .toc h3 {
+        margin-top: 0;
+        color: var(--primary-color);
+    }
+    .toc ul {
+        list-style-type: none;
+        padding-left: 0;
+    }
+    .toc li a {
+        text-decoration: none;
+        color: var(--secondary-color);
+    }
+    .toc li a:hover {
+        text-decoration: underline;
+    }
+    .icon {
+        margin-right: 8px;
+    }
+    .button-desc {
+        display: inline-block;
+        padding: 3px 8px;
+        background-color: var(--light-color);
+        border: 1px solid var(--gray-color);
+        border-radius: 4px;
+        font-family: monospace;
+        margin: 0 2px;
+    }
+    .back-to-top {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: var(--secondary-color);
+        color: white;
+        padding: 10px 15px;
+        border-radius: 50%;
+        text-decoration: none;
+        box-shadow: var(--box-shadow);
+        transition: opacity 0.3s, visibility 0.3s;
+        opacity: 0;
+        visibility: hidden;
+        z-index: 100;
+    }
+    .back-to-top.visible {
+        opacity: 1;
+        visibility: visible;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><i class="fas fa-book-open icon"></i>質借試算工具 - 操作手冊</h1>
+
+    <div class="toc">
+        <h3>目錄</h3>
+        <ul>
+            <li><a href="#introduction"><i class="fas fa-play-circle icon"></i>前言與警語</a></li>
+            <li><a href="#portal-page"><i class="fas fa-home icon"></i>入口頁面操作</a></li>
+            <li><a href="#bond-calculator"><i class="fas fa-chart-line icon"></i>疊券試算工具 (債券與基金質借收益率評估表)</a>
+                <ul>
+                    <li><a href="#bond-params"><i class="fas fa-sliders-h icon"></i>參數設定 (匯率、借款成本)</a></li>
+                    <li><a href="#bond-add"><i class="fas fa-plus-circle icon"></i>新增/編輯債券</a></li>
+                    <li><a href="#bond-import-excel"><i class="fas fa-file-excel icon"></i>從Excel導入資料</a></li>
+                    <li><a href="#bond-import-filter"><i class="fas fa-filter icon"></i>從篩選工具導入</a></li>
+                    <li><a href="#bond-calculations"><i class="fas fa-calculator icon"></i>查看計算結果</a></li>
+                    <li><a href="#bond-other-ops"><i class="fas fa-cogs icon"></i>其他操作 (清除、列印)</a></li>
+                </ul>
+            </li>
+            <li><a href="#fund-calculator"><i class="fas fa-coins icon"></i>疊基金試算工具 (基金質借收益率評估表)</a>
+                <ul>
+                    <li><a href="#fund-params"><i class="fas fa-sliders-h icon"></i>參數設定</a></li>
+                    <li><a href="#fund-add"><i class="fas fa-plus-circle icon"></i>新增/編輯基金/債券</a></li>
+                    <li><a href="#fund-calculations"><i class="fas fa-calculator icon"></i>查看計算結果</a></li>
+                    <li><a href="#fund-other-ops"><i class="fas fa-cogs icon"></i>其他操作 (清除、列印)</a></li>
+                </ul>
+            </li>
+            <li><a href="#bond-filter-tool"><i class="fas fa-search-dollar icon"></i>債券篩選工具</a>
+                <ul>
+                    <li><a href="#filter-upload"><i class="fas fa-file-upload icon"></i>上傳Excel檔案</a></li>
+                    <li><a href="#filter-conditions"><i class="fas fa-filter icon"></i>設定篩選條件</a></li>
+                    <li><a href="#filter-results"><i class="fas fa-table icon"></i>查看與匯出結果</a></li>
+                </ul>
+            </li>
+            <li><a href="#general-tips"><i class="fas fa-lightbulb icon"></i>通用提示</a></li>
+        </ul>
+    </div>
+
+    <section id="introduction">
+      <h2><i class="fas fa-play-circle icon"></i>前言與警語</h2>
+      <p>歡迎使用質借試算工具！本手冊將引導您如何有效地使用本網站提供的各項試算功能。</p>
+      <div class="warning">
+        <p><strong><i class="fas fa-exclamation-triangle icon"></i>重要警語：</strong>此網站為作者做為試算練習使用，不保證獲利，不保證數字的正確性。使用者請自行斟酌使用。所有計算結果僅供參考，實際投資可能面臨市場風險、利率風險等多種不確定因素。使用者應對自己的投資決策負責。建議在做出任何投資決策前，諮詢專業財務顧問意見。</p>
+      </div>
+      <p>當您首次訪問入口頁面時，會彈出警語視窗，請仔細閱讀並點擊「我已了解並同意」後方可繼續使用。此同意狀態會記錄在您的瀏覽器中，除非清除瀏覽器資料，否則不會重複顯示。</p>
+    </section>
+
+    <section id="portal-page">
+      <h2><i class="fas fa-home icon"></i>入口頁面操作 (index.html)</h2>
+      <p>這是網站的主頁，提供兩個主要試算工具的入口：</p>
+      <ul>
+        <li><strong>疊券試算：</strong>點擊「進入試算」會導向 <code>beautified-bond-calculator.html</code>。</li>
+        <li><strong>疊基金試算：</strong>點擊「進入試算」會導向 <code>beautified-fund-calculator.html</code>。</li>
+      </ul>
+      <p>頁面下方提供「使用說明」和「版本更新歷程」。</p>
+      <p>點擊任一試算工具前，若您尚未同意警語，系統會先請您同意。</p>
+    </section>
+
+    <section id="bond-calculator">
+      <h2><i class="fas fa-chart-line icon"></i>疊券試算工具 (債券與基金質借收益率評估表)</h2>
+      <p>此工具用於詳細評估多筆債券質借以及一筆房貸的綜合現金流與風險狀況。</p>
+
+      <h3 id="bond-params"><i class="fas fa-sliders-h icon"></i>參數設定 (匯率、借款成本)</h3>
+      <p>在頁面頂部，您可以設定以下全域參數：</p>
+      <ul>
+        <li><strong>各幣別兌台幣匯率 (USD/TWD, AUD/TWD, 等)：</strong>
+            <ul>
+                <li><code>USD/TWD</code>：此為主要計算用匯率，您可以手動輸入。</li>
+                <li>其他幣別 (AUD, CAD, CNY, EUR, GBP) 兌 TWD 的匯率欄位為唯讀，會透過API自動更新。</li>
+            </ul>
+        </li>
+        <li><strong>債券借款成本 (%)：</strong>輸入您預估的債券質借年利率。預設為 <code>2.95%</code>。</li>
+        <li><strong>房貸借款成本 (%)：</strong>輸入您的房屋貸款年利率。預設為 <code>2.60%</code>。</li>
+        <li><strong>房屋貸款金額(台幣)：</strong>輸入您的房貸總額。預設為 <code>30,000,000</code>。</li>
+      </ul>
+      <p>操作按鈕：</p>
+      <ul>
+        <li><span class="button-desc"><i class="fas fa-cloud-download-alt"></i> 強制更新匯率 (API)</span>：點擊此按鈕會強制從外部 API 獲取最新的各幣別匯率，並更新對應欄位（包括 USD/TWD）。</li>
+        <li><span class="button-desc"><i class="fas fa-sync-alt"></i> 更新參數/匯率</span>：
+            <ul>
+                <li>此按鈕會將您在「債券借款成本」、「房貸借款成本」及「房屋貸款金額」輸入框中修改的值應用到計算中。</li>
+                <li>**匯率更新邏輯**：如果您手動修改了 <code>USD/TWD</code> 欄位，此按鈕將保留您的手動輸入；否則，它會嘗試從 API 更新所有匯率。</li>
+                <li>點擊後，所有相關統計數據會重新計算。</li>
+            </ul>
+        </li>
+      </ul>
+       <div class="note">
+        <p><strong><i class="fas fa-info-circle icon"></i>提示：</strong>匯率欄位旁的 <code id="apiStatus"></code> 會顯示API匯率的更新狀態。</p>
+      </div>
+
+      <h3 id="bond-add"><i class="fas fa-plus-circle icon"></i>新增/編輯債券</h3>
+      <ul>
+        <li>點擊 <span class="button-desc"><i class="fas fa-plus-circle"></i> 新增債券</span> 按鈕彈出對話框。</li>
+        <li>填寫債券資訊：商品代碼、名稱、幣別 (USD, AUD, CAD, CNY, EUR, GBP)、標普評等、追繳維持率、剩餘年期、參考買入價 (系統會自動+3作為實際買入價)、投資面額、質借成數、利率(%)、配息頻率、下次配息日。</li>
+        <li>點擊「儲存」。債券會出現在下方表格中。</li>
+        <li>表格中每行債券後方有 <span class="button-desc"><i class="fas fa-edit"></i> 編輯</span> 和 <span class="button-desc"><i class="fas fa-trash-alt"></i> 刪除</span> 按鈕。</li>
+        <li>可以拖曳表格中的 <i class="fas fa-grip-vertical"></i> 圖示來調整債券順序。</li>
+      </ul>
+       <div class="note">
+        <p><strong><i class="fas fa-info-circle icon"></i>注意：</strong>「投資金額」是根據「投資面額」和「參考買入價(+3)」自動計算的市值。「質借金額」是根據「投資金額」和「質借成數」自動計算的。</p>
+      </div>
+
+      <h3 id="bond-import-excel"><i class="fas fa-file-excel icon"></i>從Excel導入資料 (更新現有債券)</h3>
+      <ul>
+        <li>點擊 <span class="button-desc"><i class="fas fa-file-import"></i> 導入資料</span> 按鈕，選擇一個 <code>.xlsm</code> 格式的 Excel 檔案。</li>
+        <li>工具會嘗試讀取名為「熱門債券」的工作表 (若找不到則讀取第一個工作表)。</li>
+        <li>它會根據「商品代碼」匹配您在表格中已有的債券，並用 Excel 中的數據更新這些債券的：名稱、幣別、標普評等、剩餘年期、參考買入價 (自動+3)、票息、配息頻率、下次配息日。</li>
+        <li><strong style="color: var(--accent-color);">此功能僅更新已存在於計算器表格中的債券，不會從 Excel 新增債券。</strong></li>
+      </ul>
+
+      <h3 id="bond-import-filter"><i class="fas fa-filter icon"></i>從篩選工具導入 (新增債券)</h3>
+      <p>如果您從「債券篩選工具」匯出了選定的債券：</p>
+      <ul>
+        <li>當您打開此「疊券試算」頁面時，系統會檢測到來自篩選工具的數據，並顯示一個通知。</li>
+        <li>點擊通知中的 <span class="button-desc"><i class="fas fa-download"></i> 導入</span> 按鈕。</li>
+        <li>系統會詢問您是否要清除現有債券列表。選擇「確定」以清除並導入，選擇「取消」則在現有列表後附加新導入的債券。</li>
+        <li>導入的債券會使用計算器頁面上當前設定的「債券借款成本」。</li>
+      </ul>
+      <p>您也可以點擊 <span class="button-desc"><i class="fas fa-filter"></i> 前往篩選工具</span> 按鈕直接跳轉到篩選工具頁面。</p>
+
+
+      <h3 id="bond-calculations"><i class="fas fa-calculator icon"></i>查看計算結果</h3>
+      <p>頁面下方會顯示關鍵的計算結果：</p>
+      <ul>
+        <li><strong>整戶維持率 (%)：</strong>(總投資金額市值 / 總質借金額) * 100%。</li>
+        <li><strong>整戶追繳維持率 (%)：</strong>通常為銀行要求的最低維持率，例如 113%。</li>
+        <li><strong>整戶追繳跌幅 (%)：</strong>您的資產可以承受多大的跌幅而不被追繳。</li>
+        <li><strong>每年配息(台幣)：</strong>所有債券年配息（換算台幣） + 所有基金年配息（台幣）。</li>
+        <li><strong>每年借款成本(台幣)：</strong>所有債券年借款成本（換算台幣） + 房貸年借款成本（台幣）。</li>
+        <li><strong>扣除利息每年現金流(台幣)：</strong>每年配息(台幣) - 每年借款成本(台幣)。</li>
+      </ul>
+      <p>點擊 <span class="button-desc"><i class="fas fa-calculator"></i> 重新計算</span> 按鈕可以隨時刷新這些統計數據。</p>
+
+      <h3 id="bond-other-ops"><i class="fas fa-cogs icon"></i>其他操作 (清除、列印)</h3>
+       <ul>
+        <li><span class="button-desc"><i class="fas fa-trash-alt"></i> 清除數據</span>：清除所有已新增的債券和基金資料。</li>
+        <li><span class="button-desc"><i class="fas fa-print"></i> 列印</span>：調用瀏覽器的列印功能，列印當前頁面內容。</li>
+      </ul>
+    </section>
+
+    <section id="fund-calculator">
+      <h2><i class="fas fa-coins icon"></i>疊基金試算工具 (基金質借收益率評估表)</h2>
+      <p>此工具專為評估多層基金/債券質借策略設計，特別關注第一層質借後的再投資情況。</p>
+
+      <h3 id="fund-params"><i class="fas fa-sliders-h icon"></i>參數設定</h3>
+        <ul>
+            <li><strong>匯率：</strong>影響整體現金流換算（如果您的基金投資或配息涉及外幣轉換到台幣，但此工具主要以台幣計）。預設為 <code>32</code>。</li>
+            <li><strong>基金/債券借款成本 (%)：</strong>您質借基金或債券時的年利率。預設為 <code>2.95%</code>。</li>
+            <li><strong>房貸借款成本 (%)：</strong>您的房屋貸款年利率。預設為 <code>2.60%</code>。</li>
+            <li><strong>房屋貸款金額(台幣)：</strong>您的房貸總額。預設為 <code>30,000,000</code>。</li>
+        </ul>
+        <p>點擊 <span class="button-desc"><i class="fas fa-sync-alt"></i> 更新參數</span> 按鈕，會將上述輸入框中的值應用到計算中，並重新計算所有統計數據。</p>
+
+      <h3 id="fund-add"><i class="fas fa-plus-circle icon"></i>新增/編輯基金/債券</h3>
+        <ul>
+            <li>點擊 <span class="button-desc"><i class="fas fa-plus-circle"></i> 新增基金/債券</span> 按鈕。</li>
+            <li>在彈出對話框中：
+                <ul>
+                    <li><strong>搜尋基金/債券：</strong>可輸入代碼或名稱進行模糊搜尋，系統會提供匹配選項。</li>
+                    <li><strong>商品類型：</strong>選擇「基金」或「債券」。</li>
+                    <li><strong>商品代碼/名稱：</strong>可從搜尋結果選擇，或手動輸入。</li>
+                    <li><strong>追繳維持率 (%)：</strong>銀行要求的最低維持率。預設 <code>140%</code>。</li>
+                    <li><strong>投資金額(台幣)：</strong>輸入該商品的投資總額（已換算為台幣）。對於第二層以後的投資，這通常是上一層質借出來的金額。</li>
+                    <li><strong>質借成數 (%)：</strong>該商品可質借的百分比。預設 <code>45%</code>。</li>
+                    <li><strong>利率 (%)：</strong>該商品的年化配息率或票面利率。</li>
+                    <li><strong>配息頻率：</strong>選擇月配、季配、年配或不配息。</li>
+                </ul>
+            </li>
+            <li>點擊「儲存」。商品會出現在下方表格中。</li>
+            <li>表格中每行商品後方有 <span class="button-desc"><i class="fas fa-edit"></i> 編輯</span> 和 <span class="button-desc"><i class="fas fa-trash-alt"></i> 刪除</span> 按鈕。</li>
+            <li>可以拖曳表格中的 <i class="fas fa-grip-vertical"></i> 圖示來調整順序（順序對此工具的特定計算邏輯很重要）。</li>
+            <li>每行商品後方有 <span class="button-desc"><i class="fas fa-info-circle"></i> 查看</span> 按鈕，可連結至國泰世華銀行基金資訊頁面 (基於商品代碼)。</li>
+        </ul>
+        <div class="note">
+            <p><strong><i class="fas fa-info-circle icon"></i>重要提示 (疊基金邏輯)：</strong></p>
+            <ul>
+                <li>此工具的核心計算（如整戶維持率、追繳跌幅、基金借款成本）主要基於您新增的**第一筆**基金/債券的數據。</li>
+                <li>後續新增的基金/債券主要用於累計「每年配息」，其質借金額不直接計入「整戶」的借款成本和維持率計算，而是假設其投資金額來源於上一層的質借。</li>
+                <li>因此，請確保表格中的**第一筆商品**是您主要的質借標的。</li>
+            </ul>
+        </div>
+
+      <h3 id="fund-calculations"><i class="fas fa-calculator icon"></i>查看計算結果</h3>
+        <p>頁面下方會顯示關鍵的計算結果：</p>
+        <ul>
+            <li><strong>整戶維持率 (%)：</strong>基於第一筆商品的 (投資金額 / 質借金額) * 100%。</li>
+            <li><strong>整戶追繳維持率 (%)：</strong>通常為銀行要求的最低維持率，例如 140%，或您為第一筆商品設定的值。</li>
+            <li><strong>整戶追繳跌幅 (%)：</strong>基於第一筆商品的數據計算，顯示資產可承受多大跌幅而不被追繳。</li>
+            <li><strong>每年配息(台幣)：</strong>所有新增基金/債券的年配息總和（台幣）。</li>
+            <li><strong>每年借款成本(台幣)：</strong>第一筆商品的年借款成本 + 房貸年借款成本（台幣）。</li>
+            <li><strong>扣除利息每年現金流(台幣)：</strong>每年配息(台幣) - 每年借款成本(台幣)。</li>
+            <li><strong>扣除利息每月現金流(台幣)：</strong>每年現金流 / 12。</li>
+        </ul>
+        <p>點擊 <span class="button-desc"><i class="fas fa-calculator"></i> 重新計算</span> 按鈕可以隨時刷新這些統計數據。</p>
+
+      <h3 id="fund-other-ops"><i class="fas fa-cogs icon"></i>其他操作 (清除、列印)</h3>
+       <ul>
+        <li><span class="button-desc"><i class="fas fa-trash-alt"></i> 清除數據</span>：清除所有已新增的基金/債券資料。</li>
+        <li><span class="button-desc"><i class="fas fa-print"></i> 列印</span>：調用瀏覽器的列印功能。</li>
+      </ul>
+    </section>
+
+    <section id="bond-filter-tool">
+      <h2><i class="fas fa-search-dollar icon"></i>債券篩選工具 (beautified-bond-tool.html)</h2>
+      <p>此工具協助您從 Excel 檔案中篩選符合特定條件的債券。</p>
+
+      <h3 id="filter-upload"><i class="fas fa-file-upload icon"></i>上傳 Excel 檔案</h3>
+      <ul>
+        <li>點擊「選擇檔案」按鈕或將 Excel 檔案 (<code>.xlsm</code>, <code>.xlsx</code>) 拖曳到指定區域。</li>
+        <li>工具會自動嘗試讀取名為「熱門債券」的工作表。若無此工作表，則讀取檔案中的第一個工作表。</li>
+        <li>工具會自動從指定欄位讀取數據：距到期年 (AA欄)、下次配息日 (AJ欄)、幣別 (M欄)。其他欄位 (如發行人、買入價等) 會嘗試從表頭關鍵字動態匹配。</li>
+      </ul>
+
+      <h3 id="filter-conditions"><i class="fas fa-filter icon"></i>設定篩選條件</h3>
+      <p>檔案成功載入後，您可以設定以下篩選條件：</p>
+      <ul>
+        <li><strong>發行人：</strong>輸入關鍵字篩選。</li>
+        <li><strong>幣別：</strong>輸入幣別代碼 (如 USD, AUD) 篩選。</li>
+        <li><strong>標普評級：</strong>選擇比較運算子 ( =, >=, <=, >, < ) 並輸入評級 (如 AAA, BBB-)。</li>
+        <li><strong>距到期年：</strong>可設定兩個條件，例如大於X年且小於Y年。</li>
+        <li><strong>參考買入價：</strong>選擇比較運算子並輸入價格。</li>
+        <li><strong>票息 (%)：</strong>選擇比較運算子並輸入票息率。</li>
+        <li><strong>下次配息日：</strong>選擇特定日期。</li>
+      </ul>
+      <p>點擊 <span class="button-desc"><i class="fas fa-search"></i> 套用篩選</span> 執行篩選，或點擊 <span class="button-desc"><i class="fas fa-undo"></i> 重置</span> 清除所有篩選條件。</p>
+
+      <h3 id="filter-results"><i class="fas fa-table icon"></i>查看與匯出結果</h3>
+      <ul>
+        <li>符合條件的債券會顯示在下方的表格中。</li>
+        <li>您可以點擊表頭進行排序。</li>
+        <li>勾選您想要的債券。可以使用 <span class="button-desc"><i class="fas fa-check-double"></i> 全選</span> 或 <span class="button-desc"><i class="fas fa-times"></i> 取消全選</span> 按鈕。</li>
+        <li>點擊 <span class="button-desc"><i class="fas fa-file-export"></i> 匯出選定債券</span>。這會將選中的債券數據儲存到您瀏覽器的暫存空間中。</li>
+        <li>然後，點擊 <span class="button-desc"><i class="fas fa-calculator"></i> 開啟計算器</span>，這會打開「疊券試算工具」頁面。該頁面會自動檢測到您匯出的數據並提示導入。</li>
+      </ul>
+    </section>
+
+    <section id="general-tips">
+      <h2><i class="fas fa-lightbulb icon"></i>通用提示</h2>
+      <ul>
+        <li>所有試算結果僅供參考，不構成任何投資建議。</li>
+        <li>請務必根據自身風險承受能力和財務狀況做出決策。</li>
+        <li>百分比輸入：在輸入利率、成本率、質借成數等百分比時，請直接輸入數字部分，例如輸入 <code>5.5</code> 代表 <code>5.5%</code> (除非欄位旁已標示 <code>%</code>)。</li>
+        <li>數據保存：
+            <ul>
+                <li>「疊券試算」和「疊基金試算」中的數據（您新增的債券/基金）只會保存在當前瀏覽器會話中。關閉瀏覽器或分頁後數據可能會遺失。</li>
+                <li>「債券篩選工具」匯出的數據是暫存在瀏覽器中，用於傳遞到「疊券試算工具」。</li>
+            </ul>
+        </li>
+         <li>遇到問題或顯示異常，嘗試刷新頁面或點擊各工具的「重新計算」按鈕。</li>
+      </ul>
+    </section>
+
+    <a href="#top" class="nav-link"><i class="fas fa-arrow-up icon"></i>回到頂部</a>
+  </div>
+
+  <a href="#" id="backToTopBtn" class="back-to-top"><i class="fas fa-chevron-up"></i></a>
+
+  <script>
+    // Back to top button functionality
+    const backToTopButton = document.getElementById("backToTopBtn");
+    window.onscroll = function() {
+      if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+        backToTopButton.classList.add("visible");
+      } else {
+        backToTopButton.classList.remove("visible");
+      }
+    };
+    backToTopButton.onclick = function(e) {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+  </script>
+</body>
+</html>

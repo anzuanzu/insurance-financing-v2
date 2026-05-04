@@ -1,0 +1,2331 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>亞灣專區 - 保費融資 / 保單融資試算</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #1a3a5c;
+      --primary-light: #2a5a8c;
+      --accent: #c8a45a;
+      --accent-light: #e8d49a;
+      --success: #2ecc71;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --info: #3498db;
+      --text: #2c3e50;
+      --text-light: #7f8c8d;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --border: #e0e6ed;
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    .app-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 16px 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .app-header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 1px; }
+    .app-header .subtitle { font-size: 0.75rem; color: var(--accent-light); margin-top: 2px; }
+    .home-link {
+      position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+      color: white; text-decoration: none; font-size: 1.2rem; padding: 8px;
+    }
+
+    /* Step Indicator */
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px 12px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      gap: 4px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .step-dot {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 0.72rem; color: var(--text-light); white-space: nowrap;
+      transition: all 0.3s;
+    }
+    .step-dot .num {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.7rem;
+      background: var(--border); color: var(--text-light);
+      flex-shrink: 0; transition: all 0.3s;
+    }
+    .step-dot.active .num { background: var(--primary); color: white; }
+    .step-dot.completed .num { background: var(--success); color: white; }
+    .step-dot.active { color: var(--primary); font-weight: 600; }
+    .step-line {
+      width: 20px; height: 2px; background: var(--border);
+      flex-shrink: 0; transition: background 0.3s;
+    }
+    .step-line.completed { background: var(--success); }
+
+    /* Main Content */
+    .main-content { padding: 16px; max-width: 800px; margin: 0 auto; padding-bottom: 100px; }
+
+    .step-panel { display: none; animation: fadeIn 0.3s ease; }
+    .step-panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 1rem; font-weight: 700; color: var(--primary);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .card-title i { color: var(--accent); }
+
+    /* Step 1: Financing Type Cards */
+    .type-cards { display: grid; gap: 16px; }
+    .type-card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 24px; text-align: center;
+      cursor: pointer; transition: all 0.3s; border: 2px solid transparent;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .type-card:active { transform: scale(0.98); }
+    .type-card.selected { border-color: var(--primary); box-shadow: var(--shadow-lg); }
+    .type-card .icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; font-size: 1.8rem;
+    }
+    .type-card.premium .icon { background: linear-gradient(135deg, #e8d5b7, #c8a45a); color: white; }
+    .type-card.policy .icon { background: linear-gradient(135deg, #b8d4e8, #3498db); color: white; }
+    .type-card h3 { font-size: 1.2rem; margin-bottom: 8px; color: var(--primary); }
+    .type-card p { font-size: 0.85rem; color: var(--text-light); line-height: 1.5; }
+    .type-card .badge {
+      display: inline-block; padding: 4px 12px; border-radius: 20px;
+      font-size: 0.75rem; font-weight: 600; margin-top: 12px;
+    }
+    .type-card.premium .badge { background: #fef3c7; color: #92400e; }
+    .type-card.policy .badge { background: #dbeafe; color: #1e40af; }
+
+    /* Form Elements */
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block; font-size: 0.85rem; font-weight: 600;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .form-label .hint { font-weight: 400; color: var(--text-light); font-size: 0.75rem; }
+    .form-input {
+      width: 100%; padding: 12px 14px; border: 1px solid var(--border);
+      border-radius: 8px; font-size: 1rem; font-family: inherit;
+      transition: border-color 0.2s; background: white;
+      -webkit-appearance: none; appearance: none;
+    }
+    .form-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,58,92,0.1); }
+    .form-input[inputmode="decimal"],
+    .form-input[inputmode="numeric"],
+    .form-input[type="number"] { font-variant-numeric: tabular-nums; }
+    select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237f8c8d' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+    .input-group {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .input-group .form-input { flex: 1; }
+    .input-suffix { font-size: 0.85rem; color: var(--text-light); white-space: nowrap; font-weight: 500; }
+
+    .form-row { display: grid; gap: 12px; }
+
+    /* Search dropdown */
+    .search-container { position: relative; }
+    .search-dropdown {
+      position: absolute; top: 100%; left: 0; right: 0;
+      background: white; border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto;
+      z-index: 20; display: none; box-shadow: var(--shadow);
+    }
+    .search-dropdown.show { display: block; }
+    .search-option {
+      padding: 10px 14px; cursor: pointer; font-size: 0.85rem;
+      border-bottom: 1px solid #f0f0f0; transition: background 0.15s;
+    }
+    .search-option:last-child { border-bottom: none; }
+    .search-option:hover, .search-option:active { background: #f0f8ff; }
+    .search-option .code { font-weight: 600; color: var(--primary); }
+    .search-option .name { color: var(--text-light); font-size: 0.8rem; }
+    .search-option .currency-tag {
+      display: inline-block; padding: 1px 6px; border-radius: 4px;
+      font-size: 0.65rem; font-weight: 600; margin-left: 6px;
+    }
+    .search-option .currency-tag.usd { background: #fef3c7; color: #92400e; }
+    .search-option .currency-tag.twd { background: #dbeafe; color: #1e40af; }
+
+    /* Calc Display */
+    .calc-display {
+      background: linear-gradient(135deg, #f0f4f8, #e8eef5);
+      border-radius: var(--radius); padding: 16px; margin-top: 16px;
+      border: 1px solid #d0d8e0;
+    }
+    .calc-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 0; font-size: 0.9rem;
+    }
+    .calc-row + .calc-row { border-top: 1px solid #d0d8e0; }
+    .calc-row .label { color: var(--text-light); }
+    .calc-row .value { font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .calc-row.highlight { background: rgba(26,58,92,0.05); margin: 0 -16px; padding: 10px 16px; border-radius: 8px; }
+    .calc-row.highlight .value { font-size: 1.1rem; color: var(--accent); }
+
+    /* Bond Cards */
+    .bond-slot {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); margin-bottom: 12px;
+      border: 1px solid var(--border); overflow: hidden;
+    }
+    .bond-slot-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px; background: #f8fafc; border-bottom: 1px solid var(--border);
+      font-size: 0.85rem; font-weight: 600;
+    }
+    .bond-slot-header .slot-num { color: var(--primary); }
+    .bond-slot-body { padding: 14px 16px; }
+    .bond-info-row {
+      display: flex; justify-content: space-between;
+      font-size: 0.82rem; padding: 4px 0;
+    }
+    .bond-info-row .label { color: var(--text-light); }
+    .bond-info-row .value { font-weight: 600; }
+
+    .add-bond-btn {
+      width: 100%; padding: 14px; border: 2px dashed var(--border);
+      border-radius: var(--radius); background: transparent;
+      color: var(--text-light); font-size: 0.9rem; font-family: inherit;
+      cursor: pointer; transition: all 0.2s; display: flex;
+      align-items: center; justify-content: center; gap: 8px;
+    }
+    .add-bond-btn:hover { border-color: var(--primary); color: var(--primary); }
+
+    .bond-total {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white; border-radius: var(--radius); padding: 16px; margin-top: 16px;
+    }
+    .bond-total .row {
+      display: flex; justify-content: space-between; padding: 6px 0;
+      font-size: 0.9rem;
+    }
+    .bond-total .row .val { font-weight: 700; }
+    .bond-total .row.net { font-size: 1rem; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px; margin-top: 4px; }
+    .allocation-warning {
+      background: #fef3c7; color: #92400e; padding: 10px 14px; border-radius: 8px;
+      font-size: 0.82rem; margin-top: 8px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Step 4: Results */
+    .result-section { margin-bottom: 20px; }
+    .result-section-title {
+      font-size: 0.9rem; font-weight: 700; color: var(--primary);
+      margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+      padding-bottom: 8px; border-bottom: 2px solid var(--accent);
+    }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-card {
+      background: var(--card); border-radius: var(--radius);
+      padding: 14px; box-shadow: var(--shadow); text-align: center;
+    }
+    .stat-card .stat-label { font-size: 0.72rem; color: var(--text-light); margin-bottom: 4px; }
+    .stat-card .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .stat-card.positive .stat-value { color: var(--success); }
+    .stat-card.negative .stat-value { color: var(--danger); }
+    .stat-card.accent .stat-value { color: var(--accent); }
+    .stat-card.full { grid-column: 1 / -1; }
+
+    .coverage-compare {
+      display: flex; align-items: center; justify-content: center;
+      gap: 12px; padding: 20px; text-align: center;
+    }
+    .coverage-box {
+      background: var(--card); border-radius: var(--radius); padding: 16px 20px;
+      box-shadow: var(--shadow); flex: 1; max-width: 160px;
+    }
+    .coverage-box .label { font-size: 0.72rem; color: var(--text-light); margin-bottom: 4px; }
+    .coverage-box .multiplier { font-size: 1.8rem; font-weight: 700; }
+    .coverage-box.before .multiplier { color: var(--text-light); }
+    .coverage-box.after .multiplier { color: var(--success); }
+    .coverage-arrow { font-size: 1.5rem; color: var(--accent); }
+
+    .result-bond-table {
+      width: 100%; border-collapse: collapse; font-size: 0.8rem;
+    }
+    .result-bond-table th {
+      background: #f8fafc; padding: 8px 10px; text-align: left;
+      font-weight: 600; color: var(--primary); border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+    .result-bond-table td {
+      padding: 8px 10px; border-bottom: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+    .result-bond-table .text-right { text-align: right; }
+
+    /* Bottom Nav */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: white; border-top: 1px solid var(--border);
+      padding: 12px 16px; display: flex; gap: 12px;
+      z-index: 50; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    }
+    .bottom-nav .nav-btn {
+      flex: 1; padding: 14px; border-radius: 8px; border: none;
+      font-size: 0.95rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; transition: all 0.2s; display: flex;
+      align-items: center; justify-content: center; gap: 6px;
+    }
+    .nav-btn.prev { background: #f0f0f0; color: var(--text); }
+    .nav-btn.next { background: var(--primary); color: white; }
+    .nav-btn.next:active { background: var(--primary-light); }
+    .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      z-index: 100; align-items: flex-end; justify-content: center;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-sheet {
+      background: white; border-radius: 16px 16px 0 0; width: 100%;
+      max-width: 500px; max-height: 85vh; overflow-y: auto;
+      padding: 20px; animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-handle {
+      width: 36px; height: 4px; background: #ddd; border-radius: 2px;
+      margin: 0 auto 16px;
+    }
+    .modal-title {
+      font-size: 1.1rem; font-weight: 700; color: var(--primary);
+      margin-bottom: 16px; text-align: center;
+    }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .modal-actions .btn {
+      flex: 1; padding: 14px; border-radius: 8px; border: none;
+      font-size: 0.95rem; font-weight: 600; font-family: inherit; cursor: pointer;
+    }
+    .modal-actions .btn-cancel { background: #f0f0f0; color: var(--text); }
+    .modal-actions .btn-confirm { background: var(--primary); color: white; }
+
+    /* Utility */
+    .text-center { text-align: center; }
+    .mt-12 { margin-top: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mb-8 { margin-bottom: 8px; }
+    .text-sm { font-size: 0.82rem; }
+    .text-muted { color: var(--text-light); }
+    .hidden { display: none !important; }
+    .exchange-info {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.75rem; color: var(--text-light); margin-top: 4px;
+    }
+    .exchange-info .status { font-weight: 500; }
+    .exchange-info .status.ok { color: var(--success); }
+    .exchange-info .status.err { color: var(--danger); }
+
+    .inline-btn {
+      padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border);
+      background: white; font-size: 0.8rem; font-family: inherit;
+      cursor: pointer; color: var(--primary); font-weight: 500;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
+    }
+    .inline-btn:hover { background: #f0f4f8; }
+    .inline-btn.danger { color: var(--danger); border-color: #fecdd3; }
+    .inline-btn.success { color: var(--success); border-color: #bbf7d0; }
+    .inline-btn.accent { color: var(--accent); border-color: #f5deb3; }
+    .action-row {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+    }
+    .empty-state {
+      padding: 20px; text-align: center; color: var(--text-light); font-size: 0.84rem;
+      background: #fafbfd; border: 1px dashed var(--border); border-radius: 10px;
+    }
+    .investment-section-title {
+      font-size: 0.88rem; font-weight: 700; color: var(--primary);
+      margin: 18px 0 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .mode-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .mode-option {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: white;
+      padding: 10px 12px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .mode-option.active {
+      border-color: var(--primary);
+      background: #f5f9ff;
+      box-shadow: 0 0 0 2px rgba(26,58,92,0.08);
+    }
+    .mode-option .title {
+      display: block;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 2px;
+    }
+    .mode-option .desc {
+      display: block;
+      font-size: 0.76rem;
+      color: var(--text-light);
+      line-height: 1.45;
+    }
+    .rate-grid {
+      display: grid; gap: 12px;
+    }
+    .result-empty {
+      text-align: center; color: var(--text-light); padding: 18px 10px;
+    }
+    .variant-panel {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 16px;
+      background: #fbfcfe;
+    }
+    .variant-panel.premium {
+      border-color: #d9c089;
+      background: #fffcf5;
+    }
+    .variant-panel.policy {
+      border-color: #bfd8ef;
+      background: #f7fbff;
+    }
+    .variant-panel-title {
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 6px;
+    }
+    .variant-panel-desc {
+      font-size: 0.8rem;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+    .product-search-wrap { position: relative; }
+    .product-options-list {
+      position: absolute; top: 100%; left: 0; right: 0; display: none;
+      background: white; border: 1px solid var(--border); border-top: none;
+      border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto;
+      z-index: 40; box-shadow: var(--shadow);
+    }
+    .product-option {
+      padding: 10px 14px; cursor: pointer; font-size: 0.84rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .product-option:last-child { border-bottom: none; }
+    .product-option:hover { background: #f0f8ff; }
+
+    .section-note {
+      font-size: 0.75rem; color: var(--text-light); text-align: center;
+      margin-top: 20px; line-height: 1.5;
+    }
+
+    /* Print */
+    @media print {
+      .app-header, .step-indicator, .bottom-nav, .modal-overlay, button, .add-bond-btn { display: none !important; }
+      body { background: white; padding: 0; }
+      .main-content { padding: 0; padding-bottom: 0; }
+      .card, .bond-slot, .stat-card, .coverage-box { box-shadow: none; border: 1px solid #ddd; }
+    }
+
+    /* Tablet+ */
+    @media (min-width: 768px) {
+      .app-header h1 { font-size: 1.5rem; }
+      .type-cards { grid-template-columns: 1fr 1fr; }
+      .form-row { grid-template-columns: 1fr 1fr; }
+      .rate-grid { grid-template-columns: repeat(3, 1fr); }
+      .stat-grid { grid-template-columns: repeat(3, 1fr); }
+      .main-content { padding: 24px; padding-bottom: 100px; }
+      .modal-overlay { align-items: center; }
+      .modal-sheet { border-radius: 16px; max-height: 80vh; }
+      .step-dot { font-size: 0.82rem; }
+      .step-dot .num { width: 30px; height: 30px; font-size: 0.8rem; }
+      .step-line { width: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="app-header">
+  <a href="index.html" class="home-link"><i class="fas fa-arrow-left"></i></a>
+  <h1>亞灣專區融資試算</h1>
+  <div class="subtitle">保費融資 / 保單融資策略模擬</div>
+</header>
+
+<!-- Step Indicator -->
+<nav class="step-indicator" id="stepIndicator">
+  <div class="step-dot active" data-step="1"><span class="num">1</span> 融資類型</div>
+  <div class="step-line"></div>
+  <div class="step-dot" data-step="2"><span class="num">2</span> 保單設定</div>
+  <div class="step-line"></div>
+  <div class="step-dot" data-step="3"><span class="num">3</span> 投資配置</div>
+  <div class="step-line"></div>
+  <div class="step-dot" data-step="4"><span class="num">4</span> 試算結果</div>
+</nav>
+
+<!-- Main Content -->
+<main class="main-content">
+
+  <!-- Step 1: Choose Financing Type -->
+  <section class="step-panel active" id="step1">
+    <div class="card">
+      <div class="card-title"><i class="fas fa-hand-pointer"></i> 選擇融資類型</div>
+      <div class="type-cards">
+        <div class="type-card premium" onclick="selectType('premium')" id="typeCardPremium">
+          <div class="icon"><i class="fas fa-file-invoice-dollar"></i></div>
+          <h3>保費融資</h3>
+          <p>以保單為擔保品，向銀行借款購買新保單，放大保障倍數</p>
+          <span class="badge">7 檔可承作商品</span>
+        </div>
+        <div class="type-card policy" onclick="selectType('policy')" id="typeCardPolicy">
+          <div class="icon"><i class="fas fa-shield-halved"></i></div>
+          <h3>保單融資</h3>
+          <p>以既有保單作為擔保品，向銀行融資借款，活化資金運用</p>
+          <span class="badge">163 檔可承作商品</span>
+        </div>
+      </div>
+    </div>
+    <p class="section-note">此工具僅供內部教育訓練參考，不保證獲利，不保證數字正確性。</p>
+  </section>
+
+  <!-- Step 2: Insurance Product & Financing Calc -->
+  <section class="step-panel" id="step2">
+    <div class="card">
+      <div class="card-title"><i class="fas fa-search"></i> 選擇保險商品</div>
+      <div class="form-group">
+        <label class="form-label">融資類型</label>
+        <div id="selectedTypeDisplay" style="font-weight:600; color:var(--primary);"></div>
+      </div>
+      <div class="form-group search-container">
+        <label class="form-label">保險商品 <span class="hint">(輸入代碼或名稱搜尋)</span></label>
+        <input type="text" class="form-input" id="productSearch" placeholder="搜尋商品..." autocomplete="off">
+        <div class="search-dropdown" id="productDropdown"></div>
+      </div>
+      <div id="selectedProductInfo" class="hidden" style="background:#f0f8ff; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.85rem;">
+        <div><strong id="selProductCode"></strong> <span id="selProductName"></span></div>
+        <div style="margin-top:4px;"><span id="selProductCurrencyBadge" class="search-option currency-tag"></span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><i class="fas fa-calculator"></i> <span id="financingCardTitle">融資參數</span></div>
+
+      <div class="variant-panel premium hidden" id="premiumSettingsPanel">
+        <div class="variant-panel-title">保費融資設定</div>
+        <div class="variant-panel-desc">以保費為基礎計算融資成數，拆分自備款與貸款金額，再換算台幣融資成本。</div>
+      </div>
+
+      <div class="variant-panel policy hidden" id="policySettingsPanel">
+        <div class="variant-panel-title">保單融資設定</div>
+        <div class="variant-panel-desc">以保價金為基礎計算可融資額度；美元保單可再套用匯率折扣，估算實際可動用資金。</div>
+      </div>
+
+      <div class="form-row" id="commonAmountRow">
+        <div class="form-group" id="sumInsuredGroup">
+          <label class="form-label">保額 <span class="hint" id="sumInsuredCurrLabel">(USD)</span></label>
+          <input type="number" class="form-input" id="sumInsured" inputmode="decimal" placeholder="300,0000" oninput="recalcFinancing()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">保費 <span class="hint" id="premiumCurrLabel">(USD)</span></label>
+          <input type="number" class="form-input" id="premium" inputmode="decimal" placeholder="508,200" oninput="recalcFinancing()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">融資利率 (%)</label>
+          <input type="number" class="form-input" id="financingRate" inputmode="decimal" value="2.38" step="0.01" oninput="recalcFinancing()">
+        </div>
+      </div>
+      <div class="form-row" id="policyOnlyValueRow">
+        <div class="form-group" id="policyValueGroup">
+          <label class="form-label" id="policyValueLabel">保價金 <span class="hint" id="policyValueCurrLabel">(USD)</span></label>
+          <input type="number" class="form-input" id="policyValue" inputmode="decimal" placeholder="1,000,000" oninput="recalcFinancing()">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" id="exchangeRateGroup">
+          <label class="form-label">USD/TWD 匯率</label>
+          <div class="input-group">
+            <input type="number" class="form-input" id="usdTwdRate" inputmode="decimal" value="32.00" step="0.01" oninput="recalcFinancing()">
+            <button class="inline-btn" onclick="fetchRate()" title="從API更新匯率"><i class="fas fa-sync-alt"></i></button>
+          </div>
+          <div class="exchange-info">
+            <i class="fas fa-info-circle"></i>
+            <span id="rateStatus" class="status">載入中...</span>
+          </div>
+        </div>
+        <div class="form-group" id="ltvRatioGroup">
+          <label class="form-label" id="ltvRatioLabel">保價金成數</label>
+          <div class="input-group">
+            <input type="number" class="form-input" id="ltvRatio" inputmode="decimal" value="85" step="1" oninput="recalcFinancing()">
+            <span class="input-suffix">%</span>
+          </div>
+        </div>
+      </div>
+      <div class="rate-grid" id="multiCurrencyRateGrid">
+        <div class="form-group">
+          <label class="form-label">AUD/TWD 匯率</label>
+          <input type="number" class="form-input" id="audTwdRate" inputmode="decimal" value="20.50" step="0.0001" oninput="recalcFinancing()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">EUR/TWD 匯率</label>
+          <input type="number" class="form-input" id="eurTwdRate" inputmode="decimal" value="34.80" step="0.0001" oninput="recalcFinancing()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">GBP/TWD 匯率</label>
+          <input type="number" class="form-input" id="gbpTwdRate" inputmode="decimal" value="40.60" step="0.0001" oninput="recalcFinancing()">
+        </div>
+      </div>
+      <div class="form-group" id="usdDiscountGroup">
+        <label class="form-label">美元保單匯率折扣</label>
+        <div class="input-group">
+          <input type="number" class="form-input" id="usdDiscount" inputmode="decimal" value="90" step="1" oninput="recalcFinancing()">
+          <span class="input-suffix">%</span>
+        </div>
+      </div>
+
+      <!-- Financing Calculation Display -->
+      <div class="calc-display" id="financingCalcDisplay">
+        <div class="calc-row">
+          <span class="label" id="dispBaseLabel">保價金</span>
+          <span class="value" id="dispPolicyValue">-</span>
+        </div>
+        <div class="calc-row" id="dispExchangeRow">
+          <span class="label">× 匯率</span>
+          <span class="value" id="dispExchangeRate">-</span>
+        </div>
+        <div class="calc-row">
+          <span class="label" id="dispRatioLabel">× 保價金成數</span>
+          <span class="value" id="dispLtv">85%</span>
+        </div>
+        <div class="calc-row" id="dispDiscountRow">
+          <span class="label">× 匯率折扣</span>
+          <span class="value" id="dispDiscount">90%</span>
+        </div>
+        <div class="calc-row hidden" id="dispSelfFundRow">
+          <span class="label">自備款</span>
+          <span class="value" id="dispSelfFundAmount">-</span>
+        </div>
+        <div class="calc-row hidden" id="dispLoanOriginalRow">
+          <span class="label">貸款金額</span>
+          <span class="value" id="dispLoanOriginalAmount">-</span>
+        </div>
+        <div class="calc-row highlight">
+          <span class="label"><strong>可融資金額 (TWD)</strong></span>
+          <span class="value" id="dispFinancingAmount">-</span>
+        </div>
+        <div class="calc-row">
+          <span class="label">年融資成本 (TWD)</span>
+          <span class="value" id="dispAnnualCost">-</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 3: Bond Investment -->
+  <section class="step-panel" id="step3">
+    <div class="card">
+      <div class="card-title"><i class="fas fa-chart-line"></i> 投資配置</div>
+      <div style="font-size:0.85rem; color:var(--text-light); margin-bottom:12px;">
+        可投資金額：<strong id="availableAmount" style="color:var(--accent);">-</strong>
+      </div>
+      <div class="action-row">
+        <button class="inline-btn accent" type="button" onclick="openBondScreeningTool()"><i class="fas fa-arrow-up-right-from-square"></i> 開啟債券篩選工具</button>
+        <button class="inline-btn success" type="button" id="importBondsBtn" onclick="importSelectedBonds()"><i class="fas fa-file-import"></i> 匯入篩選債券</button>
+        <button class="inline-btn danger" type="button" onclick="clearBonds()"><i class="fas fa-trash"></i> 清空債券</button>
+      </div>
+      <div class="investment-section-title"><i class="fas fa-building-columns"></i> 債券投資</div>
+      <div class="mode-toggle" id="bondModeToggle">
+        <button class="mode-option active" type="button" onclick="setInvestmentMode('bond', 'single')" id="bondModeSingle">
+          <span class="title">單一投資</span>
+          <span class="desc">不質押借款，單純配置債券部位。</span>
+        </button>
+        <button class="mode-option" type="button" onclick="setInvestmentMode('bond', 'pledged')" id="bondModePledged">
+          <span class="title">質押投資</span>
+          <span class="desc">保留後續質押借款延伸運用的設定方式。</span>
+        </button>
+      </div>
+      <div id="bondSlots"></div>
+      <button class="add-bond-btn" id="addBondBtn" onclick="openAddBondModal()">
+        <i class="fas fa-plus-circle"></i> 新增債券（最多 5 檔）
+      </button>
+      <div class="investment-section-title"><i class="fas fa-chart-pie"></i> 基金投資</div>
+      <div class="mode-toggle" id="fundModeToggle">
+        <button class="mode-option active" type="button" onclick="setInvestmentMode('fund', 'single')" id="fundModeSingle">
+          <span class="title">單一投資</span>
+          <span class="desc">不質押借款，單純配置基金部位。</span>
+        </button>
+        <button class="mode-option" type="button" onclick="setInvestmentMode('fund', 'pledged')" id="fundModePledged">
+          <span class="title">質押投資</span>
+          <span class="desc">保留後續質押借款延伸運用的設定方式。</span>
+        </button>
+      </div>
+      <div id="fundSlots"></div>
+      <button class="add-bond-btn" id="addFundBtn" onclick="openAddFundModal()">
+        <i class="fas fa-plus-circle"></i> 新增基金（最多 5 檔）
+      </button>
+      <div class="investment-section-title"><i class="fas fa-layer-group"></i> FCN / ELI</div>
+      <div id="structuredSlots"></div>
+      <button class="add-bond-btn" id="addStructuredBtn" onclick="openAddStructuredModal()">
+        <i class="fas fa-plus-circle"></i> 新增 FCN / ELI（最多 5 筆）
+      </button>
+    </div>
+
+    <div id="bondSummary" class="hidden">
+      <div class="bond-total">
+        <div class="row">
+          <span>已配置投資額</span>
+          <span class="val" id="totalAllocated">0</span>
+        </div>
+        <div class="row">
+          <span>年度配息收入</span>
+          <span class="val" id="totalCoupon">0</span>
+        </div>
+        <div class="row">
+          <span>年度融資成本</span>
+          <span class="val" id="totalFinCost">0</span>
+        </div>
+        <div class="row net">
+          <span>年度淨息收</span>
+          <span class="val" id="netIncome">0</span>
+        </div>
+      </div>
+      <div id="allocationWarning" class="allocation-warning hidden">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>投資配置金額超過可融資金額</span>
+      </div>
+    </div>
+    <p class="section-note">債券依到期時間由遠到近排序。配息收入與融資成本皆以台幣計算。</p>
+  </section>
+
+  <!-- Step 4: Results Dashboard -->
+  <section class="step-panel" id="step4">
+    <div class="result-section">
+      <div class="result-section-title"><i class="fas fa-shield-halved"></i> 保險融資摘要</div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">融資類型</div><div class="stat-value text-sm" id="resType">-</div></div>
+        <div class="stat-card"><div class="stat-label">保險商品</div><div class="stat-value text-sm" id="resProduct">-</div></div>
+        <div class="stat-card"><div class="stat-label">保額</div><div class="stat-value" id="resSumInsured">-</div></div>
+        <div class="stat-card"><div class="stat-label">保費</div><div class="stat-value" id="resPremium">-</div></div>
+        <div class="stat-card accent"><div class="stat-label">融資金額 (TWD)</div><div class="stat-value" id="resFinancing">-</div></div>
+        <div class="stat-card"><div class="stat-label">融資利率</div><div class="stat-value" id="resRate">-</div></div>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-section-title"><i class="fas fa-chart-line"></i> 債券投資明細</div>
+      <div style="overflow-x:auto;">
+        <table class="result-bond-table" id="resultBondTable">
+          <thead>
+            <tr>
+              <th>債券名稱</th>
+              <th class="text-right">面額</th>
+              <th class="text-right">票息</th>
+              <th class="text-right">到期年</th>
+              <th class="text-right">年配息(TWD)</th>
+            </tr>
+          </thead>
+          <tbody id="resultBondBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-section-title"><i class="fas fa-chart-pie"></i> 基金投資明細</div>
+      <div style="overflow-x:auto;">
+        <table class="result-bond-table">
+          <thead>
+            <tr>
+              <th>基金名稱</th>
+              <th>基金代碼</th>
+              <th class="text-right">投資金額</th>
+              <th class="text-right">年化配息率</th>
+              <th class="text-right">年配息(TWD)</th>
+            </tr>
+          </thead>
+          <tbody id="resultFundBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-section-title"><i class="fas fa-layer-group"></i> FCN / ELI 明細</div>
+      <div style="overflow-x:auto;">
+        <table class="result-bond-table">
+          <thead>
+            <tr>
+              <th>類型</th>
+              <th>名稱</th>
+              <th class="text-right">投資金額</th>
+              <th class="text-right">年化利率</th>
+              <th class="text-right">年收益(TWD)</th>
+            </tr>
+          </thead>
+          <tbody id="resultStructuredBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-section-title"><i class="fas fa-coins"></i> 現金流分析</div>
+      <div class="stat-grid">
+        <div class="stat-card"><div class="stat-label">年度配息收入</div><div class="stat-value" id="resCoupon">-</div></div>
+        <div class="stat-card"><div class="stat-label">年度融資成本</div><div class="stat-value" id="resCost">-</div></div>
+        <div class="stat-card full" id="resNetCard">
+          <div class="stat-label">年度淨息收</div>
+          <div class="stat-value" id="resNet">-</div>
+          <div class="text-sm text-muted mt-12" id="resNetMonthly"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="result-section-title"><i class="fas fa-arrow-up-right-dots"></i> 保障倍數比較</div>
+      <div class="coverage-compare">
+        <div class="coverage-box before">
+          <div class="label">未融資</div>
+          <div class="multiplier" id="resCovBefore">-</div>
+          <div class="text-sm text-muted">倍</div>
+        </div>
+        <div class="coverage-arrow"><i class="fas fa-arrow-right"></i></div>
+        <div class="coverage-box after">
+          <div class="label">融資後</div>
+          <div class="multiplier" id="resCovAfter">-</div>
+          <div class="text-sm text-muted">倍</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center mt-16">
+      <button class="inline-btn" onclick="window.print()"><i class="fas fa-print"></i> 列印結果</button>
+      <button class="inline-btn danger" onclick="resetScenario()" style="margin-left:8px;"><i class="fas fa-rotate-left"></i> 重設本次試算</button>
+    </div>
+    <p class="section-note">以上僅供內部教育訓練參考使用，所有計算結果不代表實際投資收益。<br>投資人應審慎評估自身投資風險。</p>
+  </section>
+
+</main>
+
+<!-- Bottom Navigation -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn prev" id="prevBtn" disabled>
+    <i class="fas fa-chevron-left"></i> 上一步
+  </button>
+  <button class="nav-btn next" id="nextBtn" data-action="next">
+    下一步 <i class="fas fa-chevron-right"></i>
+  </button>
+</nav>
+
+<!-- Add Bond Modal -->
+<div class="modal-overlay" id="bondModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="bondModalTitle">新增債券</div>
+    <div class="form-group">
+      <label class="form-label">商品代碼</label>
+      <input type="text" class="form-input" id="bondCode" placeholder="例: US05581LAC41">
+    </div>
+    <div class="form-group">
+      <label class="form-label">商品名稱</label>
+      <input type="text" class="form-input" id="bondName" placeholder="例: 法國巴黎銀行">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">幣別</label>
+        <select class="form-input" id="bondCurrency">
+          <option value="USD">USD</option>
+          <option value="TWD">TWD</option>
+          <option value="AUD">AUD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">標普評等</label>
+        <input type="text" class="form-input" id="bondRating" placeholder="A+">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">投資面額</label>
+        <input type="number" class="form-input" id="bondFaceValue" inputmode="numeric" placeholder="200000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">參考買入價</label>
+        <input type="number" class="form-input" id="bondBuyPrice" inputmode="decimal" step="0.01" placeholder="100.50">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">票息率 (%)</label>
+        <input type="number" class="form-input" id="bondCouponRate" inputmode="decimal" step="0.001" placeholder="5.5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">剩餘到期年</label>
+        <input type="number" class="form-input" id="bondMaturityYears" inputmode="decimal" step="0.01" placeholder="10.5">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">配息頻率</label>
+      <select class="form-input" id="bondDivFreq">
+        <option value="2">半年配 (2次)</option>
+        <option value="4">季配 (4次)</option>
+        <option value="12">月配 (12次)</option>
+        <option value="1">年配 (1次)</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeBondModal()">取消</button>
+      <button class="btn btn-confirm" id="bondModalConfirmBtn" onclick="saveBond()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="fundModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="fundModalTitle">新增基金</div>
+    <div class="form-group">
+      <label class="form-label">商品代碼</label>
+      <div class="product-search-wrap">
+        <input type="text" class="form-input" id="fundCode" placeholder="輸入基金代碼">
+        <div class="product-options-list" id="fundCodeOptions"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">商品名稱</label>
+      <div class="product-search-wrap">
+        <input type="text" class="form-input" id="fundName" placeholder="輸入基金名稱">
+        <div class="product-options-list" id="fundNameOptions"></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">投資金額 (TWD)</label>
+        <input type="number" class="form-input" id="fundInvestmentAmount" inputmode="numeric" placeholder="3000000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">年化配息率 (%)</label>
+        <input type="number" class="form-input" id="fundDividendRate" inputmode="decimal" step="0.01" placeholder="7">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">配息頻率</label>
+      <select class="form-input" id="fundDividendFrequency">
+        <option value="12">月配</option>
+        <option value="4">季配</option>
+        <option value="2">半年配</option>
+        <option value="1">年配</option>
+        <option value="0">不配息</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeFundModal()">取消</button>
+      <button class="btn btn-confirm" id="fundModalConfirmBtn" onclick="saveFund()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="structuredModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="structuredModalTitle">新增 FCN / ELI</div>
+    <div class="form-group">
+      <label class="form-label">商品類型</label>
+      <select class="form-input" id="structuredType">
+        <option value="FCN">FCN</option>
+        <option value="ELI">ELI</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">名稱</label>
+      <input type="text" class="form-input" id="structuredName" placeholder="例：美元 FCN / 港股 ELI">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">投資金額 (TWD)</label>
+        <input type="number" class="form-input" id="structuredAmount" inputmode="numeric" placeholder="3000000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">年化利率 (%)</label>
+        <input type="number" class="form-input" id="structuredRate" inputmode="decimal" step="0.01" placeholder="12">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-cancel" onclick="closeStructuredModal()">取消</button>
+      <button class="btn btn-confirm" id="structuredModalConfirmBtn" onclick="saveStructured()">新增</button>
+    </div>
+  </div>
+</div>
+
+<script src="fund_data.js"></script>
+<script>
+// === Product Data ===
+const PREMIUM_FINANCING_PRODUCTS = [
+  { code: "ABA", name: "國泰人壽美添增鑽利率變動型美元終身壽險", shortName: "美添增鑽", currency: "USD" },
+  { code: "WUS", name: "國泰人壽鑽美滿利率變動型美元終身壽險(定期給付型)", shortName: "鑽美滿", currency: "USD" },
+  { code: "WEF", name: "國泰人壽泰美好利率變動型美元終身壽險(定期給付型)", shortName: "泰美好", currency: "USD" },
+  { code: "WQ6", name: "國泰人壽美添增鑫利率變動型美元終身壽險", shortName: "美添增鑫", currency: "USD" },
+  { code: "WSJ", name: "國泰人壽鑫得利利率變動型終身壽險", shortName: "鑫得利", currency: "TWD" },
+  { code: "WSH", name: "國泰人壽旭滿鑫利率變動型終身壽險(定期給付型)", shortName: "旭滿鑫", currency: "TWD" },
+  { code: "WJA", name: "國泰人壽鑽美鑫利率變動型美元終身壽險(定期給付型)", shortName: "鑽美鑫", currency: "USD" },
+];
+
+const POLICY_FINANCING_PRODUCTS = [
+  {code:"ABA",name:"國泰人壽美添增鑽利率變動型美元終身壽險",shortName:"美添增鑽美元利變壽險",currency:"USD"},
+  {code:"ABB",name:"國泰人壽美添增鑽利率變動型美元終身壽險",shortName:"美添增鑽美元利變壽險",currency:"USD"},
+  {code:"C6",name:"國泰人壽祿美鑫利率變動型美元終身壽險(定期給付型)",shortName:"祿美鑫利變美元",currency:"USD"},
+  {code:"C61",name:"國泰人壽祿美滿利率變動型美元終身壽險(定期給付型)",shortName:"祿美滿利變美元",currency:"USD"},
+  {code:"C62",name:"國泰人壽吉利美滿利率變動型美元終身壽險(定期給付型)",shortName:"吉利美滿利變美元",currency:"USD"},
+  {code:"C63",name:"國泰人壽祿美佳利率變動型美元終身壽險(定期給付型)",shortName:"祿美佳利變美元",currency:"USD"},
+  {code:"C64",name:"國泰人壽祿美富利率變動型美元終身壽險(定期給付型)",shortName:"祿美富利變美元",currency:"USD"},
+  {code:"CC5",name:"國泰人壽GO豐采101終身壽險(定期給付型)",shortName:"GO豐采101終身壽",currency:"TWD"},
+  {code:"CCA",name:"國泰人壽繽利101利率變動型終身壽險(定期給付型)",shortName:"繽利101利變終身壽",currency:"TWD"},
+  {code:"CCB",name:"國泰人壽吉得利101利率變動型終身壽險(定期給付型)",shortName:"吉得利101利變壽",currency:"TWD"},
+  {code:"CD",name:"國泰人壽超經典101美元終身壽險(定期給付型)",shortName:"超經典101美元",currency:"USD"},
+  {code:"CDA",name:"國泰人壽GO經典101美元終身壽險(定期給付型)",shortName:"GO經典101美元",currency:"USD"},
+  {code:"CDB",name:"國泰人壽GO精彩101美元終身壽險(定期給付型)",shortName:"GO精彩101美元",currency:"USD"},
+  {code:"CDC",name:"國泰人壽新GO精彩101美元終身壽險(定期給付型)",shortName:"新GO精彩101美元",currency:"USD"},
+  {code:"DB",name:"國泰人壽益美利多利率變動型美元終身壽險",shortName:"益美利多利變終身壽險",currency:"USD"},
+  {code:"DC",name:"國泰人壽雙添利多利率變動型終身壽險",shortName:"雙添利多利變",currency:"TWD"},
+  {code:"DD",name:"國泰人壽雙美添利利率變動型美元終身壽險",shortName:"雙美添利利變美元",currency:"USD"},
+  {code:"DE",name:"國泰人壽尚美添利利率變動型美元終身壽險",shortName:"尚美添利利變美元",currency:"USD"},
+  {code:"DH",name:"國泰人壽樂添利多利率變動型終身壽險",shortName:"樂添利多利變終身壽",currency:"TWD"},
+  {code:"DI",name:"國泰人壽樂美添利利率變動型美元終身壽險",shortName:"樂美添利利變美元",currency:"USD"},
+  {code:"DL",name:"國泰人壽益利多多利率變動型終身壽險",shortName:"益利多多利變終身壽",currency:"TWD"},
+  {code:"E0",name:"國泰人壽新鑫添鑫終身壽險",shortName:"新鑫添鑫終身壽險",currency:"TWD"},
+  {code:"E3",name:"國泰人壽添美利美元終身壽險",shortName:"添美利美元",currency:"USD"},
+  {code:"E9",name:"國泰人壽添豐終身壽險",shortName:"添豐終身壽險",currency:"TWD"},
+  {code:"EH",name:"國泰人壽尚優利利率變動型終身壽險",shortName:"尚優利利變",currency:"TWD"},
+  {code:"EU",name:"國泰人壽珍鑫福終身壽險",shortName:"珍鑫福終身壽險",currency:"TWD"},
+  {code:"F1",name:"國泰人壽尚美利利率變動型美元終身壽險",shortName:"尚美利利變美元",currency:"USD"},
+  {code:"F12",name:"國泰人壽新尚美利利率變動型美元終身壽險",shortName:"新尚美利利變美元",currency:"USD"},
+  {code:"G3",name:"國泰人壽添美盛美元終身壽險",shortName:"添美盛美元",currency:"USD"},
+  {code:"G4",name:"國泰人壽添采終身壽險",shortName:"添采終身壽險",currency:"TWD"},
+  {code:"GO",name:"國泰人壽美利多利率變動型美元終身壽險",shortName:"美利多利變美元",currency:"USD"},
+  {code:"HR",name:"國泰人壽新兩全其美利率變動型美元終身壽險",shortName:"新兩全其美利變美元",currency:"USD"},
+  {code:"HV",name:"國泰人壽新美利多利率變動型美元終身壽險",shortName:"新美利多利變美元",currency:"USD"},
+  {code:"I6",name:"國泰人壽安家保本定期保險",shortName:"安家保本定期保險",currency:"TWD"},
+  {code:"IK",name:"國泰人壽增添利利率變動型終身壽險",shortName:"增添利利變",currency:"TWD"},
+  {code:"IR",name:"國泰人壽新添采終身壽險(定期給付型)",shortName:"新添采終身壽險_定期",currency:"TWD"},
+  {code:"IS",name:"國泰人壽鑫經典101美元終身壽險(定期給付型)",shortName:"鑫經典101美元_定",currency:"USD"},
+  {code:"KC",name:"國泰人壽澳多鑫澳幣終身壽險",shortName:"澳多鑫澳幣終身壽險",currency:"AUD"},
+  {code:"KF",name:"國泰人壽添美金利率變動型美元終身壽險",shortName:"添美金利變美元",currency:"USD"},
+  {code:"KG",name:"國泰人壽美滿303利率變動型美元終身壽險",shortName:"美滿303利變美元",currency:"USD"},
+  {code:"KI",name:"國泰人壽樂美加利利率變動型美元終身壽險",shortName:"樂美加利利變美元",currency:"USD"},
+  {code:"L3",name:"國泰人壽鑫彩終身壽險",shortName:"鑫彩終身壽險",currency:"TWD"},
+  {code:"M0",name:"國泰人壽新澳多鑫澳幣終身壽險",shortName:"新澳多鑫澳幣終身壽險",currency:"AUD"},
+  {code:"M3",name:"國泰人壽添美多美元終身壽險",shortName:"添美多美元",currency:"USD"},
+  {code:"M4",name:"國泰人壽新添采終身壽險",shortName:"新添采終身壽險",currency:"TWD"},
+  {code:"N6",name:"國泰人壽新安家保本定期保險",shortName:"新安家保本定期保險",currency:"TWD"},
+  {code:"N62",name:"國泰人壽GO安家保本定期保險",shortName:"GO安家保本定期保險",currency:"TWD"},
+  {code:"N63",name:"國泰人壽GO安心保本定期保險",shortName:"GO安心保本定期保險",currency:"TWD"},
+  {code:"N64",name:"國泰人壽新GO安心保本定期保險",shortName:"新GO安心保本定期",currency:"TWD"},
+  {code:"P8",name:"國泰人壽鑫經典101美元終身壽險",shortName:"鑫經典101美元",currency:"USD"},
+  {code:"PY",name:"國泰人壽固本養老保險",shortName:"固本養老保險",currency:"TWD"},
+  {code:"Q0",name:"國泰人壽祿美利利率變動型美元終身壽險(定期給付型)",shortName:"祿美利利變美元",currency:"USD"},
+  {code:"Q3",name:"國泰人壽增美福美元終身壽險",shortName:"增美福美元",currency:"USD"},
+  {code:"Q5",name:"國泰人壽澳利優澳幣終身壽險",shortName:"澳利優澳幣",currency:"AUD"},
+  {code:"QK",name:"國泰人壽添運終身壽險",shortName:"添運終身",currency:"TWD"},
+  {code:"S8",name:"國泰人壽福鑫高照終身壽險",shortName:"福鑫高照終身壽險",currency:"TWD"},
+  {code:"SG",name:"國泰人壽添旺終身壽險",shortName:"添旺終身壽險",currency:"TWD"},
+  {code:"T0",name:"國泰人壽益美利優利率變動型美元終身壽險",shortName:"益美利優利變終身壽險",currency:"USD"},
+  {code:"TI",name:"國泰人壽美利開鑫利率變動型美元終身壽險",shortName:"美利開鑫利變美元",currency:"USD"},
+  {code:"UB",name:"國泰人壽守護保本定期保險",shortName:"守護保本定期保險",currency:"TWD"},
+  {code:"UE",name:"國泰人壽金得利95養老保險",shortName:"金得利95養老",currency:"TWD"},
+  {code:"V1",name:"國泰人壽美利優美元終身壽險",shortName:"美利優美元終身壽險",currency:"USD"},
+  {code:"V9",name:"國泰人壽兩全其美利率變動型美元終身壽險",shortName:"兩全其美利變美元",currency:"USD"},
+  {code:"VV",name:"國泰人壽添鑫終身壽險",shortName:"添鑫終身壽險",currency:"TWD"},
+  {code:"WAT",name:"國泰人壽祿利吉利率變動型終身壽險(定期給付型)",shortName:"祿利吉利變壽",currency:"TWD"},
+  {code:"WAU",name:"國泰人壽祿利威登利率變動型終身壽險(定期給付型)",shortName:"祿利威登利變壽",currency:"TWD"},
+  {code:"WEA",name:"國泰人壽花美滿利率變動型美元終身壽險(定期給付型)",shortName:"花美滿利變美元",currency:"USD"},
+  {code:"WED",name:"國泰人壽泰美滿利率變動型美元終身壽險(定期給付型)",shortName:"泰美滿利變美元",currency:"USD"},
+  {code:"WEF",name:"國泰人壽泰美好利率變動型美元終身壽險(定期給付型)",shortName:"泰美好利變美元",currency:"USD"},
+  {code:"WK",name:"國泰人壽益美利加利率變動型美元終身壽險",shortName:"益美利加利變終身壽險",currency:"USD"},
+  {code:"WKA",name:"國泰人壽澳利成雙利率變動型澳幣終身壽險",shortName:"澳利成雙利變壽澳幣",currency:"AUD"},
+  {code:"WKB",name:"國泰人壽祿利澳翔利率變動型澳幣終身壽險",shortName:"祿利澳翔利率變終身",currency:"AUD"},
+  {code:"WKC",name:"國泰人壽祿守澳利利率變動型澳幣終身壽險(定期給付型)",shortName:"祿守澳利利變澳幣",currency:"AUD"},
+  {code:"WN",name:"國泰人壽美利益生利率變動型美元終身壽險(定期給付型)",shortName:"美利益生利變終身壽險",currency:"USD"},
+  {code:"WN1",name:"國泰人壽新美利益生利率變動型美元終身壽險(定期給付型)",shortName:"新美利益生利變終身壽",currency:"USD"},
+  {code:"WO",name:"國泰人壽威利益生利率變動型終身壽險(定期給付型)",shortName:"威利益生利變終身壽險",currency:"TWD"},
+  {code:"WO1",name:"國泰人壽新威利益生利率變動型終身壽險(定期給付型)",shortName:"新威利益生利變終身壽",currency:"TWD"},
+  {code:"WQ",name:"國泰人壽益美多多利率變動型美元終身壽險",shortName:"益美多多利變終身壽險",currency:"USD"},
+  {code:"WQ1",name:"國泰人壽益美多利利率變動型美元終身壽險",shortName:"益美多利利變終身壽險",currency:"USD"},
+  {code:"WQ2",name:"國泰人壽益美威利利率變動型美元終身壽險",shortName:"益美威利美元利變壽險",currency:"USD"},
+  {code:"WQ3",name:"國泰人壽益美華利利率變動型美元終身壽險",shortName:"益美華利美元利變壽險",currency:"USD"},
+  {code:"WQ4",name:"國泰人壽益美優利利率變動型美元終身壽險",shortName:"益美優利美元利變壽險",currency:"USD"},
+  {code:"WQ5",name:"國泰人壽美添開鑫利率變動型美元終身壽險",shortName:"美添開鑫美元利變壽險",currency:"USD"},
+  {code:"WQ6",name:"國泰人壽美添增鑫利率變動型美元終身壽險",shortName:"美添增鑫美元利變壽險",currency:"USD"},
+  {code:"WQ7",name:"國泰人壽美添增鑫利率變動型美元終身壽險",shortName:"美添增鑫美元利變壽險",currency:"USD"},
+  {code:"WQ8",name:"國泰人壽美添增鑫利率變動型美元終身壽險",shortName:"美添增鑫美元利變壽險",currency:"USD"},
+  {code:"WSA",name:"國泰人壽益利雙倍利率變動型終身壽險(定期給付型)",shortName:"益利雙倍利變終身壽",currency:"TWD"},
+  {code:"WSC",name:"國泰人壽旭滿益利率變動型終身壽險(定期給付型)",shortName:"旭滿益利變終身壽",currency:"TWD"},
+  {code:"WSE",name:"國泰人壽花威望利率變動型終身壽險",shortName:"花威望利變終身壽",currency:"TWD"},
+  {code:"WSH",name:"國泰人壽旭滿鑫利率變動型終身壽險(定期給付型)",shortName:"旭滿鑫利變終身壽",currency:"TWD"},
+  {code:"WSJ",name:"國泰人壽鑫得利利率變動型終身壽險",shortName:"鑫得利利變終身壽",currency:"TWD"},
+  {code:"WSK",name:"國泰人壽鑫得利利率變動型終身壽險",shortName:"鑫得利利變終身壽",currency:"TWD"},
+  {code:"WSL",name:"國泰人壽萬得利利率變動型終身壽險(定期給付型)",shortName:"萬得利利變壽",currency:"TWD"},
+  {code:"WSO",name:"國泰人壽雙美添益利率變動型美元終身壽險(定期給付型)",shortName:"雙美添益利變美元",currency:"USD"},
+  {code:"WTB",name:"國泰人壽樂添多利利率變動型終身壽險",shortName:"樂添多利利變終身壽",currency:"TWD"},
+  {code:"WTD",name:"國泰人壽常樂美利利率變動型美元終身壽險",shortName:"常樂美利利變美元",currency:"USD"},
+  {code:"WTH",name:"國泰人壽美利101利率變動型美元終身壽險(定期給付型)",shortName:"美利101利變美元壽",currency:"USD"},
+  {code:"WTK",name:"國泰人壽常美利利率變動型美元終身壽險",shortName:"常美利利變美元",currency:"USD"},
+  {code:"WTO",name:"國泰人壽益利雙收利率變動型終身壽險(定期給付型)",shortName:"益利雙收利變終身壽",currency:"TWD"},
+  {code:"WTP",name:"國泰人壽好美利101利率變動型美元終身壽險(定期給付型)",shortName:"好美利101利變美元",currency:"USD"},
+  {code:"WTQ",name:"國泰人壽益利雙收利率變動型終身壽險(定期給付型)",shortName:"益利雙收利變壽",currency:"TWD"},
+  {code:"WTS",name:"國泰人壽雙倍美利利率變動型美元終身壽險(定期給付型)",shortName:"雙倍美利利變美元",currency:"USD"},
+  {code:"WTT",name:"國泰人壽美發祿利率變動型美元終身壽險(定期給付型)",shortName:"美發祿利變美元",currency:"USD"},
+  {code:"WTV",name:"國泰人壽吉添大勝利率變動型美元終身壽險",shortName:"吉添大勝利變美元",currency:"USD"},
+  {code:"WTZ",name:"國泰人壽鑫美利101利率變動型美元終身壽險(定期給付型)",shortName:"鑫美利101利變美元",currency:"USD"},
+  {code:"WU",name:"國泰人壽花美利利率變動型美元終身壽險(定期給付型)",shortName:"花美利利變終身壽險",currency:"USD"},
+  {code:"WU1",name:"國泰人壽新花美利利率變動型美元終身壽險(定期給付型)",shortName:"新花美利利變終身壽險",currency:"USD"},
+  {code:"WU2",name:"國泰人壽益美雙喜利率變動型美元終身壽險(定期給付型)",shortName:"益美雙喜利變美元",currency:"USD"},
+  {code:"WU4",name:"國泰人壽益美雙盈利率變動型美元終身壽險(定期給付型)",shortName:"益美雙盈利變美元",currency:"USD"},
+  {code:"WUD",name:"國泰人壽七美福利率變動型美元終身壽險(定期給付型)",shortName:"七美福利變美元",currency:"USD"},
+  {code:"WUE",name:"國泰人壽萬的福利率變動型美元終身壽險(定期給付型)",shortName:"萬的福利變美元",currency:"USD"},
+  {code:"WUF",name:"國泰人壽萬美福利率變動型美元終身壽險(定期給付型)",shortName:"萬美福利變美元",currency:"USD"},
+  {code:"WUG",name:"國泰人壽吉美發利率變動型美元終身壽險(定期給付型)",shortName:"吉美發利變美元",currency:"USD"},
+  {code:"WUH",name:"國泰人壽豐利發利率變動型美元終身壽險(定期給付型)",shortName:"豐利發利變美元",currency:"USD"},
+  {code:"WUI",name:"國泰人壽瓏來發利率變動型美元終身壽險(定期給付型)",shortName:"瓏來發利變美元",currency:"USD"},
+  {code:"WUJ",name:"國泰人壽新吉美發利率變動型美元終身壽險(定期給付型)",shortName:"新吉美發利變美元",currency:"USD"},
+  {code:"WUK",name:"國泰人壽尚美鑫利率變動型美元終身壽險(定期給付型)",shortName:"尚美鑫利變美元",currency:"USD"},
+  {code:"WUL",name:"國泰人壽萬美利利率變動型美元終身壽險(定期給付型)",shortName:"萬美利利變美元",currency:"USD"},
+  {code:"WUN",name:"國泰人壽鑽美利利率變動型美元終身壽險(定期給付型)",shortName:"鑽美利利變美元",currency:"USD"},
+  {code:"WUO",name:"國泰人壽鑽美富利率變動型美元終身壽險(定期給付型)",shortName:"鑽美富利變美元",currency:"USD"},
+  {code:"WUQ",name:"國泰人壽億美利利率變動型美元終身壽險(定期給付型)",shortName:"億美利利變美元",currency:"USD"},
+  {code:"WUS",name:"國泰人壽鑽美滿利率變動型美元終身壽險(定期給付型)",shortName:"鑽美滿利變美元",currency:"USD"},
+  {code:"WUT",name:"國泰人壽旭美滿利率變動型美元終身壽險(定期給付型)",shortName:"旭美滿利變美元",currency:"USD"},
+  {code:"WZ1",name:"國泰人壽益美添利利率變動型美元終身壽險(定期給付型)",shortName:"益美添利利變美元",currency:"USD"},
+  {code:"WZA",name:"國泰人壽祿美添利利率變動型美元終身壽險(定期給付型)",shortName:"祿美添利利變美元",currency:"USD"},
+  {code:"WZB",name:"國泰人壽真美利101利率變動型美元終身壽險(定期給付型)",shortName:"真美利101利變美元",currency:"USD"},
+  {code:"WZC",name:"國泰人壽豪美利101利率變動型美元終身壽險(定期給付型)",shortName:"豪美利101利變美元",currency:"USD"},
+  {code:"WZD",name:"國泰人壽吉美利101利率變動型美元終身壽險(定期給付型)",shortName:"吉美利101利變美元",currency:"USD"},
+  {code:"XA",name:"國泰人壽美利多金利率變動型美元終身壽險",shortName:"美利多金利變終身壽險",currency:"USD"},
+  {code:"XB",name:"國泰人壽金利多利率變動型終身壽險",shortName:"金利多利變終身壽",currency:"TWD"},
+  {code:"XO",name:"國泰人壽新金利多利率變動型終身壽險",shortName:"新金利多利變終身壽",currency:"TWD"},
+  {code:"XP",name:"國泰人壽兩全優利利率變動型終身壽險",shortName:"兩全優利利變",currency:"TWD"},
+  {code:"XQ",name:"國泰人壽滿添鑫利利率變動型終身壽險",shortName:"滿添鑫利利變",currency:"TWD"},
+  {code:"XR",name:"國泰人壽新兩全美滿利率變動型美元終身壽險",shortName:"新兩全美滿利變美元",currency:"USD"},
+  {code:"XS",name:"國泰人壽美添鑫利利率變動型美元終身壽險",shortName:"美添鑫利利變美元",currency:"USD"},
+  {code:"YK",name:"國泰人壽豐彩101終身壽險",shortName:"豐彩101",currency:"TWD"},
+  {code:"YT",name:"國泰人壽新守護保本定期保險",shortName:"新守護保本定期保險",currency:"TWD"},
+  {code:"YU",name:"國泰人壽新添運終身壽險",shortName:"新添運終身",currency:"TWD"},
+  {code:"ZQ",name:"國泰人壽兩全美滿利率變動型美元終身壽險",shortName:"兩全美滿利變美元",currency:"USD"},
+  {code:"ZV",name:"國泰人壽新豐彩101終身壽險",shortName:"新豐彩101",currency:"TWD"},
+  {code:"WJA",name:"國泰人壽鑽美鑫利率變動型美元終身壽險(定期給付型)",shortName:"鑽美鑫利變美元",currency:"USD"},
+];
+
+const STORAGE_KEY = 'insuranceFinancingScenario';
+const IMPORT_BONDS_KEY = 'selectedBonds';
+const fundProducts = typeof externalFundProducts !== 'undefined' ? externalFundProducts : [];
+const DEFAULT_EXCHANGE_RATES = {
+  USD: 32.0,
+  TWD: 1,
+  AUD: 20.5,
+  EUR: 34.8,
+  GBP: 40.6
+};
+
+// === State ===
+let state = {
+  currentStep: 1,
+  financingType: null, // 'premium' or 'policy'
+  selectedProduct: null,
+  sumInsured: 0,
+  premium: 0,
+  policyValue: 0,
+  financingRate: 2.38,
+  usdTwdRate: 32.00,
+  ltvRatio: 85,
+  usdDiscount: 90,
+  financingAmount: 0,
+  financingOriginalAmount: 0,
+  selfFundAmount: 0,
+  exchangeRates: { ...DEFAULT_EXCHANGE_RATES },
+  investmentModes: {
+    bond: 'single',
+    fund: 'single'
+  },
+  bonds: [],
+  funds: [],
+  structuredProducts: [],
+  editingBondIndex: -1,
+  editingFundIndex: -1,
+  editingStructuredIndex: -1,
+};
+
+// === Formatting ===
+function fmt(n) {
+  if (isNaN(n) || n === null || n === undefined) return '-';
+  return Math.round(n).toLocaleString('zh-TW');
+}
+function fmtDec(n, d=2) {
+  if (isNaN(n)) return '-';
+  return parseFloat(n).toLocaleString('zh-TW', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+// === Storage ===
+function canUseStorage() {
+  try {
+    const key = '__insurance_financing_test__';
+    localStorage.setItem(key, key);
+    localStorage.removeItem(key);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function saveState() {
+  if (!canUseStorage()) return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState() {
+  if (!canUseStorage()) return false;
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw);
+    state = {
+      ...state,
+      ...parsed,
+      exchangeRates: { ...DEFAULT_EXCHANGE_RATES, ...(parsed.exchangeRates || {}) },
+      investmentModes: {
+        bond: 'single',
+        fund: 'single',
+        ...(parsed.investmentModes || {})
+      },
+      bonds: Array.isArray(parsed.bonds) ? parsed.bonds : [],
+      funds: Array.isArray(parsed.funds) ? parsed.funds : [],
+      structuredProducts: Array.isArray(parsed.structuredProducts) ? parsed.structuredProducts : [],
+    };
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function clearSavedState() {
+  if (!canUseStorage()) return;
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function hasImportedBondsWaiting() {
+  if (!canUseStorage()) return false;
+  try {
+    const imported = JSON.parse(localStorage.getItem(IMPORT_BONDS_KEY) || '[]');
+    return Array.isArray(imported) && imported.length > 0;
+  } catch (e) {
+    return false;
+  }
+}
+
+function updateImportButtonState() {
+  const btn = document.getElementById('importBondsBtn');
+  const hasData = hasImportedBondsWaiting();
+  btn.disabled = !hasData;
+  btn.style.opacity = hasData ? '1' : '0.45';
+}
+
+function inferFundCurrency(text) {
+  const value = String(text || '').toUpperCase();
+  if (value.includes('澳幣') || value.includes('AUD')) return 'AUD';
+  if (value.includes('歐元') || value.includes('EUR')) return 'EUR';
+  if (value.includes('英鎊') || value.includes('GBP')) return 'GBP';
+  if (value.includes('日圓') || value.includes('JPY')) return 'JPY';
+  if (value.includes('人民幣') || value.includes('CNY')) return 'CNY';
+  if (value.includes('台幣') || value.includes('TWD')) return 'TWD';
+  return 'USD';
+}
+
+function applyStateToForm() {
+  if (state.financingType) {
+    selectType(state.financingType);
+  } else {
+    document.getElementById('selectedTypeDisplay').textContent = '尚未選擇';
+    updateFinancingUI();
+  }
+
+  document.getElementById('sumInsured').value = state.sumInsured || '';
+  document.getElementById('premium').value = state.premium || '';
+  document.getElementById('policyValue').value = state.policyValue || '';
+  document.getElementById('financingRate').value = state.financingRate ?? 2.38;
+  document.getElementById('usdTwdRate').value = state.exchangeRates.USD ?? state.usdTwdRate ?? DEFAULT_EXCHANGE_RATES.USD;
+  document.getElementById('audTwdRate').value = state.exchangeRates.AUD ?? DEFAULT_EXCHANGE_RATES.AUD;
+  document.getElementById('eurTwdRate').value = state.exchangeRates.EUR ?? DEFAULT_EXCHANGE_RATES.EUR;
+  document.getElementById('gbpTwdRate').value = state.exchangeRates.GBP ?? DEFAULT_EXCHANGE_RATES.GBP;
+  document.getElementById('ltvRatio').value = state.ltvRatio ?? 85;
+  document.getElementById('usdDiscount').value = state.usdDiscount ?? 90;
+
+  if (state.financingType && state.selectedProduct) {
+    const product = getProducts().find(p => p.code === state.selectedProduct.code) || state.selectedProduct;
+    selectProduct(product);
+  } else {
+    recalcFinancing();
+  }
+}
+
+function updateStepAvailability() {
+  document.querySelectorAll('.step-dot').forEach(dot => {
+    dot.style.cursor = parseInt(dot.dataset.step, 10) <= getMaxAccessibleStep() ? 'pointer' : 'default';
+  });
+}
+
+function getMaxAccessibleStep() {
+  if (!state.financingType) return 1;
+  if (!state.selectedProduct) return 2;
+  if (state.financingType === 'premium' && state.premium <= 0) return 2;
+  if (state.financingType === 'policy' && state.policyValue <= 0) return 2;
+  return 4;
+}
+
+// === Step Navigation ===
+function goToStep(step) {
+  if (step < 1 || step > 4) return;
+  if (step > getMaxAccessibleStep()) return;
+  state.currentStep = step;
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('step' + step).classList.add('active');
+
+  document.querySelectorAll('.step-dot').forEach((dot, i) => {
+    dot.classList.remove('active', 'completed');
+    if (i + 1 < step) dot.classList.add('completed');
+    if (i + 1 === step) dot.classList.add('active');
+  });
+  document.querySelectorAll('.step-line').forEach((line, i) => {
+    line.classList.toggle('completed', i + 1 < step);
+  });
+
+  document.getElementById('prevBtn').disabled = (step === 1);
+  const nextBtn = document.getElementById('nextBtn');
+  if (step === 4) {
+    nextBtn.innerHTML = '<i class="fas fa-print"></i> 列印結果';
+    nextBtn.dataset.action = 'print';
+  } else {
+    nextBtn.innerHTML = '下一步 <i class="fas fa-chevron-right"></i>';
+    nextBtn.dataset.action = 'next';
+  }
+
+  if (step === 3) { renderBondSlots(); renderFundSlots(); updateBondSummary(); }
+  if (step === 4) { renderResults(); }
+
+  updateStepAvailability();
+  saveState();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() {
+  if (state.currentStep === 1 && !state.financingType) {
+    const premiumSelected = document.getElementById('typeCardPremium').classList.contains('selected');
+    const policySelected = document.getElementById('typeCardPolicy').classList.contains('selected');
+    if (premiumSelected) state.financingType = 'premium';
+    if (policySelected) state.financingType = 'policy';
+  }
+  if (state.currentStep === 1 && !state.financingType) {
+    alert('請選擇融資類型');
+    return;
+  }
+  if (state.currentStep === 2) {
+    if (!state.selectedProduct) { alert('請選擇保險商品'); return; }
+    if (state.financingType === 'premium' && (!state.premium || state.premium <= 0)) { alert('請輸入保費'); return; }
+    if (state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
+    recalcFinancing();
+  }
+  goToStep(state.currentStep + 1);
+}
+
+function prevStep() { goToStep(state.currentStep - 1); }
+
+// === Step 1: Type Selection ===
+function selectType(type) {
+  state.financingType = type;
+  state.ltvRatio = type === 'premium' ? 50 : 85;
+  document.getElementById('ltvRatio').value = state.ltvRatio;
+  document.getElementById('typeCardPremium').classList.toggle('selected', type === 'premium');
+  document.getElementById('typeCardPolicy').classList.toggle('selected', type === 'policy');
+  state.selectedProduct = null;
+  document.getElementById('productSearch').value = '';
+  document.getElementById('selectedProductInfo').classList.add('hidden');
+  document.getElementById('productDropdown').innerHTML = '';
+  document.getElementById('productDropdown').classList.remove('show');
+
+  const label = type === 'premium' ? '保費融資（7 檔商品）' : '保單融資（163 檔商品）';
+  document.getElementById('selectedTypeDisplay').textContent = label;
+  updateFinancingUI();
+  updateStepAvailability();
+  saveState();
+}
+
+function updateFinancingUI() {
+  if (!state.financingType) {
+    document.getElementById('financingCardTitle').textContent = '融資參數';
+    document.getElementById('premiumSettingsPanel').classList.add('hidden');
+    document.getElementById('policySettingsPanel').classList.add('hidden');
+    document.getElementById('sumInsuredGroup').classList.remove('hidden');
+    document.getElementById('policyOnlyValueRow').classList.remove('hidden');
+    document.getElementById('policyValueGroup').classList.remove('hidden');
+    document.getElementById('usdDiscountGroup').classList.remove('hidden');
+    document.getElementById('multiCurrencyRateGrid').classList.remove('hidden');
+    document.getElementById('ltvRatioLabel').textContent = '保價金成數';
+    document.getElementById('dispBaseLabel').textContent = '保價金';
+    document.getElementById('dispRatioLabel').textContent = '× 保價金成數';
+    document.getElementById('dispSelfFundRow').classList.add('hidden');
+    document.getElementById('dispLoanOriginalRow').classList.add('hidden');
+    return;
+  }
+  const isPremium = state.financingType === 'premium';
+  document.getElementById('financingCardTitle').textContent = isPremium ? '保費融資設定' : '保單融資設定';
+  document.getElementById('premiumSettingsPanel').classList.toggle('hidden', !isPremium);
+  document.getElementById('policySettingsPanel').classList.toggle('hidden', isPremium);
+  document.getElementById('sumInsuredGroup').classList.toggle('hidden', isPremium);
+  document.getElementById('policyOnlyValueRow').classList.toggle('hidden', isPremium);
+  document.getElementById('policyValueGroup').classList.toggle('hidden', isPremium);
+  document.getElementById('usdDiscountGroup').classList.toggle('hidden', isPremium);
+  document.getElementById('multiCurrencyRateGrid').classList.toggle('hidden', isPremium);
+  document.getElementById('ltvRatioLabel').textContent = isPremium ? '融資成數' : '保價金成數';
+  document.getElementById('dispBaseLabel').textContent = isPremium ? '保費' : '保價金';
+  document.getElementById('dispRatioLabel').textContent = isPremium ? '× 融資成數' : '× 保價金成數';
+  document.getElementById('dispDiscountRow').classList.toggle('hidden', isPremium || !(state.selectedProduct && state.selectedProduct.currency === 'USD'));
+  document.getElementById('dispSelfFundRow').classList.toggle('hidden', !isPremium);
+  document.getElementById('dispLoanOriginalRow').classList.toggle('hidden', !isPremium);
+}
+
+// === Step 2: Product Search ===
+function getProducts() {
+  return state.financingType === 'premium' ? PREMIUM_FINANCING_PRODUCTS : POLICY_FINANCING_PRODUCTS;
+}
+
+function renderProductOptions(query = '') {
+  const dropdown = document.getElementById('productDropdown');
+  if (!state.financingType) {
+    dropdown.innerHTML = '';
+    dropdown.classList.remove('show');
+    return;
+  }
+
+  const q = query.toLowerCase().trim();
+  const products = getProducts();
+  const matches = (q
+    ? products.filter(p =>
+        p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q) || p.shortName.toLowerCase().includes(q)
+      )
+    : products
+  ).slice(0, 30);
+
+  dropdown.innerHTML = matches.map(p => `
+    <div class="search-option" data-code="${p.code}">
+      <span class="code">${p.code}</span>
+      <span class="currency-tag ${p.currency.toLowerCase()}">${p.currency}</span>
+      <br><span class="name">${p.shortName}</span>
+    </div>
+  `).join('');
+  dropdown.classList.toggle('show', matches.length > 0);
+
+  dropdown.querySelectorAll('.search-option').forEach(opt => {
+    opt.addEventListener('click', function() {
+      const code = this.dataset.code;
+      const product = products.find(p => p.code === code);
+      selectProduct(product);
+      dropdown.classList.remove('show');
+    });
+  });
+}
+
+document.getElementById('productSearch').addEventListener('input', function() {
+  renderProductOptions(this.value);
+});
+
+document.getElementById('productSearch').addEventListener('focus', function() {
+  renderProductOptions(this.value);
+});
+
+document.getElementById('productSearch').addEventListener('click', function() {
+  renderProductOptions(this.value);
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-container')) {
+    document.getElementById('productDropdown').classList.remove('show');
+  }
+});
+
+function selectProduct(product) {
+  state.selectedProduct = product;
+  document.getElementById('productSearch').value = product.code + ' - ' + product.shortName;
+  document.getElementById('selectedProductInfo').classList.remove('hidden');
+  document.getElementById('selProductCode').textContent = product.code;
+  document.getElementById('selProductName').textContent = product.name;
+  const badge = document.getElementById('selProductCurrencyBadge');
+  badge.textContent = product.currency;
+  badge.className = 'search-option currency-tag ' + product.currency.toLowerCase();
+
+  const isUsd = product.currency === 'USD';
+  const currLabel = isUsd ? '(USD)' : '(TWD)';
+  document.getElementById('sumInsuredCurrLabel').textContent = currLabel;
+  document.getElementById('premiumCurrLabel').textContent = currLabel;
+  document.getElementById('policyValueCurrLabel').textContent = currLabel;
+  document.getElementById('exchangeRateGroup').classList.toggle('hidden', !isUsd);
+  document.getElementById('dispExchangeRow').classList.toggle('hidden', !isUsd);
+  updateFinancingUI();
+
+  recalcFinancing();
+  saveState();
+}
+
+function setupFundSelectors() {
+  const codeInput = document.getElementById('fundCode');
+  const nameInput = document.getElementById('fundName');
+  const codeOptions = document.getElementById('fundCodeOptions');
+  const nameOptions = document.getElementById('fundNameOptions');
+
+  function renderCodeOptions(matches) {
+    codeOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${product.code}">${product.code}</div>`).join('');
+    codeOptions.style.display = matches.length ? 'block' : 'none';
+    codeOptions.querySelectorAll('.product-option').forEach(option => {
+      option.addEventListener('click', () => {
+        const product = fundProducts.find(p => p.code === option.dataset.code);
+        if (!product) return;
+        codeInput.value = product.code;
+        nameInput.value = product.name;
+        codeOptions.style.display = 'none';
+      });
+    });
+  }
+
+  function renderNameOptions(matches) {
+    nameOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${product.code}">${product.name}</div>`).join('');
+    nameOptions.style.display = matches.length ? 'block' : 'none';
+    nameOptions.querySelectorAll('.product-option').forEach(option => {
+      option.addEventListener('click', () => {
+        const product = fundProducts.find(p => p.code === option.dataset.code);
+        if (!product) return;
+        codeInput.value = product.code;
+        nameInput.value = product.name;
+        nameOptions.style.display = 'none';
+      });
+    });
+  }
+
+  codeInput.addEventListener('focus', () => renderCodeOptions(fundProducts.slice(0, 50)));
+  codeInput.addEventListener('input', () => {
+    const q = codeInput.value.trim().toLowerCase();
+    renderCodeOptions(fundProducts.filter(p => p.code.toLowerCase().includes(q)).slice(0, 50));
+  });
+  nameInput.addEventListener('focus', () => renderNameOptions(fundProducts.slice(0, 50)));
+  nameInput.addEventListener('input', () => {
+    const q = nameInput.value.trim().toLowerCase();
+    renderNameOptions(fundProducts.filter(p => p.name.toLowerCase().includes(q)).slice(0, 50));
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.product-search-wrap')) {
+      codeOptions.style.display = 'none';
+      nameOptions.style.display = 'none';
+    }
+  });
+}
+
+// === Step 2: Financing Calculation ===
+function getCurrencyRate(currency) {
+  const normalized = (currency || 'TWD').toUpperCase();
+  if (normalized === 'TWD') return 1;
+  return state.exchangeRates[normalized] || state.exchangeRates.USD || DEFAULT_EXCHANGE_RATES.USD;
+}
+
+function recalcFinancing() {
+  const pv = parseFloat(document.getElementById('policyValue').value) || 0;
+  const premium = parseFloat(document.getElementById('premium').value) || 0;
+  const rate = parseFloat(document.getElementById('financingRate').value) || 2.38;
+  const usdRate = parseFloat(document.getElementById('usdTwdRate').value) || 32;
+  const audRate = parseFloat(document.getElementById('audTwdRate').value) || DEFAULT_EXCHANGE_RATES.AUD;
+  const eurRate = parseFloat(document.getElementById('eurTwdRate').value) || DEFAULT_EXCHANGE_RATES.EUR;
+  const gbpRate = parseFloat(document.getElementById('gbpTwdRate').value) || DEFAULT_EXCHANGE_RATES.GBP;
+  const ltv = parseFloat(document.getElementById('ltvRatio').value) || 85;
+  const discount = parseFloat(document.getElementById('usdDiscount').value) || 90;
+
+  state.policyValue = pv;
+  state.sumInsured = parseFloat(document.getElementById('sumInsured').value) || 0;
+  state.premium = premium;
+  state.financingRate = rate;
+  state.usdTwdRate = usdRate;
+  state.exchangeRates = {
+    TWD: 1,
+    USD: usdRate,
+    AUD: audRate,
+    EUR: eurRate,
+    GBP: gbpRate
+  };
+  state.ltvRatio = ltv;
+  state.usdDiscount = discount;
+
+  const isUsd = state.selectedProduct && state.selectedProduct.currency === 'USD';
+  const originalCurrency = state.selectedProduct ? state.selectedProduct.currency : (isUsd ? 'USD' : 'TWD');
+  const isPremium = state.financingType === 'premium';
+  let finAmount = 0;
+  let financingOriginalAmount = 0;
+  let selfFundAmount = 0;
+  if (isPremium) {
+    financingOriginalAmount = premium * (ltv / 100);
+    selfFundAmount = Math.max(premium - financingOriginalAmount, 0);
+    finAmount = isUsd ? financingOriginalAmount * usdRate : financingOriginalAmount;
+  } else {
+    financingOriginalAmount = isUsd
+      ? pv * (ltv / 100) * (discount / 100)
+      : pv * (ltv / 100);
+    selfFundAmount = Math.max(pv - financingOriginalAmount, 0);
+    finAmount = isUsd ? financingOriginalAmount * usdRate : financingOriginalAmount;
+  }
+  state.financingAmount = finAmount;
+  state.financingOriginalAmount = financingOriginalAmount;
+  state.selfFundAmount = selfFundAmount;
+
+  const annualCost = finAmount * (rate / 100);
+
+  document.getElementById('dispPolicyValue').textContent = fmt(isPremium ? premium : pv) + ' ' + originalCurrency;
+  document.getElementById('dispExchangeRate').textContent = fmtDec(usdRate, 2);
+  document.getElementById('dispLtv').textContent = ltv + '%';
+  document.getElementById('dispDiscount').textContent = discount + '%';
+  document.getElementById('dispSelfFundAmount').textContent = fmt(selfFundAmount) + ' ' + originalCurrency;
+  document.getElementById('dispLoanOriginalAmount').textContent = fmt(financingOriginalAmount) + ' ' + originalCurrency;
+  document.getElementById('dispFinancingAmount').textContent = fmt(finAmount) + ' 元';
+  document.getElementById('dispAnnualCost').textContent = fmt(annualCost) + ' 元';
+  if (state.bonds.length > 0) {
+    state.bonds = state.bonds.map(calculateBondAmounts);
+    renderBondSlots();
+    updateBondSummary();
+  }
+  updateStepAvailability();
+  saveState();
+}
+
+// === Exchange Rate ===
+async function fetchRate() {
+  const statusEl = document.getElementById('rateStatus');
+  statusEl.textContent = '更新中...';
+  statusEl.className = 'status';
+  try {
+    const resp = await fetch('https://open.er-api.com/v6/latest/TWD');
+    const data = await resp.json();
+    if (data.result === 'success' && data.rates && data.rates.USD) {
+      const usdTwd = (1 / data.rates.USD).toFixed(4);
+      const audTwd = data.rates.AUD ? (1 / data.rates.AUD).toFixed(4) : document.getElementById('audTwdRate').value;
+      const eurTwd = data.rates.EUR ? (1 / data.rates.EUR).toFixed(4) : document.getElementById('eurTwdRate').value;
+      const gbpTwd = data.rates.GBP ? (1 / data.rates.GBP).toFixed(4) : document.getElementById('gbpTwdRate').value;
+      document.getElementById('usdTwdRate').value = usdTwd;
+      document.getElementById('audTwdRate').value = audTwd;
+      document.getElementById('eurTwdRate').value = eurTwd;
+      document.getElementById('gbpTwdRate').value = gbpTwd;
+      state.usdTwdRate = parseFloat(usdTwd);
+      statusEl.textContent = '已更新 ' + new Date().toLocaleTimeString();
+      statusEl.className = 'status ok';
+      recalcFinancing();
+    } else { throw new Error('Invalid data'); }
+  } catch (e) {
+    statusEl.textContent = '更新失敗，請手動輸入';
+    statusEl.className = 'status err';
+  }
+}
+
+// === Step 3: Bond Management ===
+function calculateBondAmounts(rawBond) {
+  const faceValue = parseFloat(rawBond.faceValue) || 0;
+  const buyPrice = parseFloat(rawBond.buyPrice) || 100;
+  const couponRate = parseFloat(rawBond.couponRate) || 0;
+  const currency = (rawBond.currency || 'USD').toUpperCase();
+  const rate = getCurrencyRate(currency);
+  const investmentAmount = Math.round(faceValue * buyPrice / 100);
+  const investmentTwd = Math.round(investmentAmount * rate);
+  const annualCouponOriginal = faceValue * (couponRate / 100);
+  const annualCouponTwd = Math.round(annualCouponOriginal * rate);
+
+  return {
+    ...rawBond,
+    currency,
+    faceValue,
+    buyPrice,
+    couponRate,
+    maturityYears: parseFloat(rawBond.maturityYears) || 0,
+    divFreq: parseInt(rawBond.divFreq, 10) || 2,
+    investmentAmount,
+    investmentTwd,
+    annualCouponTwd
+  };
+}
+
+function calculateFundAmounts(rawFund) {
+  const investmentAmountTwd = Math.round(parseFloat(rawFund.investmentAmountTwd) || 0);
+  const dividendRate = parseFloat(rawFund.dividendRate) || 0;
+  const annualDividendTwd = Math.round(investmentAmountTwd * (dividendRate / 100));
+
+  return {
+    ...rawFund,
+    currency: rawFund.currency || inferFundCurrency(rawFund.name),
+    investmentAmountTwd,
+    dividendRate,
+    dividendFrequency: parseInt(rawFund.dividendFrequency, 10) || 12,
+    annualDividendTwd
+  };
+}
+
+function calculateStructuredAmounts(rawProduct) {
+  const investmentAmountTwd = Math.round(parseFloat(rawProduct.investmentAmountTwd) || 0);
+  const rate = parseFloat(rawProduct.rate) || 0;
+  const annualIncomeTwd = Math.round(investmentAmountTwd * (rate / 100));
+  return {
+    ...rawProduct,
+    investmentAmountTwd,
+    rate,
+    annualIncomeTwd
+  };
+}
+
+function openAddBondModal() {
+  if (state.bonds.length >= 5) { alert('最多新增 5 檔債券'); return; }
+  state.editingBondIndex = -1;
+  document.getElementById('bondModalTitle').textContent = '新增債券';
+  document.getElementById('bondModalConfirmBtn').textContent = '新增';
+  document.getElementById('bondCode').value = '';
+  document.getElementById('bondName').value = '';
+  document.getElementById('bondCurrency').value = 'USD';
+  document.getElementById('bondRating').value = '';
+  document.getElementById('bondFaceValue').value = '';
+  document.getElementById('bondBuyPrice').value = '';
+  document.getElementById('bondCouponRate').value = '';
+  document.getElementById('bondMaturityYears').value = '';
+  document.getElementById('bondDivFreq').value = '2';
+  document.getElementById('bondModal').classList.add('show');
+}
+
+function closeBondModal() { document.getElementById('bondModal').classList.remove('show'); }
+
+function openAddFundModal() {
+  if (state.funds.length >= 5) { alert('最多新增 5 檔基金'); return; }
+  state.editingFundIndex = -1;
+  document.getElementById('fundModalTitle').textContent = '新增基金';
+  document.getElementById('fundModalConfirmBtn').textContent = '新增';
+  document.getElementById('fundCode').value = '';
+  document.getElementById('fundName').value = '';
+  document.getElementById('fundInvestmentAmount').value = '';
+  document.getElementById('fundDividendRate').value = '';
+  document.getElementById('fundDividendFrequency').value = '12';
+  document.getElementById('fundModal').classList.add('show');
+}
+
+function closeFundModal() { document.getElementById('fundModal').classList.remove('show'); }
+
+function openAddStructuredModal() {
+  if (state.structuredProducts.length >= 5) { alert('最多新增 5 筆 FCN / ELI'); return; }
+  state.editingStructuredIndex = -1;
+  document.getElementById('structuredModalTitle').textContent = '新增 FCN / ELI';
+  document.getElementById('structuredModalConfirmBtn').textContent = '新增';
+  document.getElementById('structuredType').value = 'FCN';
+  document.getElementById('structuredName').value = '';
+  document.getElementById('structuredAmount').value = '';
+  document.getElementById('structuredRate').value = '';
+  document.getElementById('structuredModal').classList.add('show');
+}
+
+function closeStructuredModal() { document.getElementById('structuredModal').classList.remove('show'); }
+
+function saveBond() {
+  const code = document.getElementById('bondCode').value.trim();
+  const name = document.getElementById('bondName').value.trim();
+  const currency = document.getElementById('bondCurrency').value;
+  const rating = document.getElementById('bondRating').value.trim();
+  const faceValue = parseFloat(document.getElementById('bondFaceValue').value) || 0;
+  const buyPrice = parseFloat(document.getElementById('bondBuyPrice').value) || 100;
+  const couponRate = parseFloat(document.getElementById('bondCouponRate').value) || 0;
+  const maturityYears = parseFloat(document.getElementById('bondMaturityYears').value) || 0;
+  const divFreq = parseInt(document.getElementById('bondDivFreq').value) || 2;
+
+  if (!code || !name || faceValue <= 0) { alert('請填寫商品代碼、名稱及投資面額'); return; }
+
+  const bond = calculateBondAmounts({
+    code, name, currency, rating, faceValue, buyPrice, couponRate,
+    maturityYears, divFreq
+  });
+
+  if (state.editingBondIndex >= 0) {
+    state.bonds[state.editingBondIndex] = bond;
+  } else {
+    state.bonds.push(bond);
+  }
+
+  state.bonds.sort((a, b) => b.maturityYears - a.maturityYears);
+  closeBondModal();
+  renderBondSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function saveFund() {
+  const code = document.getElementById('fundCode').value.trim();
+  const name = document.getElementById('fundName').value.trim();
+  const investmentAmountTwd = parseFloat(document.getElementById('fundInvestmentAmount').value) || 0;
+  const dividendRate = parseFloat(document.getElementById('fundDividendRate').value) || 0;
+  const dividendFrequency = parseInt(document.getElementById('fundDividendFrequency').value, 10) || 12;
+
+  if (!code || !name || investmentAmountTwd <= 0) {
+    alert('請填寫基金代碼、名稱與投資金額');
+    return;
+  }
+
+  const fund = calculateFundAmounts({
+    code,
+    name,
+    currency: inferFundCurrency(name),
+    investmentAmountTwd,
+    dividendRate,
+    dividendFrequency
+  });
+
+  if (state.editingFundIndex >= 0) {
+    state.funds[state.editingFundIndex] = fund;
+  } else {
+    state.funds.push(fund);
+  }
+
+  closeFundModal();
+  renderFundSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function saveStructured() {
+  const type = document.getElementById('structuredType').value;
+  const name = document.getElementById('structuredName').value.trim() || type;
+  const investmentAmountTwd = parseFloat(document.getElementById('structuredAmount').value) || 0;
+  const rate = parseFloat(document.getElementById('structuredRate').value) || 0;
+  if (investmentAmountTwd <= 0) {
+    alert('請輸入 FCN / ELI 投資金額');
+    return;
+  }
+  const product = calculateStructuredAmounts({ type, name, investmentAmountTwd, rate });
+  if (state.editingStructuredIndex >= 0) state.structuredProducts[state.editingStructuredIndex] = product;
+  else state.structuredProducts.push(product);
+  closeStructuredModal();
+  renderStructuredSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function editBond(index) {
+  const bond = state.bonds[index];
+  state.editingBondIndex = index;
+  document.getElementById('bondModalTitle').textContent = '編輯債券';
+  document.getElementById('bondModalConfirmBtn').textContent = '儲存';
+  document.getElementById('bondCode').value = bond.code;
+  document.getElementById('bondName').value = bond.name;
+  document.getElementById('bondCurrency').value = bond.currency;
+  document.getElementById('bondRating').value = bond.rating;
+  document.getElementById('bondFaceValue').value = bond.faceValue;
+  document.getElementById('bondBuyPrice').value = bond.buyPrice;
+  document.getElementById('bondCouponRate').value = bond.couponRate;
+  document.getElementById('bondMaturityYears').value = bond.maturityYears;
+  document.getElementById('bondDivFreq').value = bond.divFreq;
+  document.getElementById('bondModal').classList.add('show');
+}
+
+function editFund(index) {
+  const fund = state.funds[index];
+  state.editingFundIndex = index;
+  document.getElementById('fundModalTitle').textContent = '編輯基金';
+  document.getElementById('fundModalConfirmBtn').textContent = '儲存';
+  document.getElementById('fundCode').value = fund.code;
+  document.getElementById('fundName').value = fund.name;
+  document.getElementById('fundInvestmentAmount').value = fund.investmentAmountTwd;
+  document.getElementById('fundDividendRate').value = fund.dividendRate;
+  document.getElementById('fundDividendFrequency').value = fund.dividendFrequency;
+  document.getElementById('fundModal').classList.add('show');
+}
+
+function deleteBond(index) {
+  state.bonds.splice(index, 1);
+  renderBondSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function deleteFund(index) {
+  state.funds.splice(index, 1);
+  renderFundSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function editStructured(index) {
+  const item = state.structuredProducts[index];
+  state.editingStructuredIndex = index;
+  document.getElementById('structuredModalTitle').textContent = '編輯 FCN / ELI';
+  document.getElementById('structuredModalConfirmBtn').textContent = '儲存';
+  document.getElementById('structuredType').value = item.type;
+  document.getElementById('structuredName').value = item.name;
+  document.getElementById('structuredAmount').value = item.investmentAmountTwd;
+  document.getElementById('structuredRate').value = item.rate;
+  document.getElementById('structuredModal').classList.add('show');
+}
+
+function deleteStructured(index) {
+  state.structuredProducts.splice(index, 1);
+  renderStructuredSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function renderBondSlots() {
+  const container = document.getElementById('bondSlots');
+  document.getElementById('availableAmount').textContent = fmt(state.financingAmount) + ' TWD';
+  const bondModeLabel = getInvestmentModeLabel(state.investmentModes?.bond);
+
+  if (state.bonds.length === 0) {
+    container.innerHTML = `<div class="empty-state">目前投資方式：${bondModeLabel}。尚未新增債券，可手動新增，或先到債券篩選工具挑選後再匯入。</div>`;
+    document.getElementById('addBondBtn').classList.toggle('hidden', false);
+    updateImportButtonState();
+    return;
+  }
+
+  container.innerHTML = state.bonds.map((b, i) => `
+    <div class="bond-slot">
+      <div class="bond-slot-header">
+        <span class="slot-num">第 ${i + 1} 檔</span>
+        <span>
+          <button class="inline-btn" onclick="editBond(${i})" style="margin-right:4px;"><i class="fas fa-edit"></i></button>
+          <button class="inline-btn danger" onclick="deleteBond(${i})"><i class="fas fa-trash"></i></button>
+        </span>
+      </div>
+      <div class="bond-slot-body">
+        <div class="bond-info-row"><span class="label">代碼</span><span class="value">${b.code}</span></div>
+        <div class="bond-info-row"><span class="label">投資方式</span><span class="value">${bondModeLabel}</span></div>
+        <div class="bond-info-row"><span class="label">名稱</span><span class="value">${b.name}</span></div>
+        <div class="bond-info-row"><span class="label">幣別 / 評等</span><span class="value">${b.currency} / ${b.rating || '-'}</span></div>
+        <div class="bond-info-row"><span class="label">面額</span><span class="value">${fmt(b.faceValue)} ${b.currency}</span></div>
+        <div class="bond-info-row"><span class="label">買入價 / 投資額</span><span class="value">${fmtDec(b.buyPrice)} / ${fmt(b.investmentAmount)} ${b.currency}</span></div>
+        <div class="bond-info-row"><span class="label">票息率</span><span class="value">${fmtDec(b.couponRate, 3)}%</span></div>
+        <div class="bond-info-row"><span class="label">剩餘到期年</span><span class="value">${fmtDec(b.maturityYears)} 年</span></div>
+        <div class="bond-info-row" style="background:#f0f8ff; margin:4px -16px -14px; padding:8px 16px; border-radius:0 0 12px 12px;">
+          <span class="label"><strong>年配息 (TWD)</strong></span>
+          <span class="value" style="color:var(--accent);">${fmt(b.annualCouponTwd)}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('addBondBtn').classList.toggle('hidden', state.bonds.length >= 5);
+  updateImportButtonState();
+}
+
+function renderFundSlots() {
+  const container = document.getElementById('fundSlots');
+  const fundModeLabel = getInvestmentModeLabel(state.investmentModes?.fund);
+  if (state.funds.length === 0) {
+    container.innerHTML = `<div class="empty-state">目前投資方式：${fundModeLabel}。尚未新增基金，可由 fund_data.js 商品庫搜尋基金名稱或代碼後帶入。</div>`;
+    document.getElementById('addFundBtn').classList.toggle('hidden', false);
+    return;
+  }
+
+  container.innerHTML = state.funds.map((f, i) => `
+    <div class="bond-slot">
+      <div class="bond-slot-header">
+        <span class="slot-num">第 ${i + 1} 檔基金</span>
+        <span>
+          <button class="inline-btn" onclick="editFund(${i})" style="margin-right:4px;"><i class="fas fa-edit"></i></button>
+          <button class="inline-btn danger" onclick="deleteFund(${i})"><i class="fas fa-trash"></i></button>
+        </span>
+      </div>
+      <div class="bond-slot-body">
+        <div class="bond-info-row"><span class="label">代碼</span><span class="value">${f.code}</span></div>
+        <div class="bond-info-row"><span class="label">投資方式</span><span class="value">${fundModeLabel}</span></div>
+        <div class="bond-info-row"><span class="label">名稱</span><span class="value">${f.name}</span></div>
+        <div class="bond-info-row"><span class="label">幣別</span><span class="value">${f.currency}</span></div>
+        <div class="bond-info-row"><span class="label">投資金額</span><span class="value">${fmt(f.investmentAmountTwd)} TWD</span></div>
+        <div class="bond-info-row"><span class="label">年化配息率</span><span class="value">${fmtDec(f.dividendRate, 2)}%</span></div>
+        <div class="bond-info-row"><span class="label">配息頻率</span><span class="value">${formatDividendFrequency(f.dividendFrequency)}</span></div>
+        <div class="bond-info-row" style="background:#f0f8ff; margin:4px -16px -14px; padding:8px 16px; border-radius:0 0 12px 12px;">
+          <span class="label"><strong>年配息 (TWD)</strong></span>
+          <span class="value" style="color:var(--accent);">${fmt(f.annualDividendTwd)}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('addFundBtn').classList.toggle('hidden', state.funds.length >= 5);
+}
+
+function renderStructuredSlots() {
+  const container = document.getElementById('structuredSlots');
+  if (state.structuredProducts.length === 0) {
+    container.innerHTML = '<div class="empty-state">尚未新增 FCN / ELI。可直接輸入投資金額與年化利率。</div>';
+    document.getElementById('addStructuredBtn').classList.toggle('hidden', false);
+    return;
+  }
+
+  container.innerHTML = state.structuredProducts.map((p, i) => `
+    <div class="bond-slot">
+      <div class="bond-slot-header">
+        <span class="slot-num">第 ${i + 1} 筆 ${p.type}</span>
+        <span>
+          <button class="inline-btn" onclick="editStructured(${i})" style="margin-right:4px;"><i class="fas fa-edit"></i></button>
+          <button class="inline-btn danger" onclick="deleteStructured(${i})"><i class="fas fa-trash"></i></button>
+        </span>
+      </div>
+      <div class="bond-slot-body">
+        <div class="bond-info-row"><span class="label">類型</span><span class="value">${p.type}</span></div>
+        <div class="bond-info-row"><span class="label">名稱</span><span class="value">${p.name}</span></div>
+        <div class="bond-info-row"><span class="label">投資金額</span><span class="value">${fmt(p.investmentAmountTwd)} TWD</span></div>
+        <div class="bond-info-row"><span class="label">年化利率</span><span class="value">${fmtDec(p.rate, 2)}%</span></div>
+        <div class="bond-info-row" style="background:#f0f8ff; margin:4px -16px -14px; padding:8px 16px; border-radius:0 0 12px 12px;">
+          <span class="label"><strong>年收益 (TWD)</strong></span>
+          <span class="value" style="color:var(--accent);">${fmt(p.annualIncomeTwd)}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('addStructuredBtn').classList.toggle('hidden', state.structuredProducts.length >= 5);
+}
+
+function formatDividendFrequency(freq) {
+  if (freq === 12) return '月配';
+  if (freq === 4) return '季配';
+  if (freq === 2) return '半年配';
+  if (freq === 1) return '年配';
+  return '不配息';
+}
+
+function getInvestmentModeLabel(mode) {
+  return mode === 'pledged' ? '質押投資' : '單一投資';
+}
+
+function setInvestmentMode(category, mode) {
+  state.investmentModes[category] = mode;
+  updateInvestmentModeUI();
+  renderBondSlots();
+  renderFundSlots();
+  saveState();
+}
+
+function updateInvestmentModeUI() {
+  const bondMode = state.investmentModes?.bond || 'single';
+  const fundMode = state.investmentModes?.fund || 'single';
+  document.getElementById('bondModeSingle').classList.toggle('active', bondMode === 'single');
+  document.getElementById('bondModePledged').classList.toggle('active', bondMode === 'pledged');
+  document.getElementById('fundModeSingle').classList.toggle('active', fundMode === 'single');
+  document.getElementById('fundModePledged').classList.toggle('active', fundMode === 'pledged');
+}
+
+function updateBondSummary() {
+  const hasInvestments = state.bonds.length > 0 || state.funds.length > 0 || state.structuredProducts.length > 0;
+  document.getElementById('bondSummary').classList.toggle('hidden', !hasInvestments);
+  if (!hasInvestments) return;
+
+  const totalBondInvTwd = state.bonds.reduce((s, b) => s + b.investmentTwd, 0);
+  const totalFundInvTwd = state.funds.reduce((s, f) => s + f.investmentAmountTwd, 0);
+  const totalStructuredInvTwd = state.structuredProducts.reduce((s, p) => s + p.investmentAmountTwd, 0);
+  const totalInvTwd = totalBondInvTwd + totalFundInvTwd + totalStructuredInvTwd;
+  const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
+  const finCost = state.financingAmount * (state.financingRate / 100);
+  const net = totalCoupon - finCost;
+
+  document.getElementById('totalAllocated').textContent = fmt(totalInvTwd) + ' TWD';
+  document.getElementById('totalCoupon').textContent = fmt(totalCoupon) + ' TWD';
+  document.getElementById('totalFinCost').textContent = fmt(finCost) + ' TWD';
+  document.getElementById('netIncome').textContent = fmt(net) + ' TWD';
+
+  document.getElementById('allocationWarning').classList.toggle('hidden', totalInvTwd <= state.financingAmount * 1.01);
+  saveState();
+}
+
+function normalizeImportedBond(importedBond) {
+  return calculateBondAmounts({
+    code: importedBond.code || '',
+    name: importedBond.name || '',
+    currency: importedBond.currency || 'USD',
+    rating: importedBond.rating || '',
+    faceValue: parseFloat(importedBond.investmentAmount) || 100000,
+    buyPrice: parseFloat(importedBond.referencePrice) || 100,
+    couponRate: parseFloat(String(importedBond.interestRate || '').replace('%', '')) || 0,
+    maturityYears: parseFloat(importedBond.remainingTerm) || 0,
+    divFreq: parseInt(importedBond.dividendFrequency, 10) || 2
+  });
+}
+
+function importSelectedBonds() {
+  if (!canUseStorage()) {
+    alert('目前瀏覽器無法使用暫存資料，無法匯入篩選債券');
+    return;
+  }
+
+  let imported;
+  try {
+    imported = JSON.parse(localStorage.getItem(IMPORT_BONDS_KEY) || '[]');
+  } catch (e) {
+    imported = [];
+  }
+
+  if (!Array.isArray(imported) || imported.length === 0) {
+    alert('目前沒有可匯入的篩選債券，請先到債券篩選工具匯出');
+    updateImportButtonState();
+    return;
+  }
+
+  const merged = imported.map(normalizeImportedBond).filter(b => b.code && b.name);
+  if (merged.length === 0) {
+    alert('匯入資料格式不完整，請重新由債券篩選工具匯出');
+    return;
+  }
+
+  if (state.bonds.length > 0) {
+    const replaceAll = confirm('是否清除目前債券並改為匯入篩選結果？\n按「取消」會直接附加到現有債券後方。');
+    if (replaceAll) {
+      state.bonds = [];
+    }
+  }
+
+  const beforeCount = state.bonds.length;
+  state.bonds = [...state.bonds, ...merged].slice(0, 5).sort((a, b) => b.maturityYears - a.maturityYears);
+  const importedCount = Math.max(0, state.bonds.length - Math.min(beforeCount, 5));
+  localStorage.removeItem(IMPORT_BONDS_KEY);
+  renderBondSlots();
+  updateBondSummary();
+  saveState();
+  alert(`已匯入 ${importedCount} 檔債券${beforeCount + merged.length > 5 ? '（超過 5 檔的部分未帶入）' : ''}`);
+}
+
+function clearBonds() {
+  if (state.bonds.length === 0) return;
+  if (!confirm('確定要清空目前所有債券配置嗎？')) return;
+  state.bonds = [];
+  renderBondSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function clearFunds() {
+  if (state.funds.length === 0) return;
+  if (!confirm('確定要清空目前所有基金配置嗎？')) return;
+  state.funds = [];
+  renderFundSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function openBondScreeningTool() {
+  window.open('beautified-bond-tool.html', '_blank');
+}
+
+function resetScenario() {
+  if (!confirm('要清除目前整份試算內容並回到第一步嗎？')) return;
+  state = {
+    currentStep: 1,
+    financingType: null,
+    selectedProduct: null,
+    sumInsured: 0,
+    premium: 0,
+    policyValue: 0,
+    financingRate: 2.38,
+    usdTwdRate: DEFAULT_EXCHANGE_RATES.USD,
+    ltvRatio: 85,
+    usdDiscount: 90,
+    financingAmount: 0,
+    financingOriginalAmount: 0,
+    selfFundAmount: 0,
+    exchangeRates: { ...DEFAULT_EXCHANGE_RATES },
+    investmentModes: {
+      bond: 'single',
+      fund: 'single'
+    },
+    bonds: [],
+    funds: [],
+    structuredProducts: [],
+    editingBondIndex: -1,
+    editingFundIndex: -1,
+    editingStructuredIndex: -1,
+  };
+  clearSavedState();
+  document.getElementById('productSearch').value = '';
+  document.getElementById('selectedProductInfo').classList.add('hidden');
+  document.querySelectorAll('.type-card').forEach(card => card.classList.remove('selected'));
+  applyStateToForm();
+  updateFinancingUI();
+  renderBondSlots();
+  renderFundSlots();
+  renderStructuredSlots();
+  updateBondSummary();
+  goToStep(1);
+}
+
+// === Step 4: Results ===
+function renderResults() {
+  const p = state.selectedProduct;
+  const isUsd = p && p.currency === 'USD';
+  const currSuffix = isUsd ? ' USD' : ' TWD';
+
+  document.getElementById('resType').textContent = state.financingType === 'premium' ? '保費融資' : '保單融資';
+  document.getElementById('resProduct').textContent = p ? p.shortName : '-';
+  document.getElementById('resSumInsured').textContent = fmt(state.sumInsured) + currSuffix;
+  document.getElementById('resPremium').textContent = fmt(state.premium) + currSuffix;
+  document.getElementById('resFinancing').textContent = fmt(state.financingAmount);
+  document.getElementById('resRate').textContent = fmtDec(state.financingRate) + '%';
+
+  const tbody = document.getElementById('resultBondBody');
+  tbody.innerHTML = state.bonds.length > 0
+    ? state.bonds.map(b => `
+    <tr>
+      <td>${b.name}</td>
+      <td class="text-right">${fmt(b.faceValue)} ${b.currency}</td>
+      <td class="text-right">${fmtDec(b.couponRate, 3)}%</td>
+      <td class="text-right">${fmtDec(b.maturityYears)}年</td>
+      <td class="text-right">${fmt(b.annualCouponTwd)}</td>
+    </tr>
+  `).join('')
+    : '<tr><td colspan="5" class="result-empty">尚未配置債券，故無配息與投資明細。</td></tr>';
+
+  const fundBody = document.getElementById('resultFundBody');
+  fundBody.innerHTML = state.funds.length > 0
+    ? state.funds.map(f => `
+    <tr>
+      <td>${f.name}</td>
+      <td>${f.code}</td>
+      <td class="text-right">${fmt(f.investmentAmountTwd)} TWD</td>
+      <td class="text-right">${fmtDec(f.dividendRate, 2)}%</td>
+      <td class="text-right">${fmt(f.annualDividendTwd)}</td>
+    </tr>
+  `).join('')
+    : '<tr><td colspan="5" class="result-empty">尚未配置基金，故無基金配息明細。</td></tr>';
+
+  const structuredBody = document.getElementById('resultStructuredBody');
+  structuredBody.innerHTML = state.structuredProducts.length > 0
+    ? state.structuredProducts.map(p => `
+    <tr>
+      <td>${p.type}</td>
+      <td>${p.name}</td>
+      <td class="text-right">${fmt(p.investmentAmountTwd)} TWD</td>
+      <td class="text-right">${fmtDec(p.rate, 2)}%</td>
+      <td class="text-right">${fmt(p.annualIncomeTwd)}</td>
+    </tr>
+  `).join('')
+    : '<tr><td colspan="5" class="result-empty">尚未配置 FCN / ELI，故無相關收益明細。</td></tr>';
+
+  const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
+  const finCost = state.financingAmount * (state.financingRate / 100);
+  const net = totalCoupon - finCost;
+
+  document.getElementById('resCoupon').textContent = fmt(totalCoupon);
+  document.getElementById('resCost').textContent = fmt(finCost);
+  document.getElementById('resNet').textContent = fmt(net);
+  const netCard = document.getElementById('resNetCard');
+  netCard.classList.toggle('positive', net >= 0);
+  netCard.classList.toggle('negative', net < 0);
+  document.getElementById('resNetMonthly').textContent = '每月約 ' + fmt(net / 12) + ' TWD';
+
+  const premiumTwd = isUsd ? state.premium * state.usdTwdRate : state.premium;
+  const sumInsuredTwd = isUsd ? state.sumInsured * state.usdTwdRate : state.sumInsured;
+  const covBefore = premiumTwd > 0 ? (sumInsuredTwd / premiumTwd) : 0;
+
+  let ownCapital;
+  if (state.financingType === 'premium') {
+    ownCapital = premiumTwd - state.financingAmount;
+    if (ownCapital <= 0) ownCapital = premiumTwd;
+  } else {
+    ownCapital = premiumTwd;
+  }
+  const covAfter = ownCapital > 0 ? (sumInsuredTwd / ownCapital) : 0;
+
+  document.getElementById('resCovBefore').textContent = fmtDec(covBefore, 1);
+  document.getElementById('resCovAfter').textContent = fmtDec(covAfter, 1);
+  saveState();
+}
+
+// === Init ===
+document.addEventListener('DOMContentLoaded', function() {
+  loadState();
+  applyStateToForm();
+  updateInvestmentModeUI();
+  renderBondSlots();
+  renderFundSlots();
+  renderStructuredSlots();
+  updateBondSummary();
+  updateImportButtonState();
+  setupFundSelectors();
+  document.getElementById('typeCardPremium').addEventListener('click', function() { selectType('premium'); });
+  document.getElementById('typeCardPolicy').addEventListener('click', function() { selectType('policy'); });
+  document.getElementById('prevBtn').addEventListener('click', function() {
+    if (!this.disabled) prevStep();
+  });
+  document.getElementById('nextBtn').addEventListener('click', function() {
+    if (this.disabled) return;
+    if (this.dataset.action === 'print') {
+      window.print();
+      return;
+    }
+    nextStep();
+  });
+  goToStep(state.currentStep || 1);
+  fetchRate();
+});
+
+document.getElementById('bondModal').addEventListener('click', function(e) {
+  if (e.target === this) closeBondModal();
+});
+
+document.getElementById('fundModal').addEventListener('click', function(e) {
+  if (e.target === this) closeFundModal();
+});
+
+document.getElementById('structuredModal').addEventListener('click', function(e) {
+  if (e.target === this) closeStructuredModal();
+});
+
+document.querySelectorAll('.step-dot').forEach(dot => {
+  dot.addEventListener('click', function() {
+    goToStep(parseInt(this.dataset.step, 10));
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>質借試算入口</title>
+  <!-- 引入 Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- 引入 Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --accent-color: #e74c3c;
+      --success-color: #2ecc71;
+      --warning-color: #f39c12;
+      --info-color: #4AA0E4;
+      --light-color: #ecf0f1;
+      --dark-color: #34495e;
+      --gray-color: #95a5a6;
+      --bg-color: #f5f7fa;
+      --card-bg: #ffffff;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Noto Sans TC', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--dark-color);
+      line-height: 1.6;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      margin: 0 auto;
+      background-color: var(--card-bg);
+      padding: 40px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 2.2rem;
+      color: var(--primary-color);
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--light-color);
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+      color: var(--secondary-color);
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+    
+    .portal-options {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin: 40px 0;
+      flex-wrap: wrap;
+    }
+    
+    .portal-card {
+      flex: 1;
+      min-width: 300px;
+      max-width: 400px;
+      background-color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid #eaeaea;
+    }
+    
+    .portal-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+    }
+    
+    .portal-card i {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+    }
+    
+    .portal-card h3 {
+      font-size: 1.4rem;
+      color: var(--dark-color);
+      margin-bottom: 15px;
+    }
+    
+    .portal-card p {
+      font-size: 0.95rem;
+      color: var(--gray-color);
+      margin-bottom: 20px;
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: var(--secondary-color);
+      color: white;
+      padding: 12px 25px;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+    }
+    
+    .btn:hover {
+      background-color: #2980b9;
+    }
+    
+    .bond-card i {
+      color: var(--secondary-color);
+    }
+    
+    .fund-card i {
+      color: var(--success-color);
+    }
+    
+    .bond-card .btn {
+      background-color: var(--secondary-color);
+    }
+    
+    .fund-card .btn {
+      background-color: var(--success-color);
+    }
+    
+    .fund-card .btn:hover {
+      background-color: #27ae60;
+    }
+    
+    .instructions, .update-history, .manual-link-section {
+      margin-top: 30px; /* Adjusted margin for better spacing */
+      padding: 25px;
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      border: 1px solid #eaeaea;
+    }
+    
+    .instructions h3, .update-history h3, .manual-link-section h3 {
+      font-size: 1.3rem;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .instructions h3 i, .update-history h3 i, .manual-link-section h3 i {
+      margin-right: 10px;
+      color: var(--info-color);
+    }
+    
+    .update-history h3 i {
+        color: var(--success-color); /* Different icon color for history */
+    }
+    
+    .instructions ul, .update-history ul {
+      padding-left: 20px;
+      list-style-type: disc; /* Default disc bullets */
+    }
+    
+    .instructions li, .update-history li {
+      margin-bottom: 10px;
+    }
+    
+    .manual-link-section {
+        text-align: center;
+    }
+    .manual-link-section h3 i {
+        color: var(--info-color); /* Icon for manual link */
+    }
+    .manual-link-section .btn {
+        background-color: var(--info-color);
+    }
+    .manual-link-section .btn:hover {
+        background-color: #357ebd;
+    }
+    .manual-link-section .btn i {
+        margin-right: 8px;
+    }
+    
+    /* 警語 Modal 樣式 */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      animation: fadeInModal 0.3s ease-out;
+    }
+
+    @keyframes fadeInModal {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .modal-content {
+      background-color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      width: 90%;
+      max-width: 600px;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+      animation: slideInModal 0.3s ease-out;
+    }
+
+    @keyframes slideInModal {
+        from { transform: translateY(-30px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    
+    .modal-content h3 {
+      color: var(--warning-color);
+      margin-bottom: 20px;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content h3 i {
+      margin-right: 10px;
+      font-size: 1.8rem;
+    }
+    
+    .modal-content p {
+      margin-bottom: 20px;
+      line-height: 1.7;
+      font-size: 1.1rem;
+    }
+    
+    .modal-btn {
+      background-color: var(--warning-color);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 50px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    
+    .modal-btn:hover {
+      background-color: #e67e22;
+    }
+    
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: var(--gray-color);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>質借試算工具</h1>
+    <h2>選擇您想要使用的試算工具</h2>
+    
+    <div class="portal-options">
+      <div class="portal-card bond-card" onclick="checkDisclaimerAndRedirect('beautified-bond-calculator.html')">
+        <i class="fas fa-chart-line"></i>
+        <h3>疊券試算</h3>
+        <p>債券質借收益率評估與試算工具</p>
+        <a href="#" class="btn" onclick="event.preventDefault(); checkDisclaimerAndRedirect('beautified-bond-calculator.html')">進入試算</a>
+      </div>
+      
+      <div class="portal-card fund-card" onclick="checkDisclaimerAndRedirect('beautified-fund-calculator.html')">
+        <i class="fas fa-coins"></i>
+        <h3>疊基金試算</h3>
+        <p>基金質借收益率評估與試算工具</p>
+        <a href="#" class="btn" onclick="event.preventDefault(); checkDisclaimerAndRedirect('beautified-fund-calculator.html')">進入試算</a>
+      </div>
+    </div>
+    
+    <div class="instructions">
+      <h3><i class="fas fa-info-circle"></i> 使用說明</h3>
+      <ul>
+        <li><strong>疊券試算：</strong>用於評估債券質借的收益率與風險，可根據不同條件進行試算比較。</li>
+        <li><strong>疊基金試算：</strong>用於評估基金質借的收益率與風險，提供多種基金類型的試算功能。</li>
+        <li>使用試算工具前，請確保您已理解相關風險，並根據您的實際情況進行分析。</li>
+        <li>試算結果僅供參考，實際投資收益可能受市場波動、利率變化等因素影響。</li>
+        <li>建議在做出任何投資決策前，諮詢專業財務顧問意見。</li>
+      </ul>
+    </div>
+
+    <div class="manual-link-section">
+      <h3><i class="fas fa-question-circle"></i> 需要幫助？</h3>
+      <p>查看詳細的操作手冊，了解如何使用本網站的各項功能。</p>
+      <a href="manual.html" class="btn"><i class="fas fa-book-reader"></i> 開啟操作手冊</a>
+    </div>
+
+    <div class="update-history">
+      <h3><i class="fas fa-history"></i> 版本更新歷程</h3>
+      <ul>
+        <li><strong>2025/05/11：</strong>疊券試算增加跨幣別匯入計算功能，匯率支援手動調整與API自動即時更新。</li>
+        <!-- 未來更新可在此處繼續添加 -->
+      </ul>
+    </div>
+    
+    <footer>
+      © 2024 質借試算工具 | 僅供參考使用
+    </footer>
+  </div>
+  
+  <!-- 警語 Modal -->
+  <div id="disclaimerModal" class="modal">
+    <div class="modal-content">
+      <h3><i class="fas fa-exclamation-triangle"></i> 重要警語</h3>
+      <p>
+        此網站為作者做為試算練習使用，不保證獲利，不保證數字的正確性。使用者請自行斟酌使用。
+      </p>
+      <p>
+        所有計算結果僅供參考，實際投資可能面臨市場風險、利率風險等多種不確定因素。使用者應對自己的投資決策負責。
+      </p>
+      <button id="acceptDisclaimer" class="modal-btn">我已了解並同意</button>
+    </div>
+  </div>
+
+  <script>
+    let redirectUrlAfterDisclaimer = null; // Store the URL to redirect to
+
+    // 檢查是否已接受警語
+    function hasAcceptedDisclaimer() {
+      try {
+        return localStorage.getItem('disclaimerAccepted') === 'true';
+      } catch (e) {
+        console.warn("localStorage is not available. Disclaimer acceptance cannot be saved.");
+        return false; // Assume not accepted if localStorage fails
+      }
+    }
+    
+    // 設置已接受警語
+    function setDisclaimerAccepted() {
+      try {
+        localStorage.setItem('disclaimerAccepted', 'true');
+      } catch (e) {
+        console.warn("localStorage is not available. Disclaimer acceptance cannot be saved.");
+      }
+      document.getElementById('disclaimerModal').style.display = 'none';
+      if (redirectUrlAfterDisclaimer) {
+        window.location.href = redirectUrlAfterDisclaimer;
+        redirectUrlAfterDisclaimer = null; // Clear after redirecting
+      }
+    }
+    
+    // 頁面載入時顯示警語 (如果需要)
+    window.onload = function() {
+      if (!hasAcceptedDisclaimer()) {
+        document.getElementById('disclaimerModal').style.display = 'flex';
+      }
+    };
+    
+    // 接受警語按鈕事件
+    document.getElementById('acceptDisclaimer').addEventListener('click', setDisclaimerAccepted);
+    
+    // 檢查警語並跳轉
+    function checkDisclaimerAndRedirect(url) {
+      if (hasAcceptedDisclaimer()) {
+        window.location.href = url;
+      } else {
+        redirectUrlAfterDisclaimer = url; // Store target URL
+        document.getElementById('disclaimerModal').style.display = 'flex';
+        // The acceptDisclaimer button's click event is already set up to handle the redirect
+      }
+    }
+  </script>
+</body>
+</html>

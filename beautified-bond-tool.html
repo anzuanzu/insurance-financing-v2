@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>債券篩選工具 (Bond Filtering Tool)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4895ef;
+      --primary-dark: #3f37c9;
+      --secondary: #4cc9f0;
+      --danger: #f72585;
+      --success: #4dd4ac;
+      --neutral-dark: #2b2d42;
+      --neutral: #8d99ae;
+      --neutral-light: #edf2f4;
+      --white: #ffffff;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+      --border-radius: 8px;
+      --transition: all 0.3s ease;
+      --warning: #f59e0b;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'SF Pro Display', 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+      line-height: 1.6;
+      color: var(--neutral-dark);
+      background-color: #f8fafc;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px 20px;
+    }
+    
+    h1, h2, h3 {
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    
+    h1 {
+      color: var(--primary-dark);
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 2.5rem;
+      letter-spacing: -0.5px;
+    }
+    
+    h2 {
+      color: var(--neutral-dark);
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+    }
+    
+    h3 {
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.2rem;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+    
+    .card {
+      background-color: var(--white);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      transition: var(--transition);
+    }
+    
+    .card:hover {
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+      transform: translateY(-2px);
+    }
+    
+    .card-header {
+      background-color: var(--primary);
+      color: var(--white);
+      padding: 20px;
+      border-top-left-radius: var(--border-radius);
+      border-top-right-radius: var(--border-radius);
+    }
+    
+    .card-header h2 {
+      color: var(--white);
+      margin: 0;
+    }
+    
+    .card-body {
+      padding: 30px;
+    }
+    
+    .file-upload {
+      text-align: center;
+      padding: 40px 30px;
+      border: 2px dashed var(--neutral);
+      border-radius: var(--border-radius);
+      background-color: var(--neutral-light);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    
+    .file-upload:hover {
+      border-color: var(--primary);
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+    
+    .file-upload h2 {
+      margin-bottom: 15px;
+      font-size: 1.5rem;
+    }
+    
+    .file-upload p {
+      margin-bottom: 15px;
+      color: var(--neutral);
+    }
+    
+    .file-upload-icon {
+      font-size: 48px;
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+    
+    .file-upload-input {
+      display: none;
+    }
+    
+    .upload-btn {
+      background-color: var(--primary);
+      color: var(--white);
+      padding: 12px 25px;
+      border-radius: 30px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 15px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .upload-btn:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    
+    .file-selected {
+      margin-top: 15px;
+      font-weight: 500;
+      color: var(--primary);
+    }
+    
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .filter-group {
+      margin-bottom: 20px;
+    }
+    
+    .filter-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--neutral-dark);
+    }
+    
+    .filter-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid var(--neutral);
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      transition: var(--transition);
+      background-color: var(--white);
+    }
+    
+    .filter-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+    
+    .filter-select {
+      padding: 12px 15px;
+      border: 1px solid var(--neutral);
+      border-radius: var(--border-radius);
+      font-size: 1rem;
+      background-color: var(--white);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+    
+    .filter-input-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin: 30px 0;
+    }
+    
+    .btn {
+      padding: 12px 25px;
+      border-radius: 30px;
+      border: none;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary);
+      color: var(--white);
+    }
+    
+    .btn-primary:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+    
+    .btn-success {
+      background-color: var(--success);
+      color: var(--white);
+    }
+    
+    .btn-success:hover {
+      background-color: #41c09c;
+      transform: translateY(-2px);
+    }
+    
+    .btn-danger {
+      background-color: var(--danger);
+      color: var(--white);
+    }
+    
+    .btn-danger:hover {
+      background-color: #e50f6d;
+      transform: translateY(-2px);
+    }
+
+    .btn-warning {
+      background-color: var(--warning);
+      color: var(--white);
+    }
+    
+    .btn-warning:hover {
+      background-color: #d97706;
+      transform: translateY(-2px);
+    }
+    
+    .summary {
+      margin: 20px 0;
+      padding: 15px 20px;
+      background-color: var(--neutral-light);
+      border-radius: var(--border-radius);
+      font-weight: 600;
+      color: var(--primary-dark);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .summary i {
+      color: var(--primary);
+      font-size: 1.2rem;
+    }
+    
+    .results-container {
+      overflow: auto;
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: var(--border-radius);
+      overflow: hidden;
+      background-color: var(--white);
+    }
+    
+    th {
+      background-color: var(--primary-dark);
+      color: var(--white);
+      font-weight: 600;
+      text-align: left;
+      padding: 15px;
+      position: sticky;
+      top: 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    
+    th:hover {
+      background-color: #3730b3;
+    }
+    
+    th small {
+      font-weight: 400;
+      opacity: 0.8;
+      display: block;
+      margin-top: 3px;
+    }
+    
+    td {
+      padding: 15px;
+      border-bottom: 1px solid var(--neutral-light);
+      transition: var(--transition);
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+    
+    tr:hover td {
+      background-color: rgba(67, 97, 238, 0.05);
+    }
+    
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .loader {
+      display: inline-block;
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(67, 97, 238, 0.3);
+      border-radius: 50%;
+      border-top-color: var(--primary);
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      margin-top: 15px;
+      color: var(--primary);
+      font-weight: 500;
+    }
+    
+    .message {
+      padding: 15px 20px;
+      border-radius: var(--border-radius);
+      margin: 15px 0;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .error {
+      background-color: rgba(247, 37, 133, 0.1);
+      color: var(--danger);
+      border-left: 4px solid var(--danger);
+    }
+    
+    .success {
+      background-color: rgba(77, 212, 172, 0.1);
+      color: var(--success);
+      border-left: 4px solid var(--success);
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    
+    .badge-high {
+      background-color: rgba(77, 212, 172, 0.2);
+      color: var(--success);
+    }
+    
+    .badge-medium {
+      background-color: rgba(76, 201, 240, 0.2);
+      color: var(--secondary);
+    }
+    
+    .badge-low {
+      background-color: rgba(247, 37, 133, 0.2);
+      color: var(--danger);
+    }
+    
+    .sort-icon {
+      display: inline-block;
+      margin-left: 5px;
+      font-size: 0.8rem;
+    }
+
+    .bond-selector {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+
+    /* Tab styles */
+    .tab-container {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+      border-bottom: 3px solid var(--primary);
+    }
+
+    .tab-btn {
+      padding: 14px 28px;
+      border: 1px solid var(--neutral);
+      border-bottom: none;
+      background-color: var(--neutral-light);
+      color: var(--neutral-dark);
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+      border-radius: var(--border-radius) var(--border-radius) 0 0;
+      position: relative;
+      bottom: -1px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-btn:hover {
+      background-color: rgba(67, 97, 238, 0.1);
+    }
+
+    .tab-btn.active {
+      background-color: var(--primary);
+      color: var(--white);
+      border-color: var(--primary);
+    }
+
+    .tab-btn .tab-count {
+      background-color: rgba(255,255,255,0.3);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+    }
+
+    .tab-btn.active .tab-count {
+      background-color: rgba(255,255,255,0.3);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Source badge in table */
+    .source-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .source-hot {
+      background-color: rgba(67, 97, 238, 0.15);
+      color: var(--primary);
+    }
+
+    .source-inventory {
+      background-color: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+    }
+
+    .source-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Selected count indicator */
+    .selected-count-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: var(--white);
+      border-radius: var(--border-radius);
+      margin: 15px 0;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+    }
+
+    .selected-count-bar .count-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .selected-count-bar .count-badge {
+      background-color: rgba(255,255,255,0.25);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+    }
+
+    /* Sheet info styles */
+    .sheet-info {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .sheet-info-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .sheet-found {
+      background-color: rgba(77, 212, 172, 0.15);
+      color: #2d8a6e;
+    }
+
+    .sheet-not-found {
+      background-color: rgba(247, 37, 133, 0.1);
+      color: var(--danger);
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+      body {
+        padding: 20px 15px;
+      }
+      
+      h1 {
+        font-size: 2rem;
+      }
+      
+      .card-body {
+        padding: 20px;
+      }
+      
+      .filters {
+        grid-template-columns: 1fr;
+      }
+      
+      .actions {
+        flex-direction: column;
+      }
+      
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      th, td {
+        padding: 10px;
+      }
+
+      .tab-btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
+      }
+    }
+    
+    /* 打印樣式 */
+    @media print {
+      .controls, button, .modal { 
+        display: none !important; 
+      }
+      
+      body, .container { 
+        background-color: white; 
+        padding: 0; 
+        margin: 0; 
+        box-shadow: none;
+        color: black;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>債券篩選工具</h1>
+  <h3>Bond Filtering Tool — 支援「熱門債券」及「客戶庫存報價」工作表，可累加選取匯出</h3>
+  
+  <div class="container">
+    <!-- File Upload Card -->
+    <div class="card">
+      <div class="card-header">
+        <h2><i class="fas fa-file-upload"></i> 上傳文件</h2>
+      </div>
+      <div class="card-body">
+        <div class="file-upload" id="drop-area">
+          <div class="file-upload-icon">
+            <i class="fas fa-file-excel"></i>
+          </div>
+          <h2>上傳 Excel 檔案</h2>
+          <p>拖曳檔案到此處或點擊選擇檔案</p>
+          <p style="color: var(--danger); font-weight: 500;">
+            <i class="fas fa-info-circle"></i> 工具將自動讀取「熱門債券」及「客戶庫存報價」兩個工作表：<br>
+            兩個工作表的欄位會自動偵測對應，選取的債券可跨工作表累加匯出。
+          </p>
+          <input type="file" id="file-input" accept=".xlsm,.xlsx" class="file-upload-input" />
+          <button class="upload-btn" id="select-file">
+            <i class="fas fa-file-upload"></i> 選擇檔案
+          </button>
+          <div id="file-selected" class="file-selected" style="display: none;"></div>
+        </div>
+        
+        <div class="loading" id="loading">
+          <div class="loader"></div>
+          <p class="loading-text">處理檔案中，請稍候...</p>
+        </div>
+        
+        <div id="file-info"></div>
+      </div>
+    </div>
+    
+    <!-- Filters Card -->
+    <div class="card" id="filters" style="display: none;">
+      <div class="card-header">
+        <h2><i class="fas fa-filter"></i> 篩選條件</h2>
+      </div>
+      <div class="card-body">
+        <div class="filters">
+          <!-- Issuer Filter -->
+          <div class="filter-group">
+            <label for="issuer-filter" class="filter-label">
+              <i class="fas fa-building"></i> 發行人 (Issuer)
+            </label>
+            <input type="text" id="issuer-filter" class="filter-input" placeholder="輸入發行人名稱">
+          </div>
+          
+          <!-- Currency Filter -->
+          <div class="filter-group">
+            <label for="currency-filter" class="filter-label">
+              <i class="fas fa-dollar-sign"></i> 幣別 (Currency)
+            </label>
+            <input type="text" id="currency-filter" class="filter-input" placeholder="輸入幣別 (例如: USD, HKD)">
+          </div>
+
+          <!-- S&P Rating Filter -->
+          <div class="filter-group">
+            <label for="sp-rating-filter" class="filter-label">
+              <i class="fas fa-star"></i> 標普評級 (S&P Rating)
+            </label>
+            <div class="filter-input-group">
+              <select id="sp-rating-op" class="filter-select" style="width: 40%;">
+                <option value="=">=</option>
+                <option value=">=">>=</option>
+                <option value="<="><=</option>
+                <option value=">">&gt;</option>
+                <option value="<">&lt;</option>
+              </select>
+              <input type="text" id="sp-rating-filter" class="filter-input" placeholder="例如: AAA, AA+, BBB-" style="width: 60%;">
+            </div>
+          </div>
+          
+          <!-- Years to Maturity Filter -->
+          <div class="filter-group">
+            <label for="years-to-maturity-filter" class="filter-label">
+              <i class="fas fa-calendar-alt"></i> 距到期年 (Years to Maturity)
+            </label>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div class="filter-input-group">
+                <select id="years-to-maturity-op" class="filter-select" style="width: 40%;">
+                  <option value=">">&gt;</option>
+                  <option value=">=">>=</option>
+                  <option value="=">=</option>
+                  <option value="<="><=</option>
+                  <option value="<">&lt;</option>
+                </select>
+                <input type="number" id="years-to-maturity-filter" class="filter-input" placeholder="輸入起始年數" style="width: 60%;">
+              </div>
+              <div class="filter-input-group">
+                <select id="years-to-maturity-op2" class="filter-select" style="width: 40%;">
+                  <option value="<">&lt;</option>
+                  <option value="<="><=</option>
+                  <option value="=">=</option>
+                  <option value=">=">>=</option>
+                  <option value=">">&gt;</option>
+                </select>
+                <input type="number" id="years-to-maturity-filter2" class="filter-input" placeholder="輸入結束年數" style="width: 60%;">
+              </div>
+            </div>
+          </div>
+          
+          <!-- Buy Price Filter -->
+          <div class="filter-group">
+            <label for="buy-price-filter" class="filter-label">
+              <i class="fas fa-tags"></i> 參考買入價 (Reference Buy Price)
+            </label>
+            <div class="filter-input-group">
+              <select id="buy-price-op" class="filter-select" style="width: 40%;">
+                <option value="=">=</option>
+                <option value=">=">>=</option>
+                <option value="<="><=</option>
+                <option value=">">&gt;</option>
+                <option value="<">&lt;</option>
+              </select>
+              <input type="number" id="buy-price-filter" class="filter-input" placeholder="輸入價格" step="0.01" style="width: 60%;">
+            </div>
+          </div>
+          
+          <!-- Coupon Filter -->
+          <div class="filter-group">
+            <label for="coupon-filter" class="filter-label">
+              <i class="fas fa-percentage"></i> 票息 (Coupon)
+            </label>
+            <div class="filter-input-group">
+              <select id="coupon-op" class="filter-select" style="width: 40%;">
+                <option value="=">=</option>
+                <option value=">=">>=</option>
+                <option value="<="><=</option>
+                <option value=">">&gt;</option>
+                <option value="<">&lt;</option>
+              </select>
+              <input type="number" id="coupon-filter" class="filter-input" placeholder="輸入票息率" step="0.01" style="width: 60%;">
+            </div>
+          </div>
+          
+          <!-- Next Dividend Date Filter -->
+          <div class="filter-group">
+            <label for="next-dividend-date-filter" class="filter-label">
+              <i class="fas fa-calendar-day"></i> 下次配息日 (Next Interest Date)
+            </label>
+            <input type="date" id="next-dividend-date-filter" class="filter-input" placeholder="選擇日期">
+          </div>
+        </div>
+        
+        <div class="actions">
+          <button id="apply-filters" class="btn btn-primary">
+            <i class="fas fa-search"></i> 套用篩選
+          </button>
+          <button id="reset-filters" class="btn btn-danger">
+            <i class="fas fa-undo"></i> 重置
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Results Card -->
+    <div class="card" id="results-card" style="display: none;">
+      <div class="card-header">
+        <h2><i class="fas fa-table"></i> 篩選結果</h2>
+      </div>
+      <div class="card-body">
+        <!-- Selected count bar -->
+        <div class="selected-count-bar" id="selected-count-bar" style="display: none;">
+          <div class="count-info">
+            <i class="fas fa-check-circle"></i>
+            <span>已選取債券：</span>
+            <span class="count-badge" id="hot-selected-count">熱門債券: 0</span>
+            <span class="count-badge" id="inventory-selected-count">客戶庫存: 0</span>
+            <span class="count-badge" id="total-selected-count">合計: 0</span>
+          </div>
+        </div>
+
+        <!-- Tab navigation -->
+        <div class="tab-container" id="tab-container">
+          <button class="tab-btn active" data-tab="hot" id="tab-hot">
+            <i class="fas fa-fire"></i> 熱門債券
+            <span class="tab-count" id="tab-hot-count">0</span>
+          </button>
+          <button class="tab-btn" data-tab="inventory" id="tab-inventory">
+            <i class="fas fa-warehouse"></i> 客戶庫存報價
+            <span class="tab-count" id="tab-inventory-count">0</span>
+          </button>
+          <button class="tab-btn" data-tab="combined" id="tab-combined" style="display:none;">
+            <i class="fas fa-layer-group"></i> 合併檢視
+            <span class="tab-count" id="tab-combined-count">0</span>
+          </button>
+        </div>
+
+        <!-- Hot bonds panel -->
+        <div class="tab-panel active" id="panel-hot">
+          <div id="summary-hot" class="summary">
+            <i class="fas fa-info-circle"></i>
+            <span id="summary-text-hot">請先上傳檔案並設定篩選條件</span>
+          </div>
+          <div class="results-container">
+            <table id="results-table-hot">
+              <!-- Table content will be dynamically generated -->
+            </table>
+          </div>
+        </div>
+
+        <!-- Inventory bonds panel -->
+        <div class="tab-panel" id="panel-inventory">
+          <div id="summary-inventory" class="summary">
+            <i class="fas fa-info-circle"></i>
+            <span id="summary-text-inventory">請先上傳檔案並設定篩選條件</span>
+          </div>
+          <div class="results-container">
+            <table id="results-table-inventory">
+              <!-- Table content will be dynamically generated -->
+            </table>
+          </div>
+        </div>
+
+        <!-- Combined panel -->
+        <div class="tab-panel" id="panel-combined">
+          <div id="summary-combined" class="summary">
+            <i class="fas fa-info-circle"></i>
+            <span id="summary-text-combined">請先上傳檔案並設定篩選條件</span>
+          </div>
+          <div class="results-container">
+            <table id="results-table-combined">
+              <!-- Table content will be dynamically generated -->
+            </table>
+          </div>
+        </div>
+        
+        <div class="actions" id="export-actions">
+          <!-- Export buttons will be added here -->
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // ============================================================
+    // Column definitions for each sheet type
+    // ============================================================
+    
+    // 熱門債券 sheet column indices (0-based) — default, will be dynamically determined
+    const COLUMNS_HOT = {
+      PRODUCT_CODE: 1,      // B (will be dynamically determined)
+      ISSUER: 10,           // K
+      CURRENCY: 12,         // M
+      BUY_PRICE: 14,        // O - 參考買入價
+      YEARS_TO_MATURITY: 26,// AA
+      SP_RATING: 29,        // AD - 標普
+      COUPON: 33,           // AH - 票息
+      NEXT_DIVIDEND_DATE: 35// AJ - 下次配息日
+    };
+    
+    // 客戶庫存報價 sheet column indices (0-based)
+    // 固定欄位對應: E=產品代碼, I=發行人, K=幣別, M=參考買入價, Y=距到期年, AB=標普評級, AF=票息
+    const COLUMNS_INVENTORY = {
+      PRODUCT_CODE: 4,      // E 欄
+      ISSUER: 8,            // I 欄
+      CURRENCY: 10,         // K 欄
+      BUY_PRICE: 12,        // M 欄
+      YEARS_TO_MATURITY: 24,// Y 欄
+      SP_RATING: 27,        // AB 欄
+      COUPON: 31,           // AF 欄
+      NEXT_DIVIDEND_DATE: -1,// will be dynamically determined
+      // Additional inventory-specific columns
+      ISSUE_DATE: -1,       // 發行日 Issue Date
+      RISK_LEVEL: -1,       // 風險等級
+      OUTSTANDING: -1       // outstanding (MM)
+    };
+    
+    // ============================================================
+    // Global variables
+    // ============================================================
+    let workbook = null;
+    let allDataHot = [];        // 熱門債券 data
+    let allDataInventory = [];  // 客戶庫存報價 data
+    let filteredDataHot = [];
+    let filteredDataInventory = [];
+    
+    // Sort state per tab
+    let sortStateHot = { column: null, order: 'asc' };
+    let sortStateInventory = { column: null, order: 'asc' };
+    
+    // Active tab
+    let activeTab = 'hot';
+    
+    // ============================================================
+    // DOM elements
+    // ============================================================
+    const fileInput = document.getElementById('file-input');
+    const selectFileBtn = document.getElementById('select-file');
+    const fileSelectedDiv = document.getElementById('file-selected');
+    const fileInfo = document.getElementById('file-info');
+    const filtersDiv = document.getElementById('filters');
+    const resultsCard = document.getElementById('results-card');
+    const loadingDiv = document.getElementById('loading');
+    const applyFiltersBtn = document.getElementById('apply-filters');
+    const resetFiltersBtn = document.getElementById('reset-filters');
+    
+    // ============================================================
+    // Tab switching
+    // ============================================================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const tab = this.dataset.tab;
+        activeTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById(`panel-${tab}`).classList.add('active');
+      });
+    });
+    
+    // ============================================================
+    // File selection
+    // ============================================================
+    selectFileBtn.addEventListener('click', function() {
+      fileInput.click();
+    });
+    
+    fileInput.addEventListener('change', function() {
+      if (this.files.length > 0) {
+        fileSelectedDiv.textContent = `已選擇: ${this.files[0].name}`;
+        fileSelectedDiv.style.display = 'block';
+      } else {
+        fileSelectedDiv.style.display = 'none';
+      }
+    });
+    
+    // ============================================================
+    // Utility functions
+    // ============================================================
+    function showLoading() { loadingDiv.style.display = 'block'; }
+    function hideLoading() { loadingDiv.style.display = 'none'; }
+    
+    function showError(message) {
+      const errorDiv = document.createElement('div');
+      errorDiv.className = 'message error';
+      errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+      fileInfo.innerHTML = '';
+      fileInfo.appendChild(errorDiv);
+    }
+    
+    function showSuccess(message) {
+      const successDiv = document.createElement('div');
+      successDiv.className = 'message success';
+      successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+      fileInfo.innerHTML = '';
+      fileInfo.appendChild(successDiv);
+    }
+    
+    function compareValues(value1, value2, operator) {
+      if (value1 === undefined || value2 === undefined) return false;
+      switch (operator) {
+        case '=': return value1 == value2;
+        case '>=': return value1 >= value2;
+        case '<=': return value1 <= value2;
+        case '>': return value1 > value2;
+        case '<': return value1 < value2;
+        default: return true;
+      }
+    }
+    
+    function convertSPRatingToNumeric(rating) {
+      if (!rating) return -1;
+      const ratingMap = {
+        'AAA': 100,
+        'AA+': 95, 'AA': 90, 'AA-': 85,
+        'A+': 80, 'A': 75, 'A-': 70,
+        'BBB+': 65, 'BBB': 60, 'BBB-': 55,
+        'BB+': 50, 'BB': 45, 'BB-': 40,
+        'B+': 35, 'B': 30, 'B-': 25,
+        'CCC+': 20, 'CCC': 15, 'CCC-': 10,
+        'CC': 5, 'C': 3, 'D': 0
+      };
+      return ratingMap[String(rating).toUpperCase()] ?? -1;
+    }
+    
+    function getRatingBadgeClass(rating) {
+      if (!rating) return '';
+      const ratingValue = String(rating).toUpperCase();
+      if (ratingValue.includes('AAA') || ratingValue.includes('AA') || ratingValue.includes('A')) {
+        return 'badge badge-high';
+      } else if (ratingValue.includes('BBB')) {
+        return 'badge badge-medium';
+      } else {
+        return 'badge badge-low';
+      }
+    }
+    
+    function formatDate(dateValue) {
+      if (!dateValue) return '';
+      
+      let dateObj;
+      
+      if (typeof dateValue === 'number' && dateValue < 10) {
+        return dateValue.toString();
+      }
+      
+      if (dateValue instanceof Date) {
+        dateObj = dateValue;
+      } else if (typeof dateValue === 'string') {
+        if (dateValue.match(/^\d{4}[-\/]\d{1,2}[-\/]\d{1,2}$/) || 
+            dateValue.match(/^\d{1,2}[-\/]\d{1,2}[-\/]\d{4}$/)) {
+          dateObj = new Date(dateValue);
+        } else {
+          return dateValue; 
+        }
+      } else if (typeof dateValue === 'number') {
+        if (dateValue > 59) { 
+          dateObj = new Date(Math.round((dateValue - 25569) * 86400 * 1000));
+        } else {
+          dateObj = new Date(Math.round((dateValue - 24107) * 86400 * 1000));
+        }
+        if (dateObj.getFullYear() < 1920 || dateObj.getFullYear() > 2100) {
+          return dateValue.toString();
+        }
+      }
+      
+      if (!dateObj || isNaN(dateObj.getTime())) {
+        return dateValue.toString(); 
+      }
+      
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    }
+    
+    // ============================================================
+    // Sheet parsing helpers
+    // ============================================================
+    
+    /**
+     * Find the header row in sheet data and determine column indices.
+     * Returns { headerRowIndex, columns }
+     */
+    function parseSheetData(jsonData, sheetType) {
+      let headerRowIndex = 0;
+
+      // 客戶庫存報價: 資料從第9行開始，標題固定在第8行 (0-based index 7)
+      if (sheetType === 'inventory') {
+        headerRowIndex = 7; // 第8行 (0-based)
+        console.log(`[${sheetType}] 客戶庫存報價固定標題行: 8 (0-based: 7)，資料從第9行起`);
+      } else {
+        // Find header row by keyword matching
+        for (let i = 0; i < Math.min(30, jsonData.length); i++) {
+          if (jsonData[i] && jsonData[i].length > 10) {
+            const rowStr = (jsonData[i] || []).join(' ').toLowerCase();
+            if (rowStr.includes('發行人') || rowStr.includes('票息') ||
+                rowStr.includes('標普') || rowStr.includes('產品') ||
+                rowStr.includes('到期') || rowStr.includes('參考') || rowStr.includes('幣別')) {
+              headerRowIndex = i;
+              console.log(`[${sheetType}] 找到標題行:`, i, rowStr);
+              break;
+            }
+          }
+        }
+
+        // Fallback: use the row with the most columns
+        if (headerRowIndex === 0) {
+          let maxLength = 0;
+          for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+            if (jsonData[i] && jsonData[i].length > maxLength) {
+              maxLength = jsonData[i].length;
+              headerRowIndex = i;
+            }
+          }
+          console.log(`[${sheetType}] 未找到標題行，使用最長列:`, headerRowIndex);
+        }
+      }
+      
+      console.log(`[${sheetType}] 標題行:`, jsonData[headerRowIndex]);
+      console.log(`[${sheetType}] 表頭信息:`, jsonData[headerRowIndex].map((h, i) => `${i}: ${h}`));
+      
+      // Build column finder
+      const findColumnIndex = (keywords) => {
+        if (!Array.isArray(keywords)) keywords = [keywords];
+        for (const keyword of keywords) {
+          for (let i = 0; i < jsonData[headerRowIndex].length; i++) {
+            const header = String(jsonData[headerRowIndex][i] || '').toLowerCase();
+            if (header.includes(keyword.toLowerCase())) {
+              return i;
+            }
+          }
+        }
+        return -1;
+      };
+      
+      // Determine column indices dynamically
+      const columns = {};
+      
+      // 產品代碼
+      let productCodeIdx = findColumnIndex(['產品代碼', '代碼', 'code', '產品']);
+      columns.PRODUCT_CODE = productCodeIdx !== -1 ? productCodeIdx : 1;
+      
+      // 發行人
+      // 熱門債券: 發行人固定在K欄 (index 10)
+      // 客戶庫存報價: 動態偵測，fallback 到 I欄 (index 8)
+      if (sheetType === 'hot') {
+        columns.ISSUER = 10; // K欄固定
+      } else {
+        let issuerIdx = findColumnIndex(['發行人', 'issuer', '發行']);
+        columns.ISSUER = issuerIdx !== -1 ? issuerIdx : 8;
+      }
+      
+      // 證券名稱
+      let secNameIdx = findColumnIndex(['證券名稱', '名稱']);
+      columns.SECURITY_NAME = secNameIdx !== -1 ? secNameIdx : -1;
+      
+      // 幣別
+      let currencyIdx = findColumnIndex(['幣別', 'currency']);
+      columns.CURRENCY = currencyIdx !== -1 ? currencyIdx : 12;
+      
+      // 參考買入價 — look for '買入' specifically; the header row may have both 參考賣出價 and 參考買入價
+      // We try for the highlighted/blue header column, or fall back
+      let buyPriceIdx = -1;
+      // Search for all columns with 買入 and pick the first one after 賣出
+      const sellIdx = findColumnIndex(['賣出', '出價']);
+      for (let i = 0; i < jsonData[headerRowIndex].length; i++) {
+        const header = String(jsonData[headerRowIndex][i] || '').toLowerCase();
+        if (header.includes('買入') || header.includes('入價')) {
+          buyPriceIdx = i;
+          break;
+        }
+      }
+      columns.BUY_PRICE = buyPriceIdx !== -1 ? buyPriceIdx : 14;
+      
+      // 距到期年
+      let yearsIdx = findColumnIndex(['距到期', '到期年']);
+      columns.YEARS_TO_MATURITY = yearsIdx !== -1 ? yearsIdx : 26;
+      
+      // 標普評級
+      let spIdx = findColumnIndex(['標普', 'rating', 's&p']);
+      columns.SP_RATING = spIdx !== -1 ? spIdx : 29;
+      
+      // 票息
+      let couponIdx = findColumnIndex(['票息', 'coupon']);
+      columns.COUPON = couponIdx !== -1 ? couponIdx : 33;
+      
+      // 配息頻率
+      let freqIdx = findColumnIndex(['配息頻率', '頻率']);
+      columns.DIVIDEND_FREQUENCY = freqIdx !== -1 ? freqIdx : -1;
+      
+      // 下一配息日 / 下次配息日
+      let nextDivIdx = findColumnIndex(['下一配息', '下次配息', '配息日']);
+      columns.NEXT_DIVIDEND_DATE = nextDivIdx !== -1 ? nextDivIdx : 35;
+      
+      // Inventory-specific columns
+      if (sheetType === 'inventory') {
+        let issueDateIdx = findColumnIndex(['發行日', 'issue date']);
+        columns.ISSUE_DATE = issueDateIdx !== -1 ? issueDateIdx : -1;
+        
+        let riskIdx = findColumnIndex(['風險等級', '風險']);
+        columns.RISK_LEVEL = riskIdx !== -1 ? riskIdx : -1;
+        
+        let outstandingIdx = findColumnIndex(['outstanding']);
+        columns.OUTSTANDING = outstandingIdx !== -1 ? outstandingIdx : -1;
+      }
+      
+      // Additional shared columns
+      let moodyIdx = findColumnIndex(['穆迪', 'moody']);
+      columns.MOODY = moodyIdx !== -1 ? moodyIdx : -1;
+
+      let fitchIdx = findColumnIndex(['惠譽', 'fitch']);
+      columns.FITCH = fitchIdx !== -1 ? fitchIdx : -1;
+      
+      console.log(`[${sheetType}] 使用欄位索引：`, columns);
+      
+      // Extract data rows
+      const dataRows = jsonData.slice(headerRowIndex + 1).filter(row => {
+        if (!row || row.length === 0) return false;
+        const hasIssuer = (row[columns.ISSUER] !== undefined && row[columns.ISSUER] !== '');
+        const hasPrice = row[columns.BUY_PRICE] !== undefined && row[columns.BUY_PRICE] !== '';
+        const hasRating = row[columns.SP_RATING] !== undefined && row[columns.SP_RATING] !== '';
+        const hasCode = row[columns.PRODUCT_CODE] !== undefined && row[columns.PRODUCT_CODE] !== '';
+        return hasIssuer || hasPrice || hasRating || hasCode;
+      });
+      
+      console.log(`[${sheetType}] 篩選後資料筆數: ${dataRows.length}`);
+      
+      return { headerRowIndex, columns, dataRows };
+    }
+    
+    /**
+     * Find a sheet by name patterns
+     */
+    function findSheet(wb, patterns) {
+      for (const sheetName of wb.SheetNames) {
+        for (const pattern of patterns) {
+          if (sheetName === pattern || sheetName.includes(pattern)) {
+            return sheetName;
+          }
+        }
+      }
+      return null;
+    }
+    
+    // ============================================================
+    // File processing
+    // ============================================================
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      processFile(file);
+    });
+    
+    function processFile(file) {
+      showLoading();
+      fileInfo.innerHTML = '';
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          
+          if (workbook.SheetNames.length === 0) {
+            throw new Error('工作簿中沒有找到工作表');
+          }
+          
+          console.log('所有工作表:', workbook.SheetNames);
+          
+          // ---- Parse 熱門債券 ----
+          const hotSheetName = findSheet(workbook, ['熱門債券', '熱門', '债券']);
+          let hotResult = null;
+          if (hotSheetName) {
+            console.log('找到熱門債券工作表:', hotSheetName);
+            const hotWorksheet = workbook.Sheets[hotSheetName];
+            const hotJson = XLSX.utils.sheet_to_json(hotWorksheet, { header: 1 });
+            hotResult = parseSheetData(hotJson, 'hot');
+            allDataHot = hotResult.dataRows;
+            // Store column mapping on global for filtering
+            Object.assign(COLUMNS_HOT, hotResult.columns);
+          } else {
+            console.log('未找到熱門債券工作表');
+            allDataHot = [];
+          }
+          
+          // ---- Parse 客戶庫存報價 ----
+          const inventorySheetName = findSheet(workbook, ['客戶庫存報價', '客戶庫存', '庫存報價', '庫存']);
+          let inventoryResult = null;
+          if (inventorySheetName) {
+            console.log('找到客戶庫存報價工作表:', inventorySheetName);
+            const invWorksheet = workbook.Sheets[inventorySheetName];
+            const invJson = XLSX.utils.sheet_to_json(invWorksheet, { header: 1 });
+            inventoryResult = parseSheetData(invJson, 'inventory');
+            allDataInventory = inventoryResult.dataRows;
+            // Merge dynamically detected columns, but override with hardcoded positions
+            const dynamicInvCols = inventoryResult.columns;
+            // Only use dynamic results for columns not hardcoded (e.g. NEXT_DIVIDEND_DATE, ISSUE_DATE, RISK_LEVEL, OUTSTANDING)
+            COLUMNS_INVENTORY.NEXT_DIVIDEND_DATE = dynamicInvCols.NEXT_DIVIDEND_DATE !== undefined ? dynamicInvCols.NEXT_DIVIDEND_DATE : -1;
+            COLUMNS_INVENTORY.ISSUE_DATE = dynamicInvCols.ISSUE_DATE !== undefined ? dynamicInvCols.ISSUE_DATE : -1;
+            COLUMNS_INVENTORY.RISK_LEVEL = dynamicInvCols.RISK_LEVEL !== undefined ? dynamicInvCols.RISK_LEVEL : -1;
+            COLUMNS_INVENTORY.OUTSTANDING = dynamicInvCols.OUTSTANDING !== undefined ? dynamicInvCols.OUTSTANDING : -1;
+            // Keep hardcoded positions for core columns: E(4), I(8), K(10), M(12), Y(24), AB(27), AF(31)
+            console.log('[inventory] 使用固定欄位: 產品代碼=E(4), 發行人=I(8), 幣別=K(10), 買入價=M(12), 距到期年=Y(24), 標普=AB(27), 票息=AF(31)');
+            console.log('[inventory] 動態欄位: 下次配息日=' + COLUMNS_INVENTORY.NEXT_DIVIDEND_DATE + ', 發行日=' + COLUMNS_INVENTORY.ISSUE_DATE + ', 風險等級=' + COLUMNS_INVENTORY.RISK_LEVEL + ', Outstanding=' + COLUMNS_INVENTORY.OUTSTANDING);
+          } else {
+            console.log('未找到客戶庫存報價工作表');
+            allDataInventory = [];
+          }
+          
+          if (allDataHot.length === 0 && allDataInventory.length === 0) {
+            throw new Error('找不到「熱門債券」或「客戶庫存報價」工作表，或工作表中無資料');
+          }
+          
+          // Build success message with sheet info
+          let successMsg = '檔案載入成功！';
+          let sheetInfoHTML = '<div class="sheet-info">';
+          if (hotSheetName) {
+            sheetInfoHTML += `<span class="sheet-info-item sheet-found"><i class="fas fa-check-circle"></i> 熱門債券: ${allDataHot.length} 筆</span>`;
+          } else {
+            sheetInfoHTML += `<span class="sheet-info-item sheet-not-found"><i class="fas fa-times-circle"></i> 熱門債券: 未找到</span>`;
+          }
+          if (inventorySheetName) {
+            sheetInfoHTML += `<span class="sheet-info-item sheet-found"><i class="fas fa-check-circle"></i> 客戶庫存報價: ${allDataInventory.length} 筆</span>`;
+          } else {
+            sheetInfoHTML += `<span class="sheet-info-item sheet-not-found"><i class="fas fa-times-circle"></i> 客戶庫存報價: 未找到</span>`;
+          }
+          sheetInfoHTML += '</div>';
+          
+          const successDiv = document.createElement('div');
+          successDiv.className = 'message success';
+          successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${successMsg}` + sheetInfoHTML;
+          fileInfo.innerHTML = '';
+          fileInfo.appendChild(successDiv);
+          
+          // Update tab counts
+          document.getElementById('tab-hot-count').textContent = allDataHot.length;
+          document.getElementById('tab-inventory-count').textContent = allDataInventory.length;
+          
+          // Show/hide tabs based on available data
+          document.getElementById('tab-hot').style.display = allDataHot.length > 0 ? '' : 'none';
+          document.getElementById('tab-inventory').style.display = allDataInventory.length > 0 ? '' : 'none';
+          const hasCombined = allDataHot.length > 0 || allDataInventory.length > 0;
+          document.getElementById('tab-combined').style.display = hasCombined ? '' : 'none';
+
+          // Set active tab to whichever has data
+          if (allDataHot.length > 0) {
+            switchTab('hot');
+          } else {
+            switchTab('inventory');
+          }
+          
+          filteredDataHot = [...allDataHot];
+          filteredDataInventory = [...allDataInventory];
+
+          filtersDiv.style.display = 'block';
+          resultsCard.style.display = 'block';
+
+          displayResults('hot', filteredDataHot);
+          displayResults('inventory', filteredDataInventory);
+          displayCombinedResults();
+          addExportFunctionality();
+          updateSelectedCounts();
+          
+        } catch (error) {
+          console.error('處理檔案錯誤:', error);
+          showError(`處理檔案時發生錯誤: ${error.message}`);
+        } finally {
+          hideLoading();
+        }
+      };
+      reader.onerror = function() {
+        hideLoading();
+        showError('讀取檔案時發生錯誤');
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+      document.getElementById(`panel-${tab}`).classList.add('active');
+    }
+    
+    // ============================================================
+    // Apply filters
+    // ============================================================
+    applyFiltersBtn.addEventListener('click', function() {
+      if (allDataHot.length === 0 && allDataInventory.length === 0) {
+        showError('請先上傳檔案');
+        return;
+      }
+      
+      const filterParams = getFilterParams();
+      
+      if (allDataHot.length > 0) {
+        filteredDataHot = applyFilterToData(allDataHot, COLUMNS_HOT, filterParams);
+        sortStateHot = { column: null, order: 'asc' };
+        displayResults('hot', filteredDataHot);
+      }
+
+      if (allDataInventory.length > 0) {
+        filteredDataInventory = applyFilterToData(allDataInventory, COLUMNS_INVENTORY, filterParams);
+        sortStateInventory = { column: null, order: 'asc' };
+        displayResults('inventory', filteredDataInventory);
+      }
+
+      displayCombinedResults();
+
+      // Update tab counts with filtered results
+      document.getElementById('tab-hot-count').textContent = filteredDataHot.length;
+      document.getElementById('tab-inventory-count').textContent = filteredDataInventory.length;
+
+      updateSelectedCounts();
+    });
+    
+    function getFilterParams() {
+      return {
+        issuer: document.getElementById('issuer-filter').value.trim().toLowerCase(),
+        currency: document.getElementById('currency-filter').value.trim().toLowerCase(),
+        spRatingOp: document.getElementById('sp-rating-op').value,
+        spRating: document.getElementById('sp-rating-filter').value.trim().toUpperCase(),
+        yearsOp1: document.getElementById('years-to-maturity-op').value,
+        years1: document.getElementById('years-to-maturity-filter').value,
+        yearsOp2: document.getElementById('years-to-maturity-op2').value,
+        years2: document.getElementById('years-to-maturity-filter2').value,
+        buyPriceOp: document.getElementById('buy-price-op').value,
+        buyPrice: document.getElementById('buy-price-filter').value,
+        couponOp: document.getElementById('coupon-op').value,
+        coupon: document.getElementById('coupon-filter').value,
+        nextDividendDate: document.getElementById('next-dividend-date-filter').value
+      };
+    }
+    
+    function applyFilterToData(data, columns, params) {
+      const spRatingNumeric = convertSPRatingToNumeric(params.spRating);
+      const yearsNumeric1 = params.years1 ? parseFloat(params.years1) : undefined;
+      const yearsNumeric2 = params.years2 ? parseFloat(params.years2) : undefined;
+      const buyPriceNumeric = params.buyPrice ? parseFloat(params.buyPrice) : undefined;
+      const couponNumeric = params.coupon ? parseFloat(params.coupon) : undefined;
+      
+      return data.filter(row => {
+        // 發行人
+        if (params.issuer) {
+          const issuer = row[columns.ISSUER];
+          if (!issuer || String(issuer).toLowerCase().indexOf(params.issuer) === -1) return false;
+        }
+        // 幣別
+        if (params.currency) {
+          const currency = row[columns.CURRENCY];
+          if (!currency || String(currency).toLowerCase().indexOf(params.currency) === -1) return false;
+        }
+        // S&P 評級
+        if (params.spRating) {
+          const rating = row[columns.SP_RATING];
+          const ratingNumeric = convertSPRatingToNumeric(rating);
+          if (!compareValues(ratingNumeric, spRatingNumeric, params.spRatingOp)) return false;
+        }
+        // 距到期年
+        if (yearsNumeric1 !== undefined || yearsNumeric2 !== undefined) {
+          const years = parseFloat(row[columns.YEARS_TO_MATURITY]);
+          if (yearsNumeric1 !== undefined && !compareValues(years, yearsNumeric1, params.yearsOp1)) return false;
+          if (yearsNumeric2 !== undefined && !compareValues(years, yearsNumeric2, params.yearsOp2)) return false;
+        }
+        // 參考買入價
+        if (buyPriceNumeric !== undefined) {
+          const price = row[columns.BUY_PRICE];
+          if (!compareValues(parseFloat(price), buyPriceNumeric, params.buyPriceOp)) return false;
+        }
+        // 票息
+        if (couponNumeric !== undefined) {
+          const coupon = row[columns.COUPON];
+          if (!compareValues(parseFloat(coupon), couponNumeric, params.couponOp)) return false;
+        }
+        // 下一配息日
+        if (params.nextDividendDate) {
+          const nextDividendDate = row[columns.NEXT_DIVIDEND_DATE];
+          if (!nextDividendDate) return false;
+          const formattedDate = formatDate(nextDividendDate);
+          if (formattedDate !== params.nextDividendDate) return false;
+        }
+        return true;
+      });
+    }
+    
+    // ============================================================
+    // Reset filters
+    // ============================================================
+    resetFiltersBtn.addEventListener('click', function() {
+      document.getElementById('issuer-filter').value = '';
+      document.getElementById('currency-filter').value = '';
+      document.getElementById('sp-rating-op').value = '=';
+      document.getElementById('sp-rating-filter').value = '';
+      document.getElementById('years-to-maturity-op').value = '>';
+      document.getElementById('years-to-maturity-filter').value = '';
+      document.getElementById('years-to-maturity-op2').value = '<';
+      document.getElementById('years-to-maturity-filter2').value = '';
+      document.getElementById('buy-price-op').value = '=';
+      document.getElementById('buy-price-filter').value = '';
+      document.getElementById('coupon-op').value = '=';
+      document.getElementById('coupon-filter').value = '';
+      document.getElementById('next-dividend-date-filter').value = '';
+      
+      filteredDataHot = [...allDataHot];
+      filteredDataInventory = [...allDataInventory];
+      sortStateHot = { column: null, order: 'asc' };
+      sortStateInventory = { column: null, order: 'asc' };
+      sortStateCombined = { column: null, order: 'asc' };
+
+      displayResults('hot', filteredDataHot);
+      displayResults('inventory', filteredDataInventory);
+      displayCombinedResults();
+
+      document.getElementById('tab-hot-count').textContent = filteredDataHot.length;
+      document.getElementById('tab-inventory-count').textContent = filteredDataInventory.length;
+
+      updateSelectedCounts();
+    });
+    
+    // ============================================================
+    // Display results
+    // ============================================================
+    function displayResults(sheetType, data) {
+      const tableId = `results-table-${sheetType}`;
+      const summaryTextId = `summary-text-${sheetType}`;
+      const resultTable = document.getElementById(tableId);
+      const summaryTextEl = document.getElementById(summaryTextId);
+      
+      const columns = sheetType === 'hot' ? COLUMNS_HOT : COLUMNS_INVENTORY;
+      const sortState = sheetType === 'hot' ? sortStateHot : sortStateInventory;
+      
+      resultTable.innerHTML = '';
+      
+      if (data.length === 0) {
+        summaryTextEl.innerHTML = '<i class="fas fa-info-circle"></i> 符合條件的結果: 0 筆';
+        return;
+      } else {
+        summaryTextEl.innerHTML = `<i class="fas fa-table"></i> 符合條件的結果: ${data.length} 筆`;
+      }
+      
+      // Define headers — common columns for both sheets
+      const headers = [
+        { text: '選擇', enText: 'Select', colIndex: -1, sortType: 'none', icon: 'fas fa-check-square' },
+        { text: '產品代碼', enText: 'Product Code', colIndex: columns.PRODUCT_CODE, sortType: 'string', icon: 'fas fa-barcode' },
+        { text: '發行人', enText: 'Issuer', colIndex: columns.ISSUER, sortType: 'string', icon: 'fas fa-building' },
+        { text: '幣別', enText: 'Currency', colIndex: columns.CURRENCY, sortType: 'string', icon: 'fas fa-dollar-sign' },
+        { text: '參考買入價', enText: 'Buy Price', colIndex: columns.BUY_PRICE, sortType: 'number', icon: 'fas fa-tags' },
+        { text: '標普評級', enText: 'S&P Rating', colIndex: columns.SP_RATING, sortType: 'rating', icon: 'fas fa-star' },
+        { text: '票息', enText: 'Coupon', colIndex: columns.COUPON, sortType: 'number', icon: 'fas fa-percentage' },
+        { text: '距到期年', enText: 'Years to Maturity', colIndex: columns.YEARS_TO_MATURITY, sortType: 'number', icon: 'fas fa-calendar-alt' },
+        { text: '下次配息日', enText: 'Next Interest Date', colIndex: columns.NEXT_DIVIDEND_DATE, sortType: 'date', icon: 'fas fa-calendar-day' }
+      ];
+      
+      // Add inventory-specific columns
+      if (sheetType === 'inventory') {
+        if (columns.ISSUE_DATE !== -1) {
+          headers.push({ text: '發行日', enText: 'Issue Date', colIndex: columns.ISSUE_DATE, sortType: 'date', icon: 'fas fa-calendar-plus' });
+        }
+        if (columns.RISK_LEVEL !== -1) {
+          headers.push({ text: '風險等級', enText: 'Risk Level', colIndex: columns.RISK_LEVEL, sortType: 'string', icon: 'fas fa-exclamation-triangle' });
+        }
+        if (columns.OUTSTANDING !== -1) {
+          headers.push({ text: 'Outstanding (MM)', enText: 'Outstanding', colIndex: columns.OUTSTANDING, sortType: 'number', icon: 'fas fa-chart-bar' });
+        }
+      }
+      
+      // Build header row
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headers.forEach(header => {
+        const th = document.createElement('th');
+        if (header.colIndex === -1) {
+          th.innerHTML = `<i class="${header.icon}"></i> ${header.text}<small>${header.enText}</small>`;
+        } else {
+          let sortIcon = '';
+          if (sortState.column === header.colIndex) {
+            sortIcon = sortState.order === 'asc' ? '<i class="fas fa-sort-up sort-icon"></i>' : '<i class="fas fa-sort-down sort-icon"></i>';
+          } else {
+            sortIcon = '<i class="fas fa-sort sort-icon" style="opacity: 0.3;"></i>';
+          }
+          th.innerHTML = `<i class="${header.icon}"></i> ${header.text} ${sortIcon}<small>${header.enText}</small>`;
+          th.setAttribute('data-col-index', header.colIndex);
+          th.setAttribute('data-sort-type', header.sortType);
+          th.setAttribute('data-sheet-type', sheetType);
+          th.addEventListener('click', function() {
+            const clickedCol = parseInt(this.getAttribute('data-col-index'));
+            const sortType = this.getAttribute('data-sort-type');
+            const st = this.getAttribute('data-sheet-type');
+            const state = st === 'hot' ? sortStateHot : sortStateInventory;
+            const fd = st === 'hot' ? filteredDataHot : filteredDataInventory;
+            
+            if (state.column === clickedCol) {
+              state.order = state.order === 'asc' ? 'desc' : 'asc';
+            } else {
+              state.column = clickedCol;
+              state.order = 'asc';
+            }
+            
+            fd.sort((a, b) => {
+              let aVal = a[clickedCol];
+              let bVal = b[clickedCol];
+              if (sortType === 'number') {
+                aVal = parseFloat(aVal) || 0;
+                bVal = parseFloat(bVal) || 0;
+              } else if (sortType === 'rating') {
+                aVal = convertSPRatingToNumeric(aVal);
+                bVal = convertSPRatingToNumeric(bVal);
+              } else if (sortType === 'date') {
+                aVal = formatDate(aVal) || '';
+                bVal = formatDate(bVal) || '';
+              } else {
+                aVal = aVal ? String(aVal) : "";
+                bVal = bVal ? String(bVal) : "";
+              }
+              if (aVal < bVal) return state.order === 'asc' ? -1 : 1;
+              if (aVal > bVal) return state.order === 'asc' ? 1 : -1;
+              return 0;
+            });
+            displayResults(st, fd);
+          });
+        }
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      resultTable.appendChild(thead);
+      
+      // Build data rows
+      const tbody = document.createElement('tbody');
+      data.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+        
+        // Checkbox
+        const tdSelect = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'bond-selector';
+        checkbox.dataset.rowIndex = rowIndex;
+        checkbox.dataset.sheetType = sheetType;
+        checkbox.addEventListener('change', updateSelectedCounts);
+        tdSelect.appendChild(checkbox);
+        tr.appendChild(tdSelect);
+        
+        // Product code
+        const tdCode = document.createElement('td');
+        tdCode.textContent = row[columns.PRODUCT_CODE] || '';
+        tr.appendChild(tdCode);
+
+        // Issuer
+        const tdIssuer = document.createElement('td');
+        tdIssuer.textContent = row[columns.ISSUER] || '';
+        tr.appendChild(tdIssuer);
+
+        // Currency
+        const tdCurrency = document.createElement('td');
+        tdCurrency.textContent = row[columns.CURRENCY] || '';
+        tr.appendChild(tdCurrency);
+
+        // Buy price
+        const tdPrice = document.createElement('td');
+        const price = row[columns.BUY_PRICE];
+        if (price !== undefined && price !== null && price !== '') {
+          try {
+            tdPrice.textContent = typeof price === 'number' ? price.toFixed(2) : parseFloat(price).toFixed(2);
+          } catch (e) { tdPrice.textContent = price; }
+        } else { tdPrice.textContent = ''; }
+        tr.appendChild(tdPrice);
+
+        // S&P Rating
+        const tdRating = document.createElement('td');
+        const rating = row[columns.SP_RATING];
+        if (rating) {
+          const span = document.createElement('span');
+          span.className = getRatingBadgeClass(rating);
+          span.textContent = rating;
+          tdRating.appendChild(span);
+        } else { tdRating.textContent = ''; }
+        tr.appendChild(tdRating);
+
+        // Coupon
+        const tdCoupon = document.createElement('td');
+        const coupon = row[columns.COUPON];
+        if (coupon !== undefined && coupon !== null && coupon !== '') {
+          try {
+            tdCoupon.textContent = typeof coupon === 'number' ? coupon.toFixed(2) + '%' : parseFloat(coupon).toFixed(2) + '%';
+          } catch (e) { tdCoupon.textContent = coupon; }
+        } else { tdCoupon.textContent = ''; }
+        tr.appendChild(tdCoupon);
+
+        // Years to maturity
+        const tdYears = document.createElement('td');
+        const years = row[columns.YEARS_TO_MATURITY];
+        if (years !== undefined && years !== null && years !== '') {
+          try {
+            tdYears.textContent = typeof years === 'number' ? years.toFixed(2) : parseFloat(years).toFixed(2);
+          } catch (e) { tdYears.textContent = years; }
+        } else { tdYears.textContent = ''; }
+        tr.appendChild(tdYears);
+        
+        // Next dividend date
+        const tdNextDividend = document.createElement('td');
+        const nextDividendDate = row[columns.NEXT_DIVIDEND_DATE];
+        if (nextDividendDate) {
+          const formattedDate = formatDate(nextDividendDate);
+          if (formattedDate && !formattedDate.startsWith('1900-')) {
+            tdNextDividend.textContent = formattedDate;
+          } else if (typeof nextDividendDate === 'string' && nextDividendDate.includes('/')) {
+            tdNextDividend.textContent = nextDividendDate;
+          } else {
+            tdNextDividend.textContent = typeof nextDividendDate === 'number' ? nextDividendDate.toString() : '';
+          }
+        } else { tdNextDividend.textContent = ''; }
+        tr.appendChild(tdNextDividend);
+        
+        // Inventory-specific columns
+        if (sheetType === 'inventory') {
+          if (columns.ISSUE_DATE !== -1) {
+            const tdIssueDate = document.createElement('td');
+            const issueDate = row[columns.ISSUE_DATE];
+            tdIssueDate.textContent = issueDate ? formatDate(issueDate) : '';
+            tr.appendChild(tdIssueDate);
+          }
+          if (columns.RISK_LEVEL !== -1) {
+            const tdRisk = document.createElement('td');
+            tdRisk.textContent = row[columns.RISK_LEVEL] || '';
+            tr.appendChild(tdRisk);
+          }
+          if (columns.OUTSTANDING !== -1) {
+            const tdOutstanding = document.createElement('td');
+            const outstanding = row[columns.OUTSTANDING];
+            if (outstanding !== undefined && outstanding !== null && outstanding !== '') {
+              tdOutstanding.textContent = typeof outstanding === 'number' ? outstanding.toFixed(2) : outstanding;
+            } else { tdOutstanding.textContent = ''; }
+            tr.appendChild(tdOutstanding);
+          }
+        }
+        
+        tbody.appendChild(tr);
+      });
+      resultTable.appendChild(tbody);
+    }
+    
+    // ============================================================
+    // Display combined results (merged hot + inventory)
+    // ============================================================
+    let sortStateCombined = { column: null, order: 'asc' };
+
+    function displayCombinedResults() {
+      const table = document.getElementById('results-table-combined');
+      const summaryTextEl = document.getElementById('summary-text-combined');
+      table.innerHTML = '';
+
+      // Normalize each row into a unified object with source tag
+      const combined = [];
+
+      filteredDataHot.forEach((row, idx) => {
+        combined.push({
+          _source: '熱門債券',
+          _sheetType: 'hot',
+          _rowIndex: idx,
+          productCode: row[COLUMNS_HOT.PRODUCT_CODE] || '',
+          issuer: row[COLUMNS_HOT.ISSUER] || '',
+          currency: row[COLUMNS_HOT.CURRENCY] || '',
+          buyPrice: row[COLUMNS_HOT.BUY_PRICE],
+          spRating: row[COLUMNS_HOT.SP_RATING] || '',
+          coupon: row[COLUMNS_HOT.COUPON],
+          yearsToMaturity: row[COLUMNS_HOT.YEARS_TO_MATURITY],
+          nextDividendDate: row[COLUMNS_HOT.NEXT_DIVIDEND_DATE]
+        });
+      });
+
+      filteredDataInventory.forEach((row, idx) => {
+        combined.push({
+          _source: '客戶庫存報價',
+          _sheetType: 'inventory',
+          _rowIndex: idx,
+          productCode: row[COLUMNS_INVENTORY.PRODUCT_CODE] || '',
+          issuer: row[COLUMNS_INVENTORY.ISSUER] || '',
+          currency: row[COLUMNS_INVENTORY.CURRENCY] || '',
+          buyPrice: row[COLUMNS_INVENTORY.BUY_PRICE],
+          spRating: row[COLUMNS_INVENTORY.SP_RATING] || '',
+          coupon: row[COLUMNS_INVENTORY.COUPON],
+          yearsToMaturity: row[COLUMNS_INVENTORY.YEARS_TO_MATURITY],
+          nextDividendDate: row[COLUMNS_INVENTORY.NEXT_DIVIDEND_DATE]
+        });
+      });
+
+      document.getElementById('tab-combined-count').textContent = combined.length;
+
+      if (combined.length === 0) {
+        summaryTextEl.innerHTML = '<i class="fas fa-info-circle"></i> 符合條件的結果: 0 筆';
+        return;
+      }
+      summaryTextEl.innerHTML = `<i class="fas fa-layer-group"></i> 合併結果: ${combined.length} 筆（熱門債券: ${filteredDataHot.length} 筆，客戶庫存報價: ${filteredDataInventory.length} 筆）`;
+
+      const headers = [
+        { text: '選擇', key: null, sortType: 'none', icon: 'fas fa-check-square' },
+        { text: '來源', key: '_source', sortType: 'string', icon: 'fas fa-layer-group' },
+        { text: '產品代碼', key: 'productCode', sortType: 'string', icon: 'fas fa-barcode' },
+        { text: '發行人', key: 'issuer', sortType: 'string', icon: 'fas fa-building' },
+        { text: '幣別', key: 'currency', sortType: 'string', icon: 'fas fa-dollar-sign' },
+        { text: '參考買入價', key: 'buyPrice', sortType: 'number', icon: 'fas fa-tags' },
+        { text: '標普評級', key: 'spRating', sortType: 'rating', icon: 'fas fa-star' },
+        { text: '票息', key: 'coupon', sortType: 'number', icon: 'fas fa-percentage' },
+        { text: '距到期年', key: 'yearsToMaturity', sortType: 'number', icon: 'fas fa-calendar-alt' },
+        { text: '下次配息日', key: 'nextDividendDate', sortType: 'date', icon: 'fas fa-calendar-day' }
+      ];
+
+      // Build header
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headers.forEach(header => {
+        const th = document.createElement('th');
+        if (!header.key) {
+          th.innerHTML = `<i class="${header.icon}"></i> ${header.text}`;
+        } else {
+          let sortIcon = '';
+          if (sortStateCombined.column === header.key) {
+            sortIcon = sortStateCombined.order === 'asc' ? '<i class="fas fa-sort-up sort-icon"></i>' : '<i class="fas fa-sort-down sort-icon"></i>';
+          } else {
+            sortIcon = '<i class="fas fa-sort sort-icon" style="opacity: 0.3;"></i>';
+          }
+          th.innerHTML = `<i class="${header.icon}"></i> ${header.text} ${sortIcon}`;
+          th.setAttribute('data-key', header.key);
+          th.setAttribute('data-sort-type', header.sortType);
+          th.style.cursor = 'pointer';
+          th.addEventListener('click', function() {
+            const key = this.getAttribute('data-key');
+            const sortType = this.getAttribute('data-sort-type');
+            if (sortStateCombined.column === key) {
+              sortStateCombined.order = sortStateCombined.order === 'asc' ? 'desc' : 'asc';
+            } else {
+              sortStateCombined.column = key;
+              sortStateCombined.order = 'asc';
+            }
+            combined.sort((a, b) => {
+              let aVal = a[key];
+              let bVal = b[key];
+              if (sortType === 'number') {
+                aVal = parseFloat(aVal) || 0;
+                bVal = parseFloat(bVal) || 0;
+              } else if (sortType === 'rating') {
+                aVal = convertSPRatingToNumeric(aVal);
+                bVal = convertSPRatingToNumeric(bVal);
+              } else if (sortType === 'date') {
+                aVal = formatDate(aVal) || '';
+                bVal = formatDate(bVal) || '';
+              } else {
+                aVal = aVal ? String(aVal) : '';
+                bVal = bVal ? String(bVal) : '';
+              }
+              if (aVal < bVal) return sortStateCombined.order === 'asc' ? -1 : 1;
+              if (aVal > bVal) return sortStateCombined.order === 'asc' ? 1 : -1;
+              return 0;
+            });
+            renderCombinedTable(combined);
+          });
+        }
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      renderCombinedTable(combined);
+    }
+
+    function renderCombinedTable(combined) {
+      const table = document.getElementById('results-table-combined');
+      // Remove existing tbody
+      const existingTbody = table.querySelector('tbody');
+      if (existingTbody) existingTbody.remove();
+
+      const tbody = document.createElement('tbody');
+      combined.forEach((item, idx) => {
+        const tr = document.createElement('tr');
+
+        // Source tag color
+        if (item._source === '熱門債券') {
+          tr.style.borderLeft = '3px solid var(--primary)';
+        } else {
+          tr.style.borderLeft = '3px solid var(--warning)';
+        }
+
+        // Checkbox
+        const tdSelect = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'bond-selector';
+        checkbox.dataset.rowIndex = item._rowIndex;
+        checkbox.dataset.sheetType = item._sheetType;
+        checkbox.addEventListener('change', updateSelectedCounts);
+        tdSelect.appendChild(checkbox);
+        tr.appendChild(tdSelect);
+
+        // Source badge
+        const tdSource = document.createElement('td');
+        const sourceSpan = document.createElement('span');
+        sourceSpan.className = item._source === '熱門債券' ? 'source-badge source-hot' : 'source-badge source-inventory';
+        sourceSpan.innerHTML = item._source === '熱門債券'
+          ? '<i class="fas fa-fire"></i> 熱門債券'
+          : '<i class="fas fa-warehouse"></i> 客戶庫存';
+        tdSource.appendChild(sourceSpan);
+        tr.appendChild(tdSource);
+
+        // Product code
+        const tdCode = document.createElement('td');
+        tdCode.textContent = item.productCode;
+        tr.appendChild(tdCode);
+
+        // Issuer
+        const tdIssuer = document.createElement('td');
+        tdIssuer.textContent = item.issuer;
+        tr.appendChild(tdIssuer);
+
+        // Currency
+        const tdCurrency = document.createElement('td');
+        tdCurrency.textContent = item.currency;
+        tr.appendChild(tdCurrency);
+
+        // Buy price
+        const tdPrice = document.createElement('td');
+        if (item.buyPrice !== undefined && item.buyPrice !== null && item.buyPrice !== '') {
+          try { tdPrice.textContent = parseFloat(item.buyPrice).toFixed(2); } catch (e) { tdPrice.textContent = item.buyPrice; }
+        }
+        tr.appendChild(tdPrice);
+
+        // S&P Rating
+        const tdRating = document.createElement('td');
+        if (item.spRating) {
+          const span = document.createElement('span');
+          span.className = getRatingBadgeClass(item.spRating);
+          span.textContent = item.spRating;
+          tdRating.appendChild(span);
+        }
+        tr.appendChild(tdRating);
+
+        // Coupon
+        const tdCoupon = document.createElement('td');
+        if (item.coupon !== undefined && item.coupon !== null && item.coupon !== '') {
+          try { tdCoupon.textContent = parseFloat(item.coupon).toFixed(2) + '%'; } catch (e) { tdCoupon.textContent = item.coupon; }
+        }
+        tr.appendChild(tdCoupon);
+
+        // Years to maturity
+        const tdYears = document.createElement('td');
+        if (item.yearsToMaturity !== undefined && item.yearsToMaturity !== null && item.yearsToMaturity !== '') {
+          try { tdYears.textContent = parseFloat(item.yearsToMaturity).toFixed(2); } catch (e) { tdYears.textContent = item.yearsToMaturity; }
+        }
+        tr.appendChild(tdYears);
+
+        // Next dividend date
+        const tdDate = document.createElement('td');
+        if (item.nextDividendDate) {
+          const formatted = formatDate(item.nextDividendDate);
+          tdDate.textContent = formatted && !formatted.startsWith('1900-') ? formatted : '';
+        }
+        tr.appendChild(tdDate);
+
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+    }
+
+    // ============================================================
+    // Update selected counts
+    // ============================================================
+    function updateSelectedCounts() {
+      const hotChecked = document.querySelectorAll('#results-table-hot .bond-selector:checked').length;
+      const invChecked = document.querySelectorAll('#results-table-inventory .bond-selector:checked').length;
+      const total = hotChecked + invChecked;
+      
+      document.getElementById('hot-selected-count').textContent = `熱門債券: ${hotChecked}`;
+      document.getElementById('inventory-selected-count').textContent = `客戶庫存: ${invChecked}`;
+      document.getElementById('total-selected-count').textContent = `合計: ${total}`;
+      
+      const bar = document.getElementById('selected-count-bar');
+      bar.style.display = total > 0 ? 'flex' : 'none';
+    }
+    
+    // ============================================================
+    // Export functionality
+    // ============================================================
+    function addExportFunctionality() {
+      const actionsDiv = document.getElementById('export-actions');
+      actionsDiv.innerHTML = ''; 
+      
+      // Export combined button
+      const exportBtn = document.createElement('button');
+      exportBtn.id = 'export-selected-btn';
+      exportBtn.className = 'btn btn-primary';
+      exportBtn.innerHTML = '<i class="fas fa-file-export"></i> 匯出全部選定債券 (合併)';
+      exportBtn.addEventListener('click', exportSelectedBonds);
+      actionsDiv.appendChild(exportBtn);
+      
+      // Open calculator
+      const openCalculatorBtn = document.createElement('button');
+      openCalculatorBtn.id = 'open-calculator-btn';
+      openCalculatorBtn.className = 'btn btn-success';
+      openCalculatorBtn.innerHTML = '<i class="fas fa-calculator"></i> 開啟計算器';
+      openCalculatorBtn.addEventListener('click', function() {
+        window.open('beautified-bond-calculator.html', '_blank');
+      });
+      actionsDiv.appendChild(openCalculatorBtn);
+      
+      // Select all (current tab)
+      const selectAllBtn = document.createElement('button');
+      selectAllBtn.id = 'select-all-btn';
+      selectAllBtn.className = 'btn btn-primary';
+      selectAllBtn.innerHTML = '<i class="fas fa-check-double"></i> 全選 (當前分頁)';
+      selectAllBtn.addEventListener('click', function() {
+        const tableId = `results-table-${activeTab}`;
+        document.querySelectorAll(`#${tableId} .bond-selector`).forEach(cb => cb.checked = true);
+        updateSelectedCounts();
+      });
+      actionsDiv.appendChild(selectAllBtn);
+
+      // Select all both sheets
+      const selectAllBothBtn = document.createElement('button');
+      selectAllBothBtn.id = 'select-all-both-btn';
+      selectAllBothBtn.className = 'btn btn-warning';
+      selectAllBothBtn.innerHTML = '<i class="fas fa-check-double"></i> 全選 (兩個分頁)';
+      selectAllBothBtn.addEventListener('click', function() {
+        document.querySelectorAll('.bond-selector').forEach(cb => cb.checked = true);
+        updateSelectedCounts();
+      });
+      actionsDiv.appendChild(selectAllBothBtn);
+      
+      // Deselect all
+      const deselectAllBtn = document.createElement('button');
+      deselectAllBtn.id = 'deselect-all-btn';
+      deselectAllBtn.className = 'btn btn-danger';
+      deselectAllBtn.innerHTML = '<i class="fas fa-times"></i> 取消全選';
+      deselectAllBtn.addEventListener('click', function() {
+        document.querySelectorAll('.bond-selector').forEach(cb => cb.checked = false);
+        updateSelectedCounts();
+      });
+      actionsDiv.appendChild(deselectAllBtn);
+    }
+    
+    function exportSelectedBonds() {
+      const allChecked = document.querySelectorAll('.bond-selector:checked');
+      if (allChecked.length === 0) {
+        alert('請至少選擇一個債券');
+        return;
+      }
+      
+      const selectedBonds = [];
+      
+      allChecked.forEach(checkbox => {
+        const rowIndex = parseInt(checkbox.dataset.rowIndex);
+        const sheetType = checkbox.dataset.sheetType;
+        const columns = sheetType === 'hot' ? COLUMNS_HOT : COLUMNS_INVENTORY;
+        const dataSource = sheetType === 'hot' ? filteredDataHot : filteredDataInventory;
+        const row = dataSource[rowIndex];
+        
+        if (!row) return;
+        
+        let nextDividendDate = row[columns.NEXT_DIVIDEND_DATE];
+        if (nextDividendDate) {
+          nextDividendDate = formatDate(nextDividendDate);
+        } else {
+          nextDividendDate = new Date().toISOString().split('T')[0].replace(/-/g, '/');
+        }
+        
+        selectedBonds.push({
+          code: row[columns.PRODUCT_CODE] || '',
+          name: row[columns.ISSUER] || '',
+          currency: row[columns.CURRENCY] || '',
+          rating: row[columns.SP_RATING] || '',
+          maturity: "113%", 
+          remainingTerm: parseFloat(row[columns.YEARS_TO_MATURITY]) || 0,
+          referencePrice: parseFloat(row[columns.BUY_PRICE]) || 0,
+          investmentAmount: 100000, 
+          loanPercentage: "72%", 
+          interestRate: (row[columns.COUPON] || 0) + "%",
+          dividendFrequency: 2, 
+          nextDividendDate: nextDividendDate, 
+          loanCost: 0.0207,
+          source: sheetType === 'hot' ? '熱門債券' : '客戶庫存報價'
+        });
+      });
+      
+      localStorage.setItem('selectedBonds', JSON.stringify(selectedBonds));
+      
+      const hotCount = selectedBonds.filter(b => b.source === '熱門債券').length;
+      const invCount = selectedBonds.filter(b => b.source === '客戶庫存報價').length;
+      
+      alert(`已成功匯出 ${selectedBonds.length} 個債券。\n` +
+            `（熱門債券: ${hotCount} 個, 客戶庫存報價: ${invCount} 個）\n` +
+            `請點擊「開啟計算器」按鈕或直接開啟債券計算器頁面。`);
+    }
+    
+    // ============================================================
+    // Drag & drop
+    // ============================================================
+    const dropArea = document.getElementById('drop-area');
+    dropArea.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.style.backgroundColor = 'rgba(67, 97, 238, 0.1)';
+      this.style.borderColor = 'var(--primary)';
+    });
+    dropArea.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.style.backgroundColor = 'var(--neutral-light)';
+      this.style.borderColor = 'var(--neutral)';
+    });
+    dropArea.addEventListener('drop', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.style.backgroundColor = 'var(--neutral-light)';
+      this.style.borderColor = 'var(--neutral)';
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        fileSelectedDiv.textContent = `已選擇: ${e.dataTransfer.files[0].name}`;
+        fileSelectedDiv.style.display = 'block';
+        processFile(e.dataTransfer.files[0]);
+      }
+    });
+  </script>
+</body>
+</html>

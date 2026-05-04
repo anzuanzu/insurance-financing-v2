@@ -1,0 +1,1924 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基金質借收益率評估表</title>
+  <!-- 引入 XLSX 庫 (例如：使用 CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- 引入 Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- 引入 Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --accent-color: #e74c3c;
+      --success-color: #2ecc71;
+      --warning-color: #f39c12;
+      --info-color: #4AA0E4;
+      --light-color: #ecf0f1;
+      --dark-color: #34495e;
+      --gray-color: #95a5a6;
+      --bg-color: #f5f7fa;
+      --card-bg: #ffffff;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Noto Sans TC', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--dark-color);
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      background-color: var(--card-bg);
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    
+    h1, h2, h3, h4 {
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 1.8rem;
+      color: var(--primary-color);
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--light-color);
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+      border-left: 4px solid var(--secondary-color);
+      padding-left: 15px;
+    }
+    
+    .header-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 25px;
+      background: linear-gradient(to right, #eef7ff, #f0f8ff);
+      padding: 18px;
+      border-radius: var(--border-radius);
+      border: 1px solid #d1e6ff;
+    }
+    
+    .header-parameter {
+      display: flex;
+      align-items: center;
+    }
+    
+    .header-parameter strong {
+      margin-right: 10px;
+      color: var(--primary-color);
+      min-width: 120px;
+    }
+    
+    .product-section {
+      margin-bottom: 35px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      border: 1px solid #eaeaea;
+    }
+    
+    .product-section h2 {
+      padding: 15px;
+      margin: 0;
+      background-color: #f8f9fa;
+      border-left: none;
+      border-bottom: 1px solid #eaeaea;
+      display: flex;
+      align-items: center;
+    }
+    
+    .product-section h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 18px;
+      background-color: var(--secondary-color);
+      margin-right: 12px;
+    }
+    
+    .bond-section h2::before {
+      background-color: var(--secondary-color);
+    }
+    
+    .fund-section h2::before {
+      background-color: var(--success-color);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0;
+      font-size: 0.9rem;
+    }
+    
+    th, td {
+      border: 1px solid #e6e6e6;
+      padding: 12px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: var(--primary-color);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .bond-table th {
+      background-color: #e8f4fd;
+    }
+    
+    .fund-table th {
+      background-color: #e8f5e9;
+    }
+    
+    tr:hover {
+      background-color: #f7faff;
+    }
+    
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 25px;
+      padding: 18px;
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      border: 1px solid #eaeaea;
+    }
+    
+    button, input, select {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+    
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      color: white;
+      transition: var(--transition);
+    }
+    
+    button i {
+      margin-right: 8px;
+    }
+    
+    .btn-primary {
+      background-color: var(--secondary-color);
+    }
+    
+    .btn-primary:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn-secondary {
+      background-color: var(--info-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: #3490c4;
+    }
+    
+    .btn-success {
+      background-color: var(--success-color);
+    }
+    
+    .btn-success:hover {
+      background-color: #27ae60;
+    }
+    
+    .btn-danger {
+      background-color: var(--accent-color);
+    }
+    
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+    
+    .btn-sm {
+      padding: 6px 10px;
+      min-width: auto;
+      font-size: 0.8rem;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--primary-color);
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+    }
+    
+    .modal-content {
+      background-color: var(--card-bg);
+      margin: 5% auto;
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      width: 500px;
+      max-width: 95%;
+      animation: modalFadeIn 0.3s;
+    }
+    
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .modal h2 {
+      margin-top: 0;
+      border-left: none;
+      padding-left: 0;
+      border-bottom: 1px solid var(--light-color);
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .close {
+      color: var(--gray-color);
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: -8px;
+    }
+    
+    .close:hover {
+      color: var(--accent-color);
+    }
+    
+    .mortgage-section {
+      margin: 25px 0;
+      padding: 20px;
+      background-color: #f0f8ff;
+      border-radius: var(--border-radius);
+      border: 1px solid #d1e6ff;
+    }
+    
+    .mortgage-section h3 {
+      margin-top: 0;
+      color: var(--info-color);
+      border-bottom: 1px solid #d1e6ff;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+    
+    .mortgage-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-end;
+    }
+    
+    .mortgage-results {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-top: 20px;
+      border: 1px solid #eaeaea;
+    }
+    
+    .mortgage-results h4 {
+      margin-top: 0;
+      color: var(--primary-color);
+      border-bottom: 1px solid #eaeaea;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+    
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .stats-card {
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border: 1px solid #eaeaea;
+    }
+    
+    .stats-card .stats-label {
+      color: var(--gray-color);
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    
+    .stats-card .stats-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+    
+    .stats-card .stats-value.positive {
+      color: var(--success-color);
+    }
+    
+    .stats-card .stats-value.negative {
+      color: var(--accent-color);
+    }
+    
+    .stats-card .stats-secondary {
+      color: var(--gray-color);
+      font-size: 1rem;
+      margin-top: 5px;
+    }
+    
+    .annual-data {
+      margin-bottom: 30px;
+    }
+    
+    .annual-data th {
+      background-color: #f5f7fa;
+    }
+    
+    .annual-data td {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    
+    .footer-note {
+      text-align: center;
+      margin-top: 40px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      color: var(--gray-color);
+      font-size: 0.9rem;
+      border: 1px solid #eaeaea;
+    }
+    
+    /* 響應式設計 */
+    @media (max-width: 1024px) {
+      .header-info {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .container {
+        padding: 20px;
+      }
+      
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .controls {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
+    
+    /* 打印樣式 */
+    @media print {
+      .controls, button, .modal { 
+        display: none !important; 
+      }
+      
+      body, .container { 
+        background-color: white; 
+        padding: 0; 
+        margin: 0; 
+        box-shadow: none;
+        color: black;
+      }
+      
+      .mortgage-results { 
+        display: block !important; 
+      }
+      
+      .product-section {
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+      
+      table {
+        border-collapse: collapse;
+      }
+      
+      th, td {
+        border: 1px solid #ddd;
+      }
+    }
+    
+    /* 漂亮的滾動條 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
+    }
+    
+    /* 表單元素統一樣式 */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+    
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    select:focus {
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+      outline: none;
+    }
+    
+    /* 提示信息樣式 */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+    }
+    
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    /* 添加新的通知樣式 */
+    .notification {
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: var(--border-radius);
+      background-color: #e8f4fd;
+      border-left: 5px solid var(--secondary-color);
+      display: flex;
+      align-items: center;
+      animation: fadeIn 0.5s;
+    }
+
+    .notification i {
+      font-size: 1.5rem;
+      color: var(--secondary-color);
+      margin-right: 15px;
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: var(--primary-color);
+    }
+
+    .notification-message {
+      color: var(--dark-color);
+      font-size: 0.95rem;
+    }
+
+    .notification-action {
+      margin-left: 15px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 新增拖曳排序功能樣式 */
+    .drag-handle {
+      cursor: move;
+      color: var(--gray-color);
+      margin-right: 8px;
+      transition: color 0.2s;
+    }
+
+    .drag-handle:hover {
+      color: var(--secondary-color);
+    }
+
+    tr.dragging {
+      opacity: 0.5;
+      background-color: #f0f8ff;
+      border: 2px dashed var(--secondary-color);
+    }
+
+    tr.drag-over {
+      border-top: 2px solid var(--secondary-color);
+    }
+
+    .sort-info {
+      display: flex;
+      align-items: center;
+      margin-left: 15px;
+      color: var(--info-color);
+      font-size: 0.9rem;
+      font-weight: normal;
+      animation: fadeIn 0.5s;
+    }
+
+    .sort-info i {
+      margin-right: 5px;
+    }
+
+    /* 添加 datalist 下拉樣式 */
+    .product-select-container {
+      position: relative;
+      width: 100%;
+    }
+    
+    .product-select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+    
+    .product-select:focus {
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+      outline: none;
+    }
+
+    .product-datalist {
+      display: none;
+      position: absolute;
+      width: 100%;
+      max-height: 200px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 0 0 6px 6px;
+      z-index: 100;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .product-option {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    
+    .product-option:hover {
+      background-color: #f5f7fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>基金質借收益率評估表 <small style="font-size: 0.8rem; font-weight: normal;">內部教育訓練使用 僅供參考</small></h1>
+    
+    <div class="controls">
+      <button id="addFundBtn" class="btn-primary"><i class="fas fa-plus-circle"></i> 新增基金/債券</button>
+      <button id="exportBtn" class="btn-secondary"><i class="fas fa-print"></i> 列印</button>
+      <button id="calculateBtn" class="btn-primary"><i class="fas fa-calculator"></i> 重新計算</button>
+      <button id="clearBtn" class="btn-danger"><i class="fas fa-trash-alt"></i> 清除數據</button>
+    </div>
+    
+    <div class="header-info">
+      <div class="header-parameter">
+        <strong><i class="fas fa-exchange-alt"></i> 匯率:</strong> 
+        <input type="number" id="exchangeRate" value="32" step="0.01" min="0" style="width:100px">
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-percentage"></i> 基金/債券借款成本:</strong> 
+        <input type="number" id="fundLoanCost" value="2.95" step="0.01" min="0" max="100" style="width:100px">%
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-home"></i> 房貸借款成本:</strong> 
+        <input type="number" id="mortgageLoanCost" value="2.60" step="0.01" min="0" max="100" style="width:100px">%
+      </div>
+      <div>
+        <button id="updateRatesBtn" class="btn-success"><i class="fas fa-sync-alt"></i> 更新參數</button>
+      </div>
+    </div>
+    
+    <!-- 房貸輸入區塊 -->
+    <div class="mortgage-section">
+      <h3><i class="fas fa-home"></i> 房貸設定</h3>
+      <div class="mortgage-inputs">
+        <div class="form-group">
+          <label for="mortgageAmount">房屋貸款金額(台幣):</label>
+          <input type="number" id="mortgageAmount" value="30000000" step="100000" min="0">
+        </div>
+      </div>
+      <div class="mortgage-results" style="display:none;">
+        <h4><i class="fas fa-chart-line"></i> 計算結果</h4>
+        <div class="stats-row">
+          <div class="stats-label">總淨現金流 (台幣):</div>
+          <div class="stats-value" id="netCashFlow">0</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 基金區塊 -->
+    <div class="product-section fund-section">
+      <h2>
+        <i class="fas fa-chart-pie"></i> 基金/債券 標的
+        <div class="sort-info">
+          <i class="fas fa-arrows-alt"></i> 可拖曳排序
+        </div>
+      </h2>
+      <div class="table-container">
+        <table class="fund-table" id="fundTable">
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>商品代碼</th>
+              <th>商品名稱</th>
+              <th>追繳維持率</th>
+              <th>投資金額(台幣)</th>
+              <th>質借成數</th>
+              <th>質借金額</th>
+              <th>利率</th>
+              <th>配息頻率</th>
+              <th>操作</th>
+              <th>基金資訊</th>
+            </tr>
+          </thead>
+          <tbody id="fundTableBody">
+            <!-- 基金數據將通過 JavaScript 動態填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stats-card">
+        <div class="stats-label">整戶維持率</div>
+        <div class="stats-value" id="totalPerformance">138.89%</div>
+        <div class="stats-secondary" id="totalPerformanceValue">1,111.948</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-label">整戶追繳維持率</div>
+        <div class="stats-value" id="historicalHighPerformance">140.00%</div>
+        <div class="stats-secondary" id="historicalHighValue">904.681</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-label">整戶追繳跌幅</div>
+        <div class="stats-value negative" id="riskDrop">-18.64%</div>
+      </div>
+    </div>
+    
+    <table class="annual-data">
+      <thead>
+        <tr>
+          <th>每年配息(台幣)</th>
+          <th>每年借款成本(台幣)</th>
+          <th>扣除利息每年現金流(台幣)</th>
+          <th>扣除利息每月現金流(台幣)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="annualDividend">58,731</td>
+          <td id="annualDebtCost">16,572</td>
+          <td id="annualCashFlow">1,349,079</td>
+          <td id="monthlyCashFlow">112,423</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="footer-note">
+      <i class="fas fa-info-circle"></i> 以上僅供參考 僅作內部教育訓練使用
+    </div>
+  </div>
+  
+  <!-- 新增基金對話框 -->
+  <div id="addFundModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2><i class="fas fa-plus-circle"></i> 新增基金/債券</h2>
+      <div class="form-group">
+        <label for="searchProduct">搜尋基金/債券:</label>
+        <input type="text" id="searchProduct" placeholder="輸入代碼或名稱搜尋..." autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="productType">商品類型:</label>
+        <select id="productType">
+          <option value="fund">基金</option>
+          <option value="bond">債券</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="fundCode">商品代碼:</label>
+        <div class="product-select-container">
+          <input type="text" id="fundCode" list="productCodeList" class="product-select" autocomplete="off" required>
+          <div id="productCodeOptions" class="product-datalist"></div>
+      </div>
+      </div>
+      <div class="form-group">
+        <label for="fundName">商品名稱:</label>
+        <div class="product-select-container">
+          <input type="text" id="fundName" list="productNameList" class="product-select" autocomplete="off" required>
+          <div id="productNameOptions" class="product-datalist"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="maturity">追繳維持率:</label>
+        <input type="text" id="maturity" value="140%">
+      </div>
+      <div class="form-group">
+        <label for="fundInvestmentAmount">投資金額(台幣):</label>
+        <input type="number" id="fundInvestmentAmount" value="0" min="0" step="100000" required>
+      </div>
+      <div class="form-group">
+        <label for="loanPercentage">質借成數:</label>
+        <input type="text" id="loanPercentage" value="45%">
+      </div>
+      <div class="form-group">
+        <label for="interestRate">利率(%):</label>
+        <input type="text" id="interestRate" placeholder="例如: 5.5%">
+      </div>
+      <div class="form-group">
+        <label for="dividendFrequency">配息頻率:</label>
+        <select id="dividendFrequency">
+          <option value="12">月配</option>
+          <option value="4">季配</option>
+          <option value="1">年配</option>
+          <option value="0">不配息</option>
+        </select>
+      </div>
+      <button id="saveFundBtn" class="btn-primary"><i class="fas fa-save"></i> 儲存</button>
+    </div>
+  </div>
+  
+  <!-- 編輯基金對話框 -->
+  <div id="editFundModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2><i class="fas fa-edit"></i> 編輯基金/債券</h2>
+      <div class="form-group">
+        <label for="editSearchProduct">搜尋基金/債券:</label>
+        <input type="text" id="editSearchProduct" placeholder="輸入代碼或名稱搜尋..." autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="productTypeEdit">商品類型:</label>
+        <select id="productTypeEdit">
+          <option value="fund">基金</option>
+          <option value="bond">債券</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editFundCode">商品代碼:</label>
+        <div class="product-select-container">
+          <input type="text" id="editFundCode" list="editProductCodeList" class="product-select" autocomplete="off" required>
+          <div id="editProductCodeOptions" class="product-datalist"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="editFundName">商品名稱:</label>
+        <div class="product-select-container">
+          <input type="text" id="editFundName" list="editProductNameList" class="product-select" autocomplete="off" required>
+          <div id="editProductNameOptions" class="product-datalist"></div>
+      </div>
+    </div>
+      <div class="form-group">
+        <label for="editMaturity">追繳維持率:</label>
+        <input type="text" id="editMaturity">
+  </div>
+      <div class="form-group">
+        <label for="editInvestmentAmount">投資金額(台幣):</label>
+        <input type="number" id="editInvestmentAmount" min="0" step="100000">
+      </div>
+      <div class="form-group">
+        <label for="editLoanPercentage">質借成數:</label>
+        <input type="text" id="editLoanPercentage">
+      </div>
+      <div class="form-group">
+        <label for="editInterestRate">利率:</label>
+        <input type="text" id="editInterestRate">
+      </div>
+      <div class="form-group">
+        <label for="editDividendFrequency">配息頻率:</label>
+        <select id="editDividendFrequency">
+          <option value="12">月配</option>
+          <option value="4">季配</option>
+          <option value="1">年配</option>
+          <option value="0">不配息</option>
+        </select>
+      </div>
+      <input type="hidden" id="editFundIndex">
+      <button id="updateFundBtn" class="btn-primary"><i class="fas fa-save"></i> 更新</button>
+    </div>
+  </div>
+  
+  <!-- 引入基金資料 -->
+  <script src="fund_data.js"></script>
+  
+  <script>
+    // 添加預載商品數據
+    // 從外部資料檔案導入基金和債券數據
+    const bondProducts = externalBondProducts || [];
+    const fundProducts = externalFundProducts || [];
+    
+    // 初始基金數據
+    let initialFunds = [
+      {
+        code: "0084B007",
+        name: "PIMCO多元收益債券基金-BM級類別-美元-穩定月收息股份",
+        maturity: "140%",
+        investmentAmount: 30000000,
+        loanPercentage: "45%",
+        loanAmount: 13500000,
+        interestRate: "9.0%",
+        dividendFrequency: 12,
+        loanCost: 0.0295,
+        hasBeenEdited: false
+      },
+      {
+        code: "0092B013",
+        name: "路博邁NB策略收益基金E股-美元-月配息",
+        maturity: "",
+        investmentAmount: 13500000,
+        loanPercentage: "",
+        loanAmount: 0,
+        interestRate: "7.0%",
+        dividendFrequency: 12,
+        loanCost: 0.0295,
+        hasBeenEdited: false
+      }
+    ];
+    
+    // 格式化數字為千分位
+    function formatNumber(number) {
+      return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+    
+    // 拖曳排序相關變數
+    let draggedItem = null;
+    
+    // 渲染基金表格
+    function renderFundTable() {
+      const tableBody = document.querySelector("#fundTableBody");
+      tableBody.innerHTML = "";
+      
+      funds.forEach((fund, index) => {
+        const row = document.createElement("tr");
+        row.setAttribute("draggable", "true");
+        row.setAttribute("data-index", index);
+        
+        // 轉換配息頻率為文字
+        let dividendFrequencyText = "";
+        switch(fund.dividendFrequency) {
+          case 12: dividendFrequencyText = "月配"; break;
+          case 4: dividendFrequencyText = "季配"; break;
+          case 1: dividendFrequencyText = "年配"; break;
+          case 0: dividendFrequencyText = "不配息"; break;
+          default: dividendFrequencyText = fund.dividendFrequency.toString();
+        }
+        
+        row.innerHTML = `
+          <td><i class="fas fa-grip-vertical drag-handle"></i></td>
+          <td>${fund.code}</td>
+          <td>${fund.name}</td>
+          <td>${fund.maturity}</td>
+          <td>${formatNumber(fund.investmentAmount)}</td>
+          <td>${fund.loanPercentage}</td>
+          <td>${fund.loanAmount > 0 ? formatNumber(fund.loanAmount) : ""}</td>
+          <td>${fund.interestRate}</td>
+          <td>${dividendFrequencyText}</td>
+          <td>
+            <button class="btn-secondary btn-sm edit-btn" data-index="${index}"><i class="fas fa-edit"></i> 編輯</button>
+            <button class="btn-danger btn-sm delete-btn" data-index="${index}"><i class="fas fa-trash-alt"></i> 刪除</button>
+          </td>
+          <td>
+            <a href="https://www.cathaybk.com.tw/cathaybk/personal/investment/fund/details/?fundid=${fund.code}#tab6" target="_blank" class="btn-info btn-sm"><i class="fas fa-info-circle"></i> 查看</a>
+          </td>
+        `;
+        
+        // 添加拖曳事件監聽器
+        row.addEventListener("dragstart", function(e) {
+          draggedItem = this;
+          setTimeout(() => {
+            this.classList.add("dragging");
+          }, 0);
+        });
+        
+        row.addEventListener("dragend", function() {
+          this.classList.remove("dragging");
+          draggedItem = null;
+          
+          // 重新排序 funds 數組以匹配 DOM 順序
+          const rows = Array.from(document.querySelectorAll("#fundTableBody tr"));
+          const newFunds = rows.map(row => {
+            const index = parseInt(row.getAttribute("data-index"));
+            return funds[index];
+          });
+          
+          funds = newFunds;
+          renderFundTable();
+          calculateAllStats();
+        });
+        
+        row.addEventListener("dragover", function(e) {
+          e.preventDefault();
+        });
+        
+        row.addEventListener("dragenter", function(e) {
+          e.preventDefault();
+          if (this !== draggedItem) {
+            this.classList.add("drag-over");
+          }
+        });
+        
+        row.addEventListener("dragleave", function() {
+          this.classList.remove("drag-over");
+        });
+        
+        row.addEventListener("drop", function(e) {
+          e.preventDefault();
+          this.classList.remove("drag-over");
+          
+          if (this !== draggedItem) {
+            // 獲取兩個元素的位置
+            const allRows = document.querySelectorAll("#fundTableBody tr");
+            const currentPos = Array.from(allRows).indexOf(draggedItem);
+            const targetPos = Array.from(allRows).indexOf(this);
+            
+            // 移動 DOM 元素
+            if (currentPos < targetPos) {
+              this.parentNode.insertBefore(draggedItem, this.nextSibling);
+            } else {
+              this.parentNode.insertBefore(draggedItem, this);
+            }
+          }
+        });
+        
+        tableBody.appendChild(row);
+      });
+      
+      document.querySelectorAll("#fundTable .delete-btn").forEach(button => {
+        button.addEventListener("click", function() {
+          const index = parseInt(this.getAttribute("data-index"));
+          funds.splice(index, 1);
+          renderFundTable();
+          calculateAllStats();
+        });
+      });
+      
+      document.querySelectorAll("#fundTable .edit-btn").forEach(button => {
+        button.addEventListener("click", function() {
+          const index = parseInt(this.getAttribute("data-index"));
+          openFundEditModal(index);
+        });
+      });
+    }
+    
+    // 計算所有統計數據
+    function calculateAllStats() {
+      // 計算投資金額(台幣)加總
+      const totalInvestment = funds.reduce((sum, fund) => sum + fund.investmentAmount, 0);
+      
+      // 獲取第一檔商品的質借金額
+      const firstProductLoanAmount = funds.length > 0 ? funds[0].loanAmount : 0;
+      // 獲取第一檔商品的投資金額
+      const firstProductInvestmentAmount = funds.length > 0 ? funds[0].investmentAmount : 0;
+      
+      console.log("Funds array:", JSON.stringify(funds));
+      console.log("First product loan amount:", firstProductLoanAmount);
+      console.log("First product investment amount:", firstProductInvestmentAmount);
+      
+      // 整戶維持率 = 第一檔投資金額 / 第一檔質借金額 * 100%
+      let totalPerformance = 0;
+      if (firstProductLoanAmount > 0) {
+        totalPerformance = (firstProductInvestmentAmount / firstProductLoanAmount * 100).toFixed(2);
+      }
+      
+      document.getElementById("totalPerformance").textContent = totalPerformance + "%";
+      // 整戶維持率的數值計算為第一筆商品的投資金額
+      document.getElementById("totalPerformanceValue").textContent = formatNumber(firstProductInvestmentAmount);
+      
+      // 整戶追繳維持率 = 第一筆商品的質借金額 * 第一筆商品的追繳維持率
+      const maintenanceRate = 140; // 默認追繳維持率為140%
+      
+      // 獲取第一筆商品的追繳維持率（如果有設定）
+      let firstProductMaintenanceRate = maintenanceRate;
+      if (funds.length > 0 && funds[0].maturity && funds[0].maturity.trim() !== "") {
+        // 從字符串中移除%符號並轉為數字
+        firstProductMaintenanceRate = parseFloat(funds[0].maturity.replace("%", ""));
+      }
+      
+      // 計算整戶追繳維持率 = 第一筆商品的質借金額 * 第一筆商品的追繳維持率
+      const totalMaintenanceValue = firstProductLoanAmount * (firstProductMaintenanceRate / 100);
+      
+      // 顯示整戶追繳維持率的百分比
+      document.getElementById("historicalHighPerformance").textContent = firstProductMaintenanceRate.toFixed(2) + "%";
+      // 顯示整戶追繳維持率的金額
+      document.getElementById("historicalHighValue").textContent = formatNumber(Math.round(totalMaintenanceValue));
+      
+      let riskDrop = 0;
+      
+      // 整戶追繳跌幅 = 整戶追繳維持率的數值/整戶維持率的數值 - 1
+      if (firstProductInvestmentAmount > 0) {
+        // 整戶追繳維持率的數值 / 整戶維持率的數值 - 1
+        riskDrop = (totalMaintenanceValue / firstProductInvestmentAmount - 1) * 100;
+        riskDrop = riskDrop.toFixed(2);
+      }
+      
+      document.getElementById("riskDrop").textContent = riskDrop + "%";
+      
+      let annualDividend = 0;
+      funds.forEach(fund => {
+        const interestRate = parseFloat(fund.interestRate.replace("%", "")) / 100;
+        // 根據配息頻率計算年度配息 (直接使用台幣金額)
+        annualDividend += fund.investmentAmount * interestRate;
+      });
+      
+      // 取得參數
+      const fundLoanCostRate = parseFloat(document.getElementById("fundLoanCost").value) / 100;
+      const mortgageAmount = parseFloat(document.getElementById("mortgageAmount").value);
+      const mortgageLoanCostRate = parseFloat(document.getElementById("mortgageLoanCost").value) / 100;
+      const exchangeRate = parseFloat(document.getElementById("exchangeRate").value);
+      
+      console.log("Parameters:", {
+        fundLoanCostRate,
+        mortgageAmount,
+        mortgageLoanCostRate,
+        exchangeRate
+      });
+      
+      // 按照新公式計算借款成本: 房屋貸款金額(台幣)*房貸借款成本+第一檔商品的質借金額*基金/債券借款成本
+      // 房貸成本
+      const mortgageAnnualDebtCostTWD = mortgageAmount * mortgageLoanCostRate;
+      console.log("Mortgage annual debt cost TWD:", mortgageAnnualDebtCostTWD);
+      
+      // 基金借款成本 - 僅使用第一檔商品的質借金額 (使用前面已定義的 firstProductLoanAmount 變數)
+      const fundAnnualDebtCostTWD = firstProductLoanAmount * fundLoanCostRate;
+      console.log("First fund loan amount:", firstProductLoanAmount);
+      console.log("Fund annual debt cost TWD:", fundAnnualDebtCostTWD);
+      
+      // 總借款成本(台幣)
+      const annualDebtCostTWD = mortgageAnnualDebtCostTWD + fundAnnualDebtCostTWD;
+      console.log("Annual debt cost TWD:", annualDebtCostTWD);
+      
+      // 配息已經是台幣值
+      const annualDividendTWD = annualDividend;
+      console.log("Annual dividend TWD:", annualDividendTWD);
+      
+      // 現金流計算
+      const annualCashFlow = annualDividendTWD - annualDebtCostTWD;
+      console.log("Annual cash flow:", annualCashFlow);
+      
+      document.getElementById("annualDividend").textContent = formatNumber(Math.round(annualDividendTWD));
+      document.getElementById("annualDebtCost").textContent = formatNumber(Math.round(annualDebtCostTWD));
+      document.getElementById("annualCashFlow").textContent = formatNumber(Math.round(annualCashFlow));
+      
+      // 計算並顯示每月現金流
+      const monthlyCashFlow = annualCashFlow / 12;
+      document.getElementById("monthlyCashFlow").textContent = formatNumber(Math.round(monthlyCashFlow));
+      
+      document.getElementById("netCashFlow").textContent = formatNumber(Math.round(annualCashFlow));
+      document.querySelector(".mortgage-results").style.display = "block";
+    }
+    
+    // 初始化資料
+    let funds = [...initialFunds];
+    
+    // 打開編輯基金對話框
+    function openFundEditModal(index) {
+      const fund = funds[index];
+      document.getElementById("editFundCode").value = fund.code;
+      document.getElementById("editFundName").value = fund.name;
+      document.getElementById("editMaturity").value = fund.maturity;
+      document.getElementById("editInvestmentAmount").value = fund.investmentAmount;
+      document.getElementById("editLoanPercentage").value = fund.loanPercentage;
+      document.getElementById("editInterestRate").value = fund.interestRate;
+      document.getElementById("editDividendFrequency").value = fund.dividendFrequency;
+      document.getElementById("editFundIndex").value = index;
+      document.getElementById("editFundModal").style.display = "block";
+      // 在開啟對話框時初始化商品選項
+      setTimeout(showEditProductOptions, 100);
+    }
+    
+    // 顯示編輯視窗的商品選項下拉列表
+    function showEditProductOptions() {
+      const productType = document.getElementById('productTypeEdit').value;
+      const products = productType === 'bond' ? bondProducts : fundProducts;
+      
+      const codeOptionsList = document.getElementById('editProductCodeOptions');
+      const nameOptionsList = document.getElementById('editProductNameOptions');
+      
+      if (!codeOptionsList || !nameOptionsList) {
+        console.error('找不到編輯視窗的下拉選單元素');
+        return;
+      }
+      
+      // 清空並填充代碼選項列表
+      codeOptionsList.innerHTML = '';
+      products.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.code;
+        option.addEventListener('click', function() {
+          document.getElementById('editFundCode').value = product.code;
+          
+          // 找到對應的名稱
+          const matchingProduct = products.find(p => p.code === product.code);
+          if (matchingProduct) {
+            document.getElementById('editFundName').value = matchingProduct.name;
+          }
+          
+          codeOptionsList.style.display = 'none';
+        });
+        codeOptionsList.appendChild(option);
+      });
+      
+      // 清空並填充名稱選項列表
+      nameOptionsList.innerHTML = '';
+      products.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.name;
+        option.addEventListener('click', function() {
+          document.getElementById('editFundName').value = product.name;
+          
+          // 找到對應的代碼
+          const matchingProduct = products.find(p => p.name === product.name);
+          if (matchingProduct) {
+            document.getElementById('editFundCode').value = matchingProduct.code;
+          }
+          
+          nameOptionsList.style.display = 'none';
+        });
+        nameOptionsList.appendChild(option);
+      });
+    }
+    
+    // 顯示商品選項下拉列表
+    function showProductOptions() {
+      const productType = document.getElementById('productType').value;
+      const products = productType === 'bond' ? bondProducts : fundProducts;
+      
+      const codeOptionsList = document.getElementById('productCodeOptions');
+      const nameOptionsList = document.getElementById('productNameOptions');
+      
+      if (!codeOptionsList || !nameOptionsList) {
+        console.error('找不到下拉選單元素');
+        return;
+      }
+      
+      // 清空並填充代碼選項列表
+      codeOptionsList.innerHTML = '';
+      products.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.code;
+        option.addEventListener('click', function() {
+          document.getElementById('fundCode').value = product.code;
+          
+          // 找到對應的名稱
+          const matchingProduct = products.find(p => p.code === product.code);
+          if (matchingProduct) {
+            document.getElementById('fundName').value = matchingProduct.name;
+          }
+          
+          codeOptionsList.style.display = 'none';
+        });
+        codeOptionsList.appendChild(option);
+      });
+      
+      // 清空並填充名稱選項列表
+      nameOptionsList.innerHTML = '';
+      products.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.name;
+        option.addEventListener('click', function() {
+          document.getElementById('fundName').value = product.name;
+          
+          // 找到對應的代碼
+          const matchingProduct = products.find(p => p.name === product.name);
+          if (matchingProduct) {
+            document.getElementById('fundCode').value = matchingProduct.code;
+          }
+          
+          nameOptionsList.style.display = 'none';
+        });
+        nameOptionsList.appendChild(option);
+      });
+    }
+    
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("fundLoanCost").value = (initialFunds[0].loanCost * 100).toFixed(2);
+      
+      // 初始化基金數據，設定默認值
+      const updateDefaultValues = function() {
+        const mortgageAmount = parseFloat(document.getElementById("mortgageAmount").value);
+        
+        // 如果有基金，只更新質借金額，不再自動設置投資金額
+        if (funds.length > 0) {
+          // 只更新質借金額
+          const loanPercentage = parseFloat(funds[0].loanPercentage.replace("%", "")) / 100;
+          funds[0].loanAmount = Math.round(funds[0].investmentAmount * loanPercentage);
+          
+          // 確保第一檔基金的利率為9%
+          if (funds[0].interestRate !== "9.0%") {
+            funds[0].interestRate = "9.0%";
+          }
+          
+          // 如果有第二檔基金，只更新質借金額
+          if (funds.length > 1) {
+            // 確保第二檔基金的利率為7%
+            if (funds[1].interestRate !== "7.0%") {
+              funds[1].interestRate = "7.0%";
+            }
+            
+            // 更新第二檔基金的質借金額
+            const secondLoanPercentage = parseFloat(funds[1].loanPercentage.replace("%", "")) / 100;
+            funds[1].loanAmount = Math.round(funds[1].investmentAmount * secondLoanPercentage);
+          }
+        }
+      };
+      
+      // 更新默認值
+      updateDefaultValues();
+      
+      // 當房貸金額變更時也更新默認值
+      document.getElementById("mortgageAmount").addEventListener("change", function() {
+        updateDefaultValues();
+      renderFundTable();
+      calculateAllStats();
+      });
+      
+      renderFundTable();
+      calculateAllStats();
+      
+      const addFundBtn = document.getElementById("addFundBtn");
+      const addFundModal = document.getElementById("addFundModal");
+      const fundCloseBtn = addFundModal.querySelector(".close");
+      
+      addFundBtn.addEventListener("click", function() { 
+        addFundModal.style.display = "block";
+        // 在開啟對話框時初始化商品選項
+        setTimeout(showProductOptions, 100);
+      });
+      
+      fundCloseBtn.addEventListener("click", function() { 
+        addFundModal.style.display = "none"; 
+      });
+      
+      // 初始化搜尋功能
+      if (document.getElementById('searchProduct')) {
+        const searchInput = document.getElementById('searchProduct');
+        searchInput.addEventListener('input', function() {
+          const searchText = this.value.toLowerCase();
+          const productType = document.getElementById('productType').value;
+          const products = productType === 'bond' ? bondProducts : fundProducts;
+          
+          if (searchText.length >= 2) { // 至少輸入2個字才開始搜尋
+            const matches = products.filter(product => 
+              product.code.toLowerCase().includes(searchText) || 
+              product.name.toLowerCase().includes(searchText)
+            );
+            
+            // 更新下拉選項
+            updateSearchResults(matches);
+          } else {
+            // 清空搜尋結果
+            document.getElementById('productCodeOptions').innerHTML = '';
+            document.getElementById('productNameOptions').innerHTML = '';
+            document.getElementById('productCodeOptions').style.display = 'none';
+            document.getElementById('productNameOptions').style.display = 'none';
+          }
+        });
+      }
+      
+      const editFundModal = document.getElementById("editFundModal");
+      const editCloseBtn = editFundModal.querySelector(".close");
+      editCloseBtn.addEventListener("click", function() { editFundModal.style.display = "none"; });
+      
+      window.addEventListener("click", function(event) {
+        if (event.target == addFundModal) { addFundModal.style.display = "none"; }
+        if (event.target == editFundModal) { editFundModal.style.display = "none"; }
+      });
+      
+      // 初始化商品類型下拉列表事件
+      if (document.getElementById('productType')) {
+        document.getElementById('productType').addEventListener('change', showProductOptions);
+      }
+      
+      // 初始化編輯視窗商品類型下拉列表事件
+      if (document.getElementById('productTypeEdit')) {
+        document.getElementById('productTypeEdit').addEventListener('change', showEditProductOptions);
+      }
+      
+      // 初始化編輯搜尋輸入框事件
+      if (document.getElementById('editSearchProduct')) {
+        const editSearchInput = document.getElementById('editSearchProduct');
+        editSearchInput.addEventListener('input', function() {
+          const searchText = this.value.toLowerCase();
+          const productType = document.getElementById('productTypeEdit').value;
+          const products = productType === 'bond' ? bondProducts : fundProducts;
+          
+          if (searchText.length >= 2) { // 至少輸入2個字才開始搜尋
+            const matches = products.filter(product => 
+              product.code.toLowerCase().includes(searchText) || 
+              product.name.toLowerCase().includes(searchText)
+            );
+            
+            // 更新編輯對話框的下拉選項
+            updateEditSearchResults(matches);
+          } else {
+            // 清空搜尋結果
+            document.getElementById('editProductCodeOptions').innerHTML = '';
+            document.getElementById('editProductNameOptions').innerHTML = '';
+            document.getElementById('editProductCodeOptions').style.display = 'none';
+            document.getElementById('editProductNameOptions').style.display = 'none';
+          }
+        });
+      }
+      
+      // 初始化商品代碼輸入框事件
+      if (document.getElementById('fundCode')) {
+        const fundCode = document.getElementById('fundCode');
+        const codeOptions = document.getElementById('productCodeOptions');
+        
+        fundCode.addEventListener('focus', function() {
+          showProductOptions();
+          if (codeOptions) codeOptions.style.display = 'block';
+        });
+        
+        fundCode.addEventListener('input', function() {
+          const searchText = this.value.toLowerCase();
+          const productType = document.getElementById('productType').value;
+          const products = productType === 'bond' ? bondProducts : fundProducts;
+          
+          // 過濾並顯示符合條件的選項
+          if (codeOptions) {
+            codeOptions.innerHTML = '';
+            const matches = products.filter(p => p.code.toLowerCase().includes(searchText));
+            
+            matches.forEach(product => {
+              const option = document.createElement('div');
+              option.className = 'product-option';
+              option.textContent = product.code;
+              option.addEventListener('click', function() {
+                fundCode.value = product.code;
+                document.getElementById('fundName').value = product.name;
+                codeOptions.style.display = 'none';
+              });
+              codeOptions.appendChild(option);
+            });
+            
+            codeOptions.style.display = matches.length > 0 ? 'block' : 'none';
+          }
+        });
+      }
+      
+      // 初始化商品名稱輸入框事件
+      if (document.getElementById('fundName')) {
+        const fundName = document.getElementById('fundName');
+        const nameOptions = document.getElementById('productNameOptions');
+        
+        fundName.addEventListener('focus', function() {
+          showProductOptions();
+          if (nameOptions) nameOptions.style.display = 'block';
+        });
+        
+        fundName.addEventListener('input', function() {
+          const searchText = this.value.toLowerCase();
+          const productType = document.getElementById('productType').value;
+          const products = productType === 'bond' ? bondProducts : fundProducts;
+          
+          // 過濾並顯示符合條件的選項
+          if (nameOptions) {
+            nameOptions.innerHTML = '';
+            const matches = products.filter(p => p.name.toLowerCase().includes(searchText));
+            
+            matches.forEach(product => {
+              const option = document.createElement('div');
+              option.className = 'product-option';
+              option.textContent = product.name;
+              option.addEventListener('click', function() {
+                fundName.value = product.name;
+                nameOptions.style.display = 'none';
+                
+                // 更新對應的代碼
+                fundCode.value = product.code;
+              });
+              nameOptions.appendChild(option);
+            });
+            
+            nameOptions.style.display = matches.length > 0 ? 'block' : 'none';
+          }
+        });
+      }
+      
+      // 點擊空白處關閉下拉選單
+      document.addEventListener('click', function(e) {
+        const codeInput = document.getElementById('fundCode');
+        const nameInput = document.getElementById('fundName');
+        const codeOptions = document.getElementById('productCodeOptions');
+        const nameOptions = document.getElementById('productNameOptions');
+        const editCodeInput = document.getElementById('editFundCode');
+        const editNameInput = document.getElementById('editFundName');
+        const editCodeOptions = document.getElementById('editProductCodeOptions');
+        const editNameOptions = document.getElementById('editProductNameOptions');
+        
+        if (codeInput && codeOptions && !codeInput.contains(e.target) && !codeOptions.contains(e.target)) {
+          codeOptions.style.display = 'none';
+        }
+        
+        if (nameInput && nameOptions && !nameInput.contains(e.target) && !nameOptions.contains(e.target)) {
+          nameOptions.style.display = 'none';
+        }
+        
+        if (editCodeInput && editCodeOptions && !editCodeInput.contains(e.target) && !editCodeOptions.contains(e.target)) {
+          editCodeOptions.style.display = 'none';
+        }
+        
+        if (editNameInput && editNameOptions && !editNameInput.contains(e.target) && !editNameOptions.contains(e.target)) {
+          editNameOptions.style.display = 'none';
+        }
+      });
+      
+      // 新增基金儲存
+      document.getElementById("saveFundBtn").addEventListener("click", function() {
+        // 設定默認利率
+        let interestRate = document.getElementById("interestRate").value;
+        if (!interestRate || interestRate.trim() === "" || interestRate === "%") {
+          // 根據基金順序設定默認利率
+          if (funds.length === 0) {
+            interestRate = "9.0%"; // 第一檔基金利率9%
+          } else if (funds.length === 1) {
+            interestRate = "7.0%"; // 第二檔基金利率7%
+          } else {
+            interestRate = "5.0%"; // 其他基金設定一個合理默認值
+          }
+        } else {
+          // 確保有%符號
+          interestRate = interestRate.endsWith("%") ? interestRate : interestRate + "%";
+        }
+        
+        // 投資金額直接使用用戶輸入，如果為0則使用預設值0
+        let investmentAmount = parseInt(document.getElementById("fundInvestmentAmount").value);
+        if (isNaN(investmentAmount)) {
+          investmentAmount = 0;
+          document.getElementById("fundInvestmentAmount").value = investmentAmount;
+        }
+        
+        const loanPercentage = document.getElementById("loanPercentage").value;
+        const loanPercentageValue = parseFloat(loanPercentage.replace("%", "")) / 100;
+        const loanAmount = Math.round(investmentAmount * loanPercentageValue);
+        
+        const newFund = {
+          code: document.getElementById("fundCode").value,
+          name: document.getElementById("fundName").value,
+          maturity: document.getElementById("maturity").value,
+          investmentAmount: investmentAmount,
+          loanPercentage: loanPercentage,
+          loanAmount: loanAmount,
+          interestRate: interestRate,
+          dividendFrequency: parseInt(document.getElementById("dividendFrequency").value),
+          loanCost: parseFloat(document.getElementById("fundLoanCost").value) / 100,
+          hasBeenEdited: true // 所有新增的基金都標記為已編輯，確保投資金額不會被自動修改
+        };
+        
+        funds.push(newFund);
+        renderFundTable();
+        calculateAllStats();
+        addFundModal.style.display = "none";
+        
+        // 清空輸入欄位
+        document.getElementById("fundCode").value = "";
+        document.getElementById("fundName").value = "";
+        document.getElementById("fundInvestmentAmount").value = "";
+        document.getElementById("interestRate").value = "";
+      });
+      
+      document.getElementById("updateFundBtn").addEventListener("click", function() {
+        const index = parseInt(document.getElementById("editFundIndex").value);
+        const fund = funds[index];
+        const newCode = document.getElementById("editFundCode").value;
+        const newName = document.getElementById("editFundName").value;
+        const newMaturity = document.getElementById("editMaturity").value;
+        const newInvestmentAmount = parseInt(document.getElementById("editInvestmentAmount").value);
+        const newLoanPercentage = document.getElementById("editLoanPercentage").value;
+        const newInterestRate = document.getElementById("editInterestRate").value;
+        const newDividendFrequency = parseInt(document.getElementById("editDividendFrequency").value);
+        
+        if (newCode !== "") fund.code = newCode;
+        if (newName !== "") fund.name = newName;
+        if (newMaturity !== "") fund.maturity = newMaturity;
+        if (!isNaN(newInvestmentAmount) && newInvestmentAmount > 0) {
+          fund.investmentAmount = newInvestmentAmount;
+          fund.hasBeenEdited = true; // 標記投資金額已被手動編輯
+          const loanPercentageValue = parseFloat(fund.loanPercentage.replace("%", "")) / 100;
+          fund.loanAmount = Math.round(fund.investmentAmount * loanPercentageValue);
+        }
+        if (newLoanPercentage !== "" && newLoanPercentage !== fund.loanPercentage) {
+          fund.loanPercentage = newLoanPercentage;
+          const loanPercentageValue = parseFloat(newLoanPercentage.replace("%", "")) / 100;
+          fund.loanAmount = Math.round(fund.investmentAmount * loanPercentageValue);
+        }
+        if (newInterestRate !== "") fund.interestRate = newInterestRate.endsWith("%") ? newInterestRate : newInterestRate + "%";
+        if (!isNaN(newDividendFrequency)) fund.dividendFrequency = newDividendFrequency;
+        
+        editFundModal.style.display = "none";
+        renderFundTable();
+        calculateAllStats();
+      });
+      
+      document.getElementById("clearBtn").addEventListener("click", function() {
+        if (confirm("確定要清除所有資產數據嗎？")) {
+          funds = [];
+          renderFundTable();
+          calculateAllStats();
+        }
+      });
+      
+      document.getElementById("exportBtn").addEventListener("click", function() {
+        window.print();
+      });
+      
+      document.getElementById("calculateBtn").addEventListener("click", function() {
+        calculateAllStats();
+        alert("已重新計算所有統計數據！");
+      });
+      
+      document.getElementById("updateRatesBtn").addEventListener("click", function() {
+        const newLoanCost = parseFloat(document.getElementById("fundLoanCost").value) / 100;
+        funds.forEach(fund => { fund.loanCost = newLoanCost; });
+        renderFundTable();
+        calculateAllStats();
+        alert("已更新參數並重新計算！");
+      });
+      
+      // 載入商品資料
+      loadProductData();
+    });
+    
+    // 載入商品資料函數
+    async function loadProductData() {
+      try {
+        // Using data from fund_data.js instead of loading from files
+        console.log(`已使用 ${bondProducts.length} 個債券商品`);
+        console.log(`已使用 ${fundProducts.length} 個基金商品`);
+        
+        // 準備下拉選項
+        setupProductSelectors();
+      } catch (error) {
+        console.error('載入商品資料失敗:', error);
+      }
+    }
+    
+    // 設置商品選擇器
+    function setupProductSelectors() {
+      const fundCodeInput = document.getElementById('fundCode');
+      const fundNameInput = document.getElementById('fundName');
+      const productTypeSelect = document.getElementById('productType');
+      const codeOptionsList = document.getElementById('productCodeOptions');
+      const nameOptionsList = document.getElementById('productNameOptions');
+      
+      // 更新選項函數
+      function updateOptions(type) {
+        const products = type === 'bond' ? bondProducts : fundProducts;
+        
+        // 更新代碼選項
+        codeOptionsList.innerHTML = '';
+        products.forEach(product => {
+          const option = document.createElement('div');
+          option.className = 'product-option';
+          option.textContent = product.code;
+          option.addEventListener('click', () => {
+            fundCodeInput.value = product.code;
+            codeOptionsList.style.display = 'none';
+            
+            // 更新對應的名稱
+            const matchingProduct = products.find(p => p.code === product.code);
+            if (matchingProduct) {
+              fundNameInput.value = matchingProduct.name;
+            }
+          });
+          codeOptionsList.appendChild(option);
+        });
+        
+        // 更新名稱選項
+        nameOptionsList.innerHTML = '';
+        products.forEach(product => {
+          const option = document.createElement('div');
+          option.className = 'product-option';
+          option.textContent = product.name;
+          option.addEventListener('click', () => {
+            fundNameInput.value = product.name;
+            nameOptionsList.style.display = 'none';
+            
+            // 更新對應的代碼
+            const matchingProduct = products.find(p => p.name === product.name);
+            if (matchingProduct) {
+              fundCodeInput.value = matchingProduct.code;
+            }
+          });
+          nameOptionsList.appendChild(option);
+        });
+      }
+      
+      // 監聽商品類型變更
+      productTypeSelect.addEventListener('change', () => {
+        updateOptions(productTypeSelect.value);
+      });
+      
+      // 監聽代碼輸入框
+      fundCodeInput.addEventListener('focus', () => {
+        updateOptions(productTypeSelect.value);
+        codeOptionsList.style.display = 'block';
+      });
+      
+      fundCodeInput.addEventListener('input', () => {
+        const products = productTypeSelect.value === 'bond' ? bondProducts : fundProducts;
+        const filterValue = fundCodeInput.value.toLowerCase();
+        
+        const filteredProducts = products.filter(product => 
+          product.code.toLowerCase().includes(filterValue)
+        );
+        
+        codeOptionsList.innerHTML = '';
+        filteredProducts.forEach(product => {
+          const option = document.createElement('div');
+          option.className = 'product-option';
+          option.textContent = product.code;
+          option.addEventListener('click', () => {
+            fundCodeInput.value = product.code;
+            codeOptionsList.style.display = 'none';
+            
+            // 更新對應的名稱
+            fundNameInput.value = product.name;
+          });
+          codeOptionsList.appendChild(option);
+        });
+        
+        if (filteredProducts.length > 0) {
+          codeOptionsList.style.display = 'block';
+        } else {
+          codeOptionsList.style.display = 'none';
+        }
+      });
+      
+      // 監聽名稱輸入框
+      fundNameInput.addEventListener('focus', () => {
+        updateOptions(productTypeSelect.value);
+        nameOptionsList.style.display = 'block';
+      });
+      
+      fundNameInput.addEventListener('input', () => {
+        const products = productTypeSelect.value === 'bond' ? bondProducts : fundProducts;
+        const filterValue = fundNameInput.value.toLowerCase();
+        
+        const filteredProducts = products.filter(product => 
+          product.name.toLowerCase().includes(filterValue)
+        );
+        
+        nameOptionsList.innerHTML = '';
+        filteredProducts.forEach(product => {
+          const option = document.createElement('div');
+          option.className = 'product-option';
+          option.textContent = product.name;
+          option.addEventListener('click', () => {
+            fundNameInput.value = product.name;
+            nameOptionsList.style.display = 'none';
+            
+            // 更新對應的代碼
+            fundCodeInput.value = product.code;
+          });
+          nameOptionsList.appendChild(option);
+        });
+        
+        if (filteredProducts.length > 0) {
+          nameOptionsList.style.display = 'block';
+        } else {
+          nameOptionsList.style.display = 'none';
+        }
+      });
+      
+      // 點擊其他地方關閉下拉清單
+      document.addEventListener('click', (e) => {
+        if (!fundCodeInput.contains(e.target) && !codeOptionsList.contains(e.target)) {
+          codeOptionsList.style.display = 'none';
+        }
+        if (!fundNameInput.contains(e.target) && !nameOptionsList.contains(e.target)) {
+          nameOptionsList.style.display = 'none';
+        }
+      });
+      
+      // 初始更新選項
+      updateOptions('fund');
+    }
+
+    // 更新搜尋結果函數
+    function updateSearchResults(matches) {
+      const codeOptions = document.getElementById('productCodeOptions');
+      const nameOptions = document.getElementById('productNameOptions');
+      
+      if (!codeOptions || !nameOptions) {
+        console.error('找不到下拉選單元素');
+        return;
+      }
+      
+      // 清空並填充代碼選項列表
+      codeOptions.innerHTML = '';
+      matches.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.code;
+        option.addEventListener('click', function() {
+          document.getElementById('fundCode').value = product.code;
+          document.getElementById('fundName').value = product.name;
+          codeOptions.style.display = 'none';
+          nameOptions.style.display = 'none';
+        });
+        codeOptions.appendChild(option);
+      });
+      
+      // 清空並填充名稱選項列表
+      nameOptions.innerHTML = '';
+      matches.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.name;
+        option.addEventListener('click', function() {
+          document.getElementById('fundName').value = product.name;
+          document.getElementById('fundCode').value = product.code;
+          codeOptions.style.display = 'none';
+          nameOptions.style.display = 'none';
+        });
+        nameOptions.appendChild(option);
+      });
+      
+      // 顯示下拉列表
+      if (matches.length > 0) {
+        codeOptions.style.display = 'block';
+        nameOptions.style.display = 'block';
+      } else {
+        codeOptions.style.display = 'none';
+        nameOptions.style.display = 'none';
+      }
+    }
+
+    // 更新編輯視窗搜尋結果函數
+    function updateEditSearchResults(matches) {
+      const codeOptions = document.getElementById('editProductCodeOptions');
+      const nameOptions = document.getElementById('editProductNameOptions');
+      
+      if (!codeOptions || !nameOptions) {
+        console.error('找不到編輯視窗的下拉選單元素');
+        return;
+      }
+      
+      // 清空並填充代碼選項列表
+      codeOptions.innerHTML = '';
+      matches.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.code;
+        option.addEventListener('click', function() {
+          document.getElementById('editFundCode').value = product.code;
+          document.getElementById('editFundName').value = product.name;
+          codeOptions.style.display = 'none';
+          nameOptions.style.display = 'none';
+        });
+        codeOptions.appendChild(option);
+      });
+      
+      // 清空並填充名稱選項列表
+      nameOptions.innerHTML = '';
+      matches.forEach(product => {
+        const option = document.createElement('div');
+        option.className = 'product-option';
+        option.textContent = product.name;
+        option.addEventListener('click', function() {
+          document.getElementById('editFundName').value = product.name;
+          document.getElementById('editFundCode').value = product.code;
+          codeOptions.style.display = 'none';
+          nameOptions.style.display = 'none';
+        });
+        nameOptions.appendChild(option);
+      });
+      
+      // 顯示下拉列表
+      if (matches.length > 0) {
+        codeOptions.style.display = 'block';
+        nameOptions.style.display = 'block';
+      } else {
+        codeOptions.style.display = 'none';
+        nameOptions.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>
