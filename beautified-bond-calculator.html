@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>債券與基金質借收益率評估表</title>
+  <!-- 引入 XLSX 庫 (例如：使用 CDN) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- 引入 Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- 引入 Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --accent-color: #e74c3c;
+      --success-color: #2ecc71;
+      --warning-color: #f39c12;
+      --info-color: #4AA0E4;
+      --light-color: #ecf0f1;
+      --dark-color: #34495e;
+      --gray-color: #95a5a6;
+      --bg-color: #f5f7fa;
+      --card-bg: #ffffff;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+      --transition: all 0.3s ease;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Noto Sans TC', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--dark-color);
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1350px; /* Slightly wider for new currency column */
+      margin: 0 auto;
+      background-color: var(--card-bg);
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+    }
+    
+    h1, h2, h3, h4 {
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+    
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 1.8rem;
+      color: var(--primary-color);
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--light-color);
+    }
+    
+    h2 {
+      font-size: 1.5rem;
+      border-left: 4px solid var(--secondary-color);
+      padding-left: 15px;
+    }
+    
+    .header-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 25px;
+      background: linear-gradient(to right, #eef7ff, #f0f8ff);
+      padding: 18px;
+      border-radius: var(--border-radius);
+      border: 1px solid #d1e6ff;
+    }
+    
+    .header-parameter {
+      display: flex;
+      align-items: center;
+      gap: 8px; /* Gap between label and input */
+    }
+    
+    .header-parameter strong {
+      color: var(--primary-color);
+      min-width: 120px; /* Ensure labels align nicely */
+      white-space: nowrap;
+    }
+    
+    .header-parameter input[type="number"] {
+        width: 100px; /* Default width for rate inputs */
+    }
+    .header-parameter i {
+        margin-right: 5px;
+    }
+
+    .update-params-container {
+        grid-column: 1 / -1; /* Span across all columns */
+        text-align: right; /* Align button to the right */
+        margin-top: 10px;
+    }
+    
+    .product-section {
+      margin-bottom: 35px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      overflow: hidden;
+      border: 1px solid #eaeaea;
+    }
+    
+    .product-section h2 {
+      padding: 15px;
+      margin: 0;
+      background-color: #f8f9fa;
+      border-left: none;
+      border-bottom: 1px solid #eaeaea;
+      display: flex;
+      align-items: center;
+    }
+    
+    .product-section h2::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 18px;
+      background-color: var(--secondary-color);
+      margin-right: 12px;
+    }
+    
+    .bond-section h2::before {
+      background-color: var(--secondary-color);
+    }
+    
+    .fund-section h2::before {
+      background-color: var(--success-color);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 0;
+      font-size: 0.9rem;
+    }
+    
+    th, td {
+      border: 1px solid #e6e6e6;
+      padding: 12px;
+      text-align: center;
+      vertical-align: middle;
+    }
+    
+    th {
+      background-color: #f8f9fa;
+      font-weight: 600;
+      color: var(--primary-color);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .bond-table th {
+      background-color: #e8f4fd;
+    }
+    
+    .fund-table th {
+      background-color: #e8f5e9;
+    }
+    
+    tr:hover {
+      background-color: #f7faff;
+    }
+    
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 25px;
+      padding: 18px;
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      border: 1px solid #eaeaea;
+    }
+    
+    button, input, select {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      font-family: inherit;
+      font-size: 0.9rem;
+      transition: var(--transition);
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    }
+    
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 120px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      color: white;
+      transition: var(--transition);
+    }
+    
+    button i {
+      margin-right: 8px;
+    }
+    
+    .btn-primary {
+      background-color: var(--secondary-color);
+    }
+    
+    .btn-primary:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn-secondary {
+      background-color: var(--info-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: #3490c4;
+    }
+    
+    .btn-success {
+      background-color: var(--success-color);
+    }
+    
+    .btn-success:hover {
+      background-color: #27ae60;
+    }
+    
+    .btn-danger {
+      background-color: var(--accent-color);
+    }
+    
+    .btn-danger:hover {
+      background-color: #c0392b;
+    }
+    
+    .btn-sm {
+      padding: 6px 10px;
+      min-width: auto;
+      font-size: 0.8rem;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--primary-color);
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(3px);
+    }
+    
+    .modal-content {
+      background-color: var(--card-bg);
+      margin: 5% auto;
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      width: 500px;
+      max-width: 95%;
+      animation: modalFadeIn 0.3s;
+    }
+    
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .modal h2 {
+      margin-top: 0;
+      border-left: none;
+      padding-left: 0;
+      border-bottom: 1px solid var(--light-color);
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .close {
+      color: var(--gray-color);
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: -8px;
+    }
+    
+    .close:hover {
+      color: var(--accent-color);
+    }
+    
+    .mortgage-section {
+      margin: 25px 0;
+      padding: 20px;
+      background-color: #f0f8ff;
+      border-radius: var(--border-radius);
+      border: 1px solid #d1e6ff;
+    }
+    
+    .mortgage-section h3 {
+      margin-top: 0;
+      color: var(--info-color);
+      border-bottom: 1px solid #d1e6ff;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      font-weight: 600;
+    }
+    
+    .mortgage-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: flex-end;
+    }
+    
+    .mortgage-results {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: var(--border-radius);
+      margin-top: 20px;
+      border: 1px solid #eaeaea;
+    }
+    
+    .mortgage-results h4 {
+      margin-top: 0;
+      color: var(--primary-color);
+      border-bottom: 1px solid #eaeaea;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+    
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .stats-card {
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      border: 1px solid #eaeaea;
+    }
+    
+    .stats-card .stats-label {
+      color: var(--gray-color);
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+    
+    .stats-card .stats-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+    
+    .stats-card .stats-value.positive {
+      color: var(--success-color);
+    }
+    
+    .stats-card .stats-value.negative {
+      color: var(--accent-color);
+    }
+    
+    .stats-card .stats-secondary {
+      color: var(--gray-color);
+      font-size: 1rem;
+      margin-top: 5px;
+    }
+    
+    .annual-data {
+      margin-bottom: 30px;
+    }
+    
+    .annual-data th {
+      background-color: #f5f7fa;
+    }
+    
+    .annual-data td {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+    
+    .footer-note {
+      text-align: center;
+      margin-top: 40px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: var(--border-radius);
+      color: var(--gray-color);
+      font-size: 0.9rem;
+      border: 1px solid #eaeaea;
+    }
+    
+    /* 響應式設計 */
+    @media (max-width: 1024px) {
+      .header-info {
+        grid-template-columns: 1fr; /* Stack on smaller screens */
+      }
+      
+      .container {
+        padding: 20px;
+      }
+      
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .controls {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
+    
+    /* 打印樣式 */
+    @media print {
+      .controls, button, .modal { 
+        display: none !important; 
+      }
+      
+      body, .container { 
+        background-color: white; 
+        padding: 0; 
+        margin: 0; 
+        box-shadow: none;
+        color: black;
+      }
+      
+      .mortgage-results { 
+        display: block !important; 
+      }
+      
+      .product-section {
+        box-shadow: none;
+        border: 1px solid #ddd;
+      }
+      
+      table {
+        border-collapse: collapse;
+      }
+      
+      th, td {
+        border: 1px solid #ddd;
+      }
+    }
+    
+    /* 漂亮的滾動條 */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 10px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+      background: #aaa;
+    }
+    
+    /* 表單元素統一樣式 */
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+    
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="date"]:focus,
+    select:focus {
+      border-color: var(--secondary-color);
+      box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+      outline: none;
+    }
+    
+    /* 提示信息樣式 */
+    .tooltip {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+    }
+    
+    .tooltip .tooltip-text {
+      visibility: hidden;
+      width: 200px;
+      background-color: #333;
+      color: #fff;
+      text-align: center;
+      border-radius: 6px;
+      padding: 5px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -100px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    /* 添加新的通知樣式 */
+    .notification {
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: var(--border-radius);
+      background-color: #e8f4fd;
+      border-left: 5px solid var(--secondary-color);
+      display: flex;
+      align-items: center;
+      animation: fadeIn 0.5s;
+    }
+
+    .notification i {
+      font-size: 1.5rem;
+      color: var(--secondary-color);
+      margin-right: 15px;
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: var(--primary-color);
+    }
+
+    .notification-message {
+      color: var(--dark-color);
+      font-size: 0.95rem;
+    }
+
+    .notification-action {
+      margin-left: 15px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 新增拖曳排序功能樣式 */
+    .drag-handle {
+      cursor: move;
+      color: var(--gray-color);
+      margin-right: 8px;
+      transition: color 0.2s;
+    }
+
+    .drag-handle:hover {
+      color: var(--secondary-color);
+    }
+
+    tr.dragging {
+      opacity: 0.5;
+      background-color: #f0f8ff;
+      border: 2px dashed var(--secondary-color);
+    }
+
+    tr.drag-over {
+      border-top: 2px solid var(--secondary-color);
+    }
+
+    .sort-info {
+      display: flex;
+      align-items: center;
+      margin-left: 15px;
+      color: var(--info-color);
+      font-size: 0.9rem;
+      font-weight: normal;
+      animation: fadeIn 0.5s;
+    }
+
+    .sort-info i {
+      margin-right: 5px;
+    }
+
+    .api-status {
+        font-size: 0.8rem;
+        color: var(--gray-color);
+        margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>債券與基金質借收益率評估表 <small style="font-size: 0.8rem; font-weight: normal;">僅供參考</small></h1>
+    
+    <div id="import-notification" style="display: none;" class="notification">
+      <i class="fas fa-file-import"></i>
+      <div class="notification-content">
+        <div class="notification-title">發現從篩選工具匯出的債券資料</div>
+        <div class="notification-message" id="notification-message"></div>
+      </div>
+      <div class="notification-action">
+        <button id="importFilteredBtn" class="btn-success"><i class="fas fa-download"></i> 導入</button>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <button id="addBondBtn" class="btn-primary"><i class="fas fa-plus-circle"></i> 新增債券</button>
+      <button id="addFundBtn" class="btn-secondary"><i class="fas fa-plus-circle"></i> 新增基金</button>
+      <button id="importBtn" class="btn-success"><i class="fas fa-file-import"></i> 導入資料</button>
+      <button id="exportBtn" class="btn-secondary"><i class="fas fa-print"></i> 列印</button>
+      <button id="calculateBtn" class="btn-primary"><i class="fas fa-calculator"></i> 重新計算</button>
+      <button id="clearBtn" class="btn-danger"><i class="fas fa-trash-alt"></i> 清除數據</button>
+      <button id="goToFilterBtn" class="btn-secondary"><i class="fas fa-filter"></i> 前往篩選工具</button>
+      <input type="file" id="importFile" accept=".xlsm" style="display:none">
+    </div>
+    
+    <div class="header-info">
+      <div class="header-parameter">
+        <strong><i class="fas fa-dollar-sign"></i> USD/TWD:</strong> 
+        <input type="number" id="usdToTwdRate" value="32.0000" step="0.0001" min="0">
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-coins"></i> AUD/TWD:</strong> 
+        <input type="number" id="audToTwdRate" step="0.0001" min="0" readonly>
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fab fa-canadian-maple-leaf"></i> CAD/TWD:</strong> 
+        <input type="number" id="cadToTwdRate" step="0.0001" min="0" readonly>
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-yen-sign"></i> CNY/TWD:</strong> 
+        <input type="number" id="cnyToTwdRate" step="0.0001" min="0" readonly>
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-euro-sign"></i> EUR/TWD:</strong> 
+        <input type="number" id="eurToTwdRate" step="0.0001" min="0" readonly>
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-pound-sign"></i> GBP/TWD:</strong> 
+        <input type="number" id="gbpToTwdRate" step="0.0001" min="0" readonly>
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-percentage"></i> 債券借款成本:</strong> 
+        <input type="number" id="bondLoanCost" value="2.95" step="0.01" min="0" max="100" style="width:80px">%
+      </div>
+      <div class="header-parameter">
+        <strong><i class="fas fa-home"></i> 房貸借款成本:</strong> 
+        <input type="number" id="mortgageLoanCost" value="2.60" step="0.01" min="0" max="100" style="width:80px">%
+      </div>
+      <div class="update-params-container">
+        <button id="forceUpdateExchangeRatesBtn" class="btn-secondary" style="margin-right: 10px;"><i class="fas fa-cloud-download-alt"></i> 強制更新匯率 (API)</button>
+        <button id="updateRatesBtn" class="btn-success"><i class="fas fa-sync-alt"></i> 更新參數/匯率</button>
+        <span id="apiStatus" class="api-status"></span>
+        <small style="display: block; text-align: right; font-size: 0.75rem; color: var(--gray-color); margin-top: 5px;">
+          提示：「更新參數/匯率」在您手動修改USD/TWD後將保留您的輸入；使用「強制更新匯率」可從API獲取。
+        </small>
+      </div>
+    </div>
+    
+    <!-- 房貸輸入區塊 -->
+    <div class="mortgage-section">
+      <h3><i class="fas fa-home"></i> 房貸設定</h3>
+      <div class="mortgage-inputs">
+        <div class="form-group">
+          <label for="mortgageAmount">房屋貸款金額(台幣):</label>
+          <input type="number" id="mortgageAmount" value="30000000" step="100000" min="0">
+        </div>
+      </div>
+      <div class="mortgage-results" style="display:none;">
+        <h4><i class="fas fa-chart-line"></i> 計算結果</h4>
+        <div class="stats-row">
+          <div class="stats-label">總淨現金流 (台幣):</div>
+          <div class="stats-value" id="netCashFlow">0</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 債券區塊 -->
+    <div class="product-section bond-section">
+      <h2>
+        <i class="fas fa-file-invoice-dollar"></i> 債券資產
+        <div class="sort-info">
+          <i class="fas fa-arrows-alt"></i> 可拖曳排序
+        </div>
+      </h2>
+      <div class="table-container">
+        <table class="bond-table" id="bondTable">
+          <thead>
+            <tr>
+              <th width="30"></th>
+              <th>商品代碼</th>
+              <th>商品名稱</th>
+              <th>幣別</th>
+              <th>標普評等</th>
+              <th>追繳維持率</th>
+              <th>剩餘年期</th>
+              <th>參考買入價</th>
+              <th>投資面額</th>
+              <th>投資金額</th>
+              <th>質借成數</th>
+              <th>質借金額</th>
+              <th>利率</th>
+              <th>配息頻率</th>
+              <th>下次配息日</th>
+              <th>借款成本</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="bondTableBody">
+            <!-- 債券數據將通過 JavaScript 動態填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- 基金區塊 -->
+    <div class="product-section fund-section">
+      <h2><i class="fas fa-chart-pie"></i> 基金資產</h2>
+      <div class="table-container">
+        <table class="fund-table" id="fundTable">
+          <thead>
+            <tr>
+              <th>商品代碼</th>
+              <th>商品名稱</th>
+              <th>投資金額(台幣)</th>
+              <th>配息率</th>
+              <th>年度配息金額(台幣)</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 基金數據將通過 JavaScript 動態填充 -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <div class="stats-container">
+      <div class="stats-card">
+        <div class="stats-label">整戶維持率</div>
+        <div class="stats-value" id="totalPerformance">138.89%</div>
+        <div class="stats-secondary" id="totalPerformanceValue">1,111.948</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-label">整戶追繳維持率</div>
+        <div class="stats-value" id="historicalHighPerformance">113.00%</div>
+        <div class="stats-secondary" id="historicalHighValue">904.681</div>
+      </div>
+      <div class="stats-card">
+        <div class="stats-label">整戶追繳跌幅</div>
+        <div class="stats-value negative" id="riskDrop">-18.64%</div>
+      </div>
+    </div>
+    
+    <table class="annual-data">
+      <thead>
+        <tr>
+          <th>每年配息(台幣)</th>
+          <th>每年借款成本(台幣)</th>
+          <th>扣除利息每年現金流(台幣)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="annualDividend">0</td>
+          <td id="annualDebtCost">0</td>
+          <td id="annualCashFlow">0</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="footer-note">
+      <i class="fas fa-info-circle"></i> 以上僅供參考 僅作內部教育訓練使用
+    </div>
+  </div>
+  
+  <!-- 新增債券對話框 -->
+  <div id="addBondModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2><i class="fas fa-plus-circle"></i> 新增債券</h2>
+      <div class="form-group">
+        <label for="bondCode">商品代碼:</label>
+        <input type="text" id="bondCode" required>
+      </div>
+      <div class="form-group">
+        <label for="bondName">商品名稱:</label>
+        <input type="text" id="bondName" required>
+      </div>
+      <div class="form-group">
+        <label for="bondCurrency">幣別:</label>
+        <select id="bondCurrency">
+          <option value="USD">USD</option>
+          <option value="AUD">AUD</option>
+          <option value="CAD">CAD</option>
+          <option value="CNY">CNY</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="rating">標普評等:</label>
+        <input type="text" id="rating" placeholder="例如: A+, BBB">
+      </div>
+      <div class="form-group">
+        <label for="maturity">追繳維持率:</label>
+        <input type="text" id="maturity" value="113%">
+      </div>
+      <div class="form-group">
+        <label for="remainingTerm">剩餘年期:</label>
+        <input type="number" id="remainingTerm" step="0.01">
+      </div>
+      <div class="form-group">
+        <label for="referencePrice">參考買入價:</label>
+        <input type="number" id="referencePrice" step="0.01">
+      </div>
+      <div class="form-group">
+        <label for="investmentAmount">投資面額:</label>
+        <input type="number" id="investmentAmount">
+      </div>
+      <div class="form-group">
+        <label for="loanPercentage">質借成數:</label>
+        <input type="text" id="loanPercentage" value="72%">
+      </div>
+      <div class="form-group">
+        <label for="interestRate">利率:</label>
+        <input type="text" id="interestRate" placeholder="例如: 5.894%">
+      </div>
+      <div class="form-group">
+        <label for="dividendFrequency">配息頻率:</label>
+        <input type="number" id="dividendFrequency" value="2">
+      </div>
+      <div class="form-group">
+        <label for="nextDividendDate">下次配息日:</label>
+        <input type="text" id="nextDividendDate" placeholder="YYYY/MM/DD">
+      </div>
+      <button id="saveBondBtn" class="btn-primary"><i class="fas fa-save"></i> 儲存</button>
+    </div>
+  </div>
+  
+  <!-- 編輯債券對話框 -->
+  <div id="editBondModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2><i class="fas fa-edit"></i> 編輯債券</h2>
+      <div class="form-group">
+        <label for="editBondCode">商品代碼:</label>
+        <input type="text" id="editBondCode" required>
+      </div>
+      <div class="form-group">
+        <label for="editBondCurrency">幣別:</label>
+        <select id="editBondCurrency">
+          <option value="USD">USD</option>
+          <option value="AUD">AUD</option>
+          <option value="CAD">CAD</option>
+          <option value="CNY">CNY</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editMaturity">追繳維持率:</label>
+        <input type="text" id="editMaturity">
+      </div>
+      <div class="form-group">
+        <label for="editReferencePrice">參考買入價:</label>
+        <input type="number" id="editReferencePrice" step="0.01">
+      </div>
+      <div class="form-group">
+        <label for="editInvestmentAmount">投資面額:</label>
+        <input type="number" id="editInvestmentAmount">
+      </div>
+      <div class="form-group">
+        <label for="editLoanPercentage">質借成數:</label>
+        <input type="text" id="editLoanPercentage">
+      </div>
+      <input type="hidden" id="editBondIndex">
+      <button id="updateBondBtn" class="btn-primary"><i class="fas fa-save"></i> 更新</button>
+    </div>
+  </div>
+  
+  <!-- 新增基金對話框 -->
+  <div id="addFundModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2><i class="fas fa-plus-circle"></i> 新增基金</h2>
+      <div class="form-group">
+        <label for="fundCode">商品代碼:</label>
+        <input type="text" id="fundCode" required>
+      </div>
+      <div class="form-group">
+        <label for="fundName">基金名稱:</label>
+        <input type="text" id="fundName" required>
+      </div>
+      <div class="form-group">
+        <label for="fundInvestmentAmount">投資金額(請將最後一層質借金額換算為台幣):</label>
+        <input type="number" id="fundInvestmentAmount" required>
+      </div>
+      <div class="form-group">
+        <label for="fundDividendRate">配息率(%):</label>
+        <input type="number" id="fundDividendRate" step="0.01" min="0" max="100" required>
+      </div>
+      <button id="saveFundBtn" class="btn-primary"><i class="fas fa-save"></i> 儲存</button>
+    </div>
+  </div>
+  
+  <!-- 編輯基金對話框 -->
+  <div id="editFundModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2><i class="fas fa-edit"></i> 編輯基金</h2>
+      <div class="form-group">
+        <label for="editFundCode">商品代碼:</label>
+        <input type="text" id="editFundCode" required>
+      </div>
+      <div class="form-group">
+        <label for="editFundName">基金名稱:</label>
+        <input type="text" id="editFundName" required>
+      </div>
+      <div class="form-group">
+        <label for="editFundInvestmentAmount">投資金額(請將最後一層質借金額換算為台幣):</label>
+        <input type="number" id="editFundInvestmentAmount" required>
+      </div>
+      <div class="form-group">
+        <label for="editFundDividendRate">配息率(%):</label>
+        <input type="number" id="editFundDividendRate" step="0.01" min="0" max="100" required>
+      </div>
+      <input type="hidden" id="editFundIndex">
+      <button id="updateFundBtn" class="btn-primary"><i class="fas fa-save"></i> 更新</button>
+    </div>
+  </div>
+  
+  <script>
+    // 初始債券數據
+    const initialBonds = [
+      {
+        code: "US05581LAC41",
+        name: "法國巴黎銀行有限責任公司",
+        currency: "USD",
+        rating: "A+",
+        maturity: "113%",
+        remainingTerm: 10.67,
+        referencePrice: 107.55, 
+        investmentAmount: 460000, 
+        investmentAmount2: 494738, 
+        loanPercentage: "72%",
+        loanAmount: 356212, 
+        interestRate: "5.894%",
+        dividendFrequency: 2,
+        nextDividendDate: "2024/6/5",
+        loanCost: 0.0295 
+      },
+      {
+        code: "USH2097EL72",
+        name: "瑞銀集團公司",
+        currency: "USD",
+        rating: "A-",
+        maturity: "113%",
+        remainingTerm: 3.72,
+        referencePrice: 105.74,
+        investmentAmount: 240000,
+        investmentAmount2: 255779,
+        loanPercentage: "72%",
+        loanAmount: 182721,
+        interestRate: "6.327%",
+        dividendFrequency: 2,
+        nextDividendDate: "2024/6/22",
+        loanCost: 0.0295 
+      },
+      {
+        code: "US46647PDD89",
+        name: "摩根大通銀行",
+        currency: "USD",
+        rating: "A-",
+        maturity: "113%",
+        remainingTerm: 6.20,
+        referencePrice: 100.95,
+        investmentAmount: 360000,
+        investmentAmount2: 363431,
+        loanPercentage: "72%",
+        loanAmount: 261670,
+        interestRate: "4.565%",
+        dividendFrequency: 2,
+        nextDividendDate: "2024/6/14",
+        loanCost: 0.0295
+      }
+    ];
+    
+    // 初始化基金數據
+    const initialFunds = [];
+
+    // 全域變數，用於追蹤 USD/TWD 是否被手動修改
+    let usdRateManuallyChanged = false;
+    
+    // 格式化數字為千分位
+    function formatNumber(number) {
+      if (isNaN(parseFloat(number))) return number; 
+      return parseFloat(number).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+     function formatNumberWithDecimals(number, decimals = 2) {
+      if (isNaN(parseFloat(number))) return number;
+      return parseFloat(number).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+    }
+    
+    // 拖曳排序相關變數
+    let draggedItem = null;
+
+    // Helper to get exchange rate for a given currency code
+    function getExchangeRateForCurrency(currencyCode) {
+        let rate = 1.0; 
+        if (!currencyCode) return rate; // Handle undefined or null currencyCode
+        switch (currencyCode.toUpperCase()) {
+            case 'USD':
+                rate = parseFloat(document.getElementById('usdToTwdRate').value);
+                break;
+            case 'AUD':
+                rate = parseFloat(document.getElementById('audToTwdRate').value);
+                break;
+            case 'CAD':
+                rate = parseFloat(document.getElementById('cadToTwdRate').value);
+                break;
+            case 'CNY':
+                rate = parseFloat(document.getElementById('cnyToTwdRate').value);
+                break;
+            case 'EUR':
+                rate = parseFloat(document.getElementById('eurToTwdRate').value);
+                break;
+            case 'GBP':
+                rate = parseFloat(document.getElementById('gbpToTwdRate').value);
+                break;
+        }
+        return isNaN(rate) || rate <= 0 ? 1.0 : rate; 
+    }
+    
+    // 渲染債券表格
+    function renderBondTable() {
+      const tableBody = document.querySelector("#bondTableBody");
+      tableBody.innerHTML = "";
+      
+      bonds.forEach((bond, index) => {
+        const row = document.createElement("tr");
+        row.setAttribute("draggable", "true");
+        row.setAttribute("data-index", index); 
+        row.innerHTML = `
+          <td><i class="fas fa-grip-vertical drag-handle"></i></td>
+          <td>${bond.code}</td>
+          <td>${bond.name}</td>
+          <td>${bond.currency || 'N/A'}</td>
+          <td>${bond.rating}</td>
+          <td>${bond.maturity}</td>
+          <td>${formatNumberWithDecimals(bond.remainingTerm, 2)}</td>
+          <td>${formatNumberWithDecimals(bond.referencePrice, 2)}</td>
+          <td>${formatNumber(bond.investmentAmount)}</td>
+          <td>${formatNumber(bond.investmentAmount2)}</td>
+          <td>${bond.loanPercentage}</td>
+          <td>${formatNumber(bond.loanAmount)}</td>
+          <td>${bond.interestRate}</td>
+          <td>${bond.dividendFrequency}</td>
+          <td>${bond.nextDividendDate}</td>
+          <td>${(bond.loanCost * 100).toFixed(2)}%</td>
+          <td>
+            <button class="btn-secondary btn-sm edit-btn" data-index="${index}"><i class="fas fa-edit"></i> 編輯</button>
+            <button class="btn-danger btn-sm delete-btn" data-index="${index}"><i class="fas fa-trash-alt"></i> 刪除</button>
+          </td>
+        `;
+        
+        row.addEventListener("dragstart", function(e) {
+          draggedItem = this;
+          // Store the actual bond object or its original index from the `bonds` array
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-index'));
+          setTimeout(() => {
+            this.classList.add("dragging");
+          }, 0);
+        });
+        
+        row.addEventListener("dragend", function() {
+            this.classList.remove("dragging");
+            // Update the `bonds` array based on the new DOM order
+            const newOrderedIndices = Array.from(tableBody.children).map(tr => parseInt(tr.getAttribute('data-index')));
+            const reorderedBonds = newOrderedIndices.map(originalIndex => bonds[originalIndex]);
+            bonds = reorderedBonds;
+            
+            // Re-render to update data-index attributes for next drag operation
+            renderBondTable(); 
+            calculateAllStats();
+            draggedItem = null;
+        });
+        
+        row.addEventListener("dragover", function(e) {
+          e.preventDefault();
+          if (this !== draggedItem) {
+              this.classList.add("drag-over");
+          }
+        });
+        
+        row.addEventListener("dragenter", function(e) {
+          e.preventDefault();
+        });
+        
+        row.addEventListener("dragleave", function() {
+          this.classList.remove("drag-over");
+        });
+        
+        row.addEventListener("drop", function(e) {
+          e.preventDefault();
+          this.classList.remove("drag-over");
+          
+          if (this !== draggedItem && draggedItem) {
+            const allRows = Array.from(this.parentNode.children);
+            const draggedIdx = allRows.indexOf(draggedItem);
+            const targetIdx = allRows.indexOf(this);
+
+            if (draggedIdx < targetIdx) {
+              this.parentNode.insertBefore(draggedItem, this.nextSibling);
+            } else {
+              this.parentNode.insertBefore(draggedItem, this);
+            }
+          }
+        });
+        
+        tableBody.appendChild(row);
+      });
+      
+      document.querySelectorAll("#bondTable .delete-btn").forEach(button => {
+        button.addEventListener("click", function() {
+          const index = parseInt(this.getAttribute("data-index"));
+          // Find the actual bond to delete based on its current position if sorting changes array directly
+          // Or, if 'data-index' refers to the original index before re-render, this is fine.
+          // For simplicity, assuming data-index matches current bonds array index after re-render.
+          bonds.splice(index, 1);
+          renderBondTable(); // Re-render will re-assign data-index
+          calculateAllStats();
+        });
+      });
+      
+      document.querySelectorAll("#bondTable .edit-btn").forEach(button => {
+        button.addEventListener("click", function() {
+          const index = parseInt(this.getAttribute("data-index"));
+          openBondEditModal(index);
+        });
+      });
+    }
+    
+    // 渲染基金表格
+    function renderFundTable() {
+      const tableBody = document.querySelector("#fundTable tbody");
+      tableBody.innerHTML = "";
+      
+      funds.forEach((fund, index) => {
+        const row = document.createElement("tr");
+        const annualDividendTWD = fund.investmentAmount * (fund.dividendRate / 100);
+        row.innerHTML = `
+          <td>${fund.code}</td>
+          <td>${fund.name}</td>
+          <td>${formatNumber(fund.investmentAmount)}</td>
+          <td>${fund.dividendRate}%</td>
+          <td>${formatNumber(Math.round(annualDividendTWD))}</td>
+          <td>
+            <button class="btn-secondary btn-sm edit-fund-btn" data-index="${index}"><i class="fas fa-edit"></i> 編輯</button>
+            <button class="btn-danger btn-sm delete-fund-btn" data-index="${index}"><i class="fas fa-trash-alt"></i> 刪除</button>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+      
+      document.querySelectorAll("#fundTable .delete-fund-btn").forEach(button => {
+        button.addEventListener("click", function() {
+          const index = parseInt(this.getAttribute("data-index"));
+          funds.splice(index, 1);
+          renderFundTable();
+          calculateAllStats();
+        });
+      });
+      
+      document.querySelectorAll("#fundTable .edit-fund-btn").forEach(button => {
+        button.addEventListener("click", function() {
+          const index = parseInt(this.getAttribute("data-index"));
+          openFundEditModal(index);
+        });
+      });
+    }
+    
+    // 計算所有統計數據
+    function calculateAllStats() {
+      const totalLoanAmount = bonds.reduce((sum, bond) => sum + bond.loanAmount, 0);
+      const totalInvestmentAmount2 = bonds.reduce((sum, bond) => sum + bond.investmentAmount2, 0); 
+      
+      let totalPerformance = 0;
+      if (totalLoanAmount > 0) {
+        totalPerformance = (totalInvestmentAmount2 / totalLoanAmount * 100).toFixed(2);
+      }
+      
+      document.getElementById("totalPerformance").textContent = totalPerformance + "%";
+      document.getElementById("totalPerformanceValue").textContent = formatNumber(Math.round(totalInvestmentAmount2));
+      
+      document.getElementById("historicalHighPerformance").textContent = "113.00%";
+      document.getElementById("historicalHighValue").textContent = formatNumber(Math.round(totalLoanAmount * 1.13));
+      
+      const maintenanceRate = 113;
+      let riskDrop = 0;
+      if (parseFloat(totalPerformance) > 0) { 
+        riskDrop = ((maintenanceRate / parseFloat(totalPerformance)) - 1) * 100;
+        riskDrop = riskDrop.toFixed(2);
+      }
+      document.getElementById("riskDrop").textContent = riskDrop + "%";
+      
+      let annualDividendTWD = 0;
+      bonds.forEach(bond => {
+        const interestRateDecimal = parseFloat(String(bond.interestRate).replace("%", "")) / 100;
+        const bondCurrencyRate = getExchangeRateForCurrency(bond.currency);
+        annualDividendTWD += bond.investmentAmount * interestRateDecimal * bondCurrencyRate;
+      });
+      funds.forEach(fund => { 
+        annualDividendTWD += fund.investmentAmount * (fund.dividendRate / 100);
+      });
+      
+      let annualDebtCostTWD = 0;
+      const bondLoanCostRateDecimal = parseFloat(document.getElementById("bondLoanCost").value) / 100;
+      bonds.forEach(bond => {
+        const bondCurrencyRate = getExchangeRateForCurrency(bond.currency);
+        annualDebtCostTWD += bond.loanAmount * bondLoanCostRateDecimal * bondCurrencyRate;
+      });
+      
+      const mortgageAmountTWD = parseFloat(document.getElementById("mortgageAmount").value);
+      const mortgageLoanCostRateDecimal = parseFloat(document.getElementById("mortgageLoanCost").value) / 100;
+      annualDebtCostTWD += mortgageAmountTWD * mortgageLoanCostRateDecimal;
+      
+      const annualCashFlowTWD = annualDividendTWD - annualDebtCostTWD;
+      
+      document.getElementById("annualDividend").textContent = formatNumber(Math.round(annualDividendTWD));
+      document.getElementById("annualDebtCost").textContent = formatNumber(Math.round(annualDebtCostTWD));
+      document.getElementById("annualCashFlow").textContent = formatNumber(Math.round(annualCashFlowTWD));
+      
+      document.getElementById("netCashFlow").textContent = formatNumber(Math.round(annualCashFlowTWD));
+      document.querySelector(".mortgage-results").style.display = "block";
+    }
+
+    // Fetch exchange rates from API
+    async function fetchExchangeRates(forceFetchGlobal = false) { // Renamed param to avoid conflict
+        const apiStatusEl = document.getElementById("apiStatus");
+        apiStatusEl.textContent = "正在獲取匯率...";
+        apiStatusEl.style.color = "var(--info-color)";
+        try {
+            const response = await fetch('https://open.er-api.com/v6/latest/TWD');
+            if (!response.ok) {
+                throw new Error(`API 請求失敗: ${response.status}`);
+            }
+            const data = await response.json();
+            if (data.result === 'success' && data.rates) {
+                const rates = data.rates;
+                
+                if (forceFetchGlobal || !usdRateManuallyChanged) {
+                    document.getElementById('usdToTwdRate').value = rates.USD ? (1 / rates.USD).toFixed(4) : document.getElementById('usdToTwdRate').value;
+                    if (forceFetchGlobal) usdRateManuallyChanged = false; 
+                }
+                document.getElementById('audToTwdRate').value = rates.AUD ? (1 / rates.AUD).toFixed(4) : "";
+                document.getElementById('cadToTwdRate').value = rates.CAD ? (1 / rates.CAD).toFixed(4) : "";
+                document.getElementById('cnyToTwdRate').value = rates.CNY ? (1 / rates.CNY).toFixed(4) : "";
+                document.getElementById('eurToTwdRate').value = rates.EUR ? (1 / rates.EUR).toFixed(4) : "";
+                document.getElementById('gbpToTwdRate').value = rates.GBP ? (1 / rates.GBP).toFixed(4) : "";
+                
+                apiStatusEl.textContent = `匯率已更新 (${new Date(data.time_last_update_unix * 1000).toLocaleTimeString()})`;
+                apiStatusEl.style.color = "var(--success-color)";
+                return true; 
+            } else {
+                throw new Error('API 回應格式錯誤或無匯率數據');
+            }
+        } catch (error) {
+            console.error("獲取匯率失敗:", error);
+            apiStatusEl.textContent = "匯率獲取失敗，請手動輸入。";
+            apiStatusEl.style.color = "var(--accent-color)";
+            return false; 
+        }
+    }
+    
+    // 初始化資料
+    let bonds = [...initialBonds];
+    let funds = [...initialFunds];
+    
+    // 打開編輯債券對話框
+    function openBondEditModal(index) {
+      const bond = bonds[index];
+      document.getElementById("editBondCode").value = bond.code;
+      document.getElementById("editBondCurrency").value = bond.currency;
+      document.getElementById("editMaturity").value = bond.maturity;
+      document.getElementById("editReferencePrice").value = parseFloat(bond.referencePrice).toFixed(2);
+      document.getElementById("editInvestmentAmount").value = bond.investmentAmount;
+      document.getElementById("editLoanPercentage").value = bond.loanPercentage;
+      document.getElementById("editBondIndex").value = index;
+      document.getElementById("editBondModal").style.display = "block";
+    }
+    
+    // 打開編輯基金對話框
+    function openFundEditModal(index) {
+      const fund = funds[index];
+      document.getElementById("editFundCode").value = fund.code;
+      document.getElementById("editFundName").value = fund.name;
+      document.getElementById("editFundInvestmentAmount").value = fund.investmentAmount; 
+      document.getElementById("editFundDividendRate").value = fund.dividendRate;
+      document.getElementById("editFundIndex").value = index;
+      document.getElementById("editFundModal").style.display = "block";
+    }
+    
+    // 導入篩選工具匯出的債券
+    function importFilteredBonds(importedBondsFromFilterTool) {
+      if (!importedBondsFromFilterTool || importedBondsFromFilterTool.length === 0) return;
+      
+      let shouldClear = false;
+      if (bonds.length > 0) {
+        shouldClear = confirm('是否清除現有債券並導入新篩選的債券？\n(點擊「取消」將會保留現有債券並添加新債券)');
+        if (shouldClear) {
+          bonds = [];
+        }
+      }
+      
+      importedBondsFromFilterTool.forEach(importedBond => {
+        const refPrice = parseFloat((parseFloat(importedBond.referencePrice) + 3).toFixed(2));
+        const investmentAmountVal = parseInt(importedBond.investmentAmount); 
+        const investmentAmount2Val = Math.round(investmentAmountVal * refPrice / 100); 
+        const loanPercentageValue = parseFloat(String(importedBond.loanPercentage).replace("%", "")) / 100;
+        const loanAmountVal = Math.round(investmentAmount2Val * loanPercentageValue);
+        
+        const newBond = {
+          code: importedBond.code,
+          name: importedBond.name,
+          currency: importedBond.currency || "USD", 
+          rating: importedBond.rating,
+          maturity: importedBond.maturity,
+          remainingTerm: parseFloat(importedBond.remainingTerm),
+          referencePrice: refPrice,
+          investmentAmount: investmentAmountVal,
+          investmentAmount2: investmentAmount2Val,
+          loanPercentage: importedBond.loanPercentage,
+          loanAmount: loanAmountVal,
+          interestRate: importedBond.interestRate,
+          dividendFrequency: parseInt(importedBond.dividendFrequency),
+          nextDividendDate: importedBond.nextDividendDate || new Date().toISOString().split('T')[0].replace(/-/g, '/'),
+          loanCost: parseFloat(document.getElementById("bondLoanCost").value) / 100 
+        };
+        
+        bonds.push(newBond);
+      });
+      
+      renderBondTable();
+      calculateAllStats();
+      
+      try {
+        localStorage.removeItem('selectedBonds');
+      } catch (e) {
+        console.log('localStorage 不可用，跳過清除操作');
+      }
+      
+      document.getElementById('import-notification').style.display = 'none';
+      alert(`成功導入 ${importedBondsFromFilterTool.length} 個債券！`);
+    }
+    
+    document.addEventListener("DOMContentLoaded", async function() { 
+      document.getElementById("bondLoanCost").value = (initialBonds.length > 0 ? initialBonds[0].loanCost * 100 : 2.95).toFixed(2);
+      document.getElementById("mortgageLoanCost").value = "2.60";
+      document.getElementById("mortgageAmount").value = "30000000";
+      
+      const usdToTwdRateInput = document.getElementById('usdToTwdRate');
+      usdToTwdRateInput.addEventListener('input', function() {
+          usdRateManuallyChanged = true;
+          console.log("USD/TWD rate manually changed by user input.");
+      });
+
+      await fetchExchangeRates(true); 
+
+      renderBondTable();
+      renderFundTable();
+      calculateAllStats();
+      
+      const addBondBtn = document.getElementById("addBondBtn");
+      const addBondModal = document.getElementById("addBondModal");
+      const bondCloseBtn = addBondModal.querySelector(".close");
+      addBondBtn.addEventListener("click", function() { addBondModal.style.display = "block"; });
+      bondCloseBtn.addEventListener("click", function() { addBondModal.style.display = "none"; });
+      
+      const addFundBtn = document.getElementById("addFundBtn");
+      const addFundModal = document.getElementById("addFundModal");
+      const fundCloseBtn = addFundModal.querySelector(".close");
+      addFundBtn.addEventListener("click", function() { addFundModal.style.display = "block"; });
+      fundCloseBtn.addEventListener("click", function() { addFundModal.style.display = "none"; });
+      
+      const editBondModal = document.getElementById("editBondModal");
+      const editBondCloseBtn = editBondModal.querySelector(".close");
+      editBondCloseBtn.addEventListener("click", function() { editBondModal.style.display = "none"; });
+
+      const editFundModal = document.getElementById("editFundModal");
+      const editFundCloseBtn = editFundModal.querySelector(".close");
+      editFundCloseBtn.addEventListener("click", function() { editFundModal.style.display = "none"; });
+      
+      window.addEventListener("click", function(event) {
+        if (event.target == addBondModal) { addBondModal.style.display = "none"; }
+        if (event.target == addFundModal) { addFundModal.style.display = "none"; }
+        if (event.target == editBondModal) { editBondModal.style.display = "none"; }
+        if (event.target == editFundModal) { editFundModal.style.display = "none"; }
+      });
+      
+      document.getElementById("saveBondBtn").addEventListener("click", function() {
+        const inputRefPrice = parseFloat(document.getElementById("referencePrice").value);
+        const refPrice = parseFloat((inputRefPrice + 3).toFixed(2)); 
+        const investmentAmountVal = parseInt(document.getElementById("investmentAmount").value); 
+        const newBond = {
+          code: document.getElementById("bondCode").value,
+          name: document.getElementById("bondName").value,
+          currency: document.getElementById("bondCurrency").value,
+          rating: document.getElementById("rating").value,
+          maturity: document.getElementById("maturity").value,
+          remainingTerm: parseFloat(document.getElementById("remainingTerm").value),
+          referencePrice: refPrice,
+          investmentAmount: investmentAmountVal,
+          investmentAmount2: Math.round(investmentAmountVal * refPrice / 100), 
+          loanPercentage: document.getElementById("loanPercentage").value,
+          loanAmount: Math.round(Math.round(investmentAmountVal * refPrice / 100) * parseFloat(document.getElementById("loanPercentage").value.replace("%", "")) / 100),
+          interestRate: document.getElementById("interestRate").value,
+          dividendFrequency: parseInt(document.getElementById("dividendFrequency").value),
+          nextDividendDate: document.getElementById("nextDividendDate").value,
+          loanCost: parseFloat(document.getElementById("bondLoanCost").value) / 100
+        };
+        bonds.push(newBond);
+        renderBondTable();
+        calculateAllStats();
+        addBondModal.style.display = "none";
+        addBondModal.querySelectorAll('input[type="text"], input[type="number"], select').forEach(input => {
+            if(input.tagName === 'SELECT') input.value = input.options[0].value; // Reset select to first option
+            else input.value = '';
+        });
+        document.getElementById("maturity").value = "113%";
+        document.getElementById("loanPercentage").value = "72%";
+        document.getElementById("dividendFrequency").value = "2";
+        document.getElementById("bondCurrency").value = "USD";
+      });
+      
+      document.getElementById("saveFundBtn").addEventListener("click", function() {
+        const newFund = {
+          code: document.getElementById("fundCode").value,
+          name: document.getElementById("fundName").value,
+          investmentAmount: parseInt(document.getElementById("fundInvestmentAmount").value), 
+          dividendRate: parseFloat(document.getElementById("fundDividendRate").value)
+        };
+        funds.push(newFund);
+        renderFundTable();
+        calculateAllStats();
+        addFundModal.style.display = "none";
+        addFundModal.querySelectorAll('input[type="text"], input[type="number"]').forEach(input => input.value = '');
+      });
+      
+      document.getElementById("clearBtn").addEventListener("click", function() {
+        if (confirm("確定要清除所有資產數據嗎？")) {
+          bonds = [];
+          funds = [];
+          renderBondTable();
+          renderFundTable();
+          calculateAllStats();
+        }
+      });
+      
+      document.getElementById("updateBondBtn").addEventListener("click", function() {
+        const index = parseInt(document.getElementById("editBondIndex").value);
+        const bond = bonds[index];
+        
+        bond.code = document.getElementById("editBondCode").value || bond.code;
+        bond.currency = document.getElementById("editBondCurrency").value || bond.currency;
+        bond.maturity = document.getElementById("editMaturity").value || bond.maturity;
+        
+        const newReferencePrice = parseFloat(document.getElementById("editReferencePrice").value);
+        const newInvestmentAmount = parseInt(document.getElementById("editInvestmentAmount").value); 
+        const newLoanPercentageStr = document.getElementById("editLoanPercentage").value;
+
+        if (!isNaN(newReferencePrice) && newReferencePrice > 0) {
+          bond.referencePrice = parseFloat(newReferencePrice.toFixed(2));
+        }
+        if (!isNaN(newInvestmentAmount) && newInvestmentAmount > 0) {
+          bond.investmentAmount = newInvestmentAmount;
+        }
+        if (newLoanPercentageStr) {
+            bond.loanPercentage = newLoanPercentageStr;
+        }
+
+        bond.investmentAmount2 = Math.round(bond.investmentAmount * bond.referencePrice / 100); 
+        const loanPercentageValue = parseFloat(String(bond.loanPercentage).replace("%", "")) / 100;
+        bond.loanAmount = Math.round(bond.investmentAmount2 * loanPercentageValue); 
+        
+        editBondModal.style.display = "none";
+        renderBondTable();
+        calculateAllStats();
+      });
+
+      document.getElementById("updateFundBtn").addEventListener("click", function() {
+        const index = parseInt(document.getElementById("editFundIndex").value);
+        const fund = funds[index];
+        fund.code = document.getElementById("editFundCode").value || fund.code;
+        fund.name = document.getElementById("editFundName").value || fund.name;
+        
+        const newInvestmentAmount = parseInt(document.getElementById("editFundInvestmentAmount").value);
+        if (!isNaN(newInvestmentAmount) && newInvestmentAmount >= 0) { 
+          fund.investmentAmount = newInvestmentAmount; 
+        }
+        
+        const newDividendRate = parseFloat(document.getElementById("editFundDividendRate").value);
+        if (!isNaN(newDividendRate) && newDividendRate >= 0) {
+          fund.dividendRate = newDividendRate;
+        }
+        
+        editFundModal.style.display = "none";
+        renderFundTable();
+        calculateAllStats();
+      });
+      
+      document.getElementById("exportBtn").addEventListener("click", function() {
+        window.print();
+      });
+      
+      document.getElementById("calculateBtn").addEventListener("click", function() {
+        calculateAllStats();
+        alert("已重新計算所有統計數據！");
+      });
+
+      document.getElementById("forceUpdateExchangeRatesBtn").addEventListener("click", async function() {
+        await fetchExchangeRates(true); // Force fetch and update USD/TWD
+        calculateAllStats(); 
+        alert("已強制從API更新匯率並重新計算！");
+      });
+      
+      document.getElementById("updateRatesBtn").addEventListener("click", async function() { 
+        const newLoanCost = parseFloat(document.getElementById("bondLoanCost").value) / 100;
+        bonds.forEach(bond => { bond.loanCost = newLoanCost; });
+        
+        // Fetch rates only if USD/TWD hasn't been manually changed, or it's the initial load (handled by forceFetch = true)
+        // The `usdRateManuallyChanged` flag now correctly controls if fetchExchangeRates updates the USD input
+        await fetchExchangeRates(false); // Pass false, so it respects usdRateManuallyChanged
+        
+        renderBondTable(); 
+        calculateAllStats(); 
+        alert("已更新參數/匯率並重新計算！");
+      });
+      
+      const importBtn = document.getElementById("importBtn");
+      const importFile = document.getElementById("importFile");
+      importBtn.addEventListener("click", function() {
+        importFile.click();
+      });
+      
+      importFile.addEventListener("change", function() {
+        if (this.files && this.files[0]) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            let sheetName = workbook.SheetNames.find(name => name.includes("熱門債券")) || workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+
+            if (!sheet) {
+              alert(`找不到 '${sheetName || "熱門債券"}' 工作表`);
+              return;
+            }
+            const jsonData = XLSX.utils.sheet_to_json(sheet, {header: 1, cellDates: true, dateNF:'yyyy/mm/dd'});
+            let headerRowIndex = jsonData.findIndex(row => Array.isArray(row) && (row.some(h => String(h).includes('代碼')) || row.some(h => String(h).includes('發行'))));
+            if (headerRowIndex === -1) headerRowIndex = 0; 
+
+            const header = jsonData[headerRowIndex];
+            const colMap = {
+                code: header.findIndex(h => String(h).includes('代碼') || String(h).includes('產品')), 
+                issuer: header.findIndex(h => String(h).includes('發行')), 
+                currency: header.findIndex(h => String(h).toLowerCase().includes('幣別')), 
+                spRating: header.findIndex(h => String(h).includes('標普')), 
+                remTerm: header.findIndex(h => String(h).includes('到期年')), 
+                refPrice: header.findIndex(h => String(h).includes('買入價')), 
+                coupon: header.findIndex(h => String(h).includes('票息')), 
+                divFreq: header.findIndex(h => String(h).includes('配息頻率')), 
+                nextDiv: header.findIndex(h => String(h).includes('下次配息日')), 
+            };
+            
+            if (colMap.code === -1) colMap.code = 1; 
+            if (colMap.issuer === -1) colMap.issuer = 10; 
+            if (colMap.currency === -1) colMap.currency = 12; 
+            if (colMap.spRating === -1) colMap.spRating = 29; 
+            if (colMap.remTerm === -1) colMap.remTerm = 26; 
+            if (colMap.refPrice === -1) colMap.refPrice = 14; 
+            if (colMap.coupon === -1) colMap.coupon = 33; 
+            if (colMap.divFreq === -1) colMap.divFreq = 34; 
+            if (colMap.nextDiv === -1) colMap.nextDiv = 35; 
+
+
+            for (let i = headerRowIndex + 1; i < jsonData.length; i++) {
+              const row = jsonData[i];
+              if (!Array.isArray(row) || row.length === 0 || !row[colMap.code]) continue; 
+
+              const codeVal = String(row[colMap.code]);      
+              const bond = bonds.find(b => String(b.code) === codeVal);
+              if (bond) {
+                if(row[colMap.issuer]) bond.name = String(row[colMap.issuer]);
+                if(row[colMap.currency]) bond.currency = String(row[colMap.currency]).toUpperCase();
+                if(row[colMap.spRating]) bond.rating = String(row[colMap.spRating]);
+                if(row[colMap.remTerm] !== undefined && row[colMap.remTerm] !== null) bond.remainingTerm = parseFloat(row[colMap.remTerm]);
+                if(row[colMap.refPrice] !== undefined && row[colMap.refPrice] !== null) bond.referencePrice = parseFloat((parseFloat(row[colMap.refPrice]) + 3).toFixed(2));
+                if(row[colMap.coupon] !== undefined && row[colMap.coupon] !== null) bond.interestRate = parseFloat(row[colMap.coupon]).toFixed(3) + "%";
+                if(row[colMap.divFreq] !== undefined && row[colMap.divFreq] !== null) bond.dividendFrequency = parseInt(row[colMap.divFreq]);
+                if(row[colMap.nextDiv]) {
+                    let dateVal = row[colMap.nextDiv];
+                    if (dateVal instanceof Date && !isNaN(dateVal)) {
+                         bond.nextDividendDate = `${dateVal.getFullYear()}/${String(dateVal.getMonth() + 1).padStart(2,'0')}/${String(dateVal.getDate()).padStart(2,'0')}`;
+                    } else if (typeof dateVal === 'number') { 
+                        const d = XLSX.SSF.parse_date_code(dateVal);
+                        if (d) bond.nextDividendDate = `${d.y}/${String(d.m).padStart(2,'0')}/${String(d.d).padStart(2,'0')}`;
+                    } else if (typeof dateVal === 'string') {
+                        bond.nextDividendDate = dateVal.replace(/-/g, '/');
+                    }
+                }
+                bond.investmentAmount2 = Math.round(bond.investmentAmount * bond.referencePrice / 100);
+                const loanPercentageValue = parseFloat(String(bond.loanPercentage).replace("%", "")) / 100;
+                bond.loanAmount = Math.round(bond.investmentAmount2 * loanPercentageValue);
+              }
+            }
+            renderBondTable();
+            calculateAllStats();
+            alert("資料導入完成！");
+            importFile.value = "";
+          };
+          reader.readAsArrayBuffer(this.files[0]);
+        }
+      });
+      
+      document.getElementById("goToFilterBtn").addEventListener("click", function() {
+        try {
+          window.open("beautified-bond-tool.html", "_blank");
+        } catch (e) {
+          alert("在當前環境中無法導航到篩選工具，請手動開啟篩選工具頁面。");
+        }
+      });
+      
+      try {
+        const testKey = '__test_localStorage__';
+        localStorage.setItem(testKey, testKey);
+        localStorage.removeItem(testKey);
+        
+        if (localStorage.getItem('selectedBonds')) {
+          try {
+            const importedBondsFromFilterTool = JSON.parse(localStorage.getItem('selectedBonds'));
+            if (importedBondsFromFilterTool && importedBondsFromFilterTool.length > 0) {
+              document.getElementById('import-notification').style.display = 'flex'; 
+              document.getElementById('notification-message').textContent = `發現 ${importedBondsFromFilterTool.length} 個從篩選工具匯出的債券，點擊右側按鈕導入。`;
+              
+              document.getElementById('importFilteredBtn').addEventListener('click', function() {
+                importFilteredBonds(importedBondsFromFilterTool);
+              });
+            }
+          } catch (parseError) {
+            console.error('解析匯出債券資料時出錯:', parseError);
+          }
+        }
+      } catch (storageError) {
+        console.log('localStorage 不可用，跳過債券匯入檢查');
+      }
+    });
+  </script>
+</body>
+</html>
