@@ -1162,6 +1162,7 @@ const POLICY_FINANCING_PRODUCTS = [
 const STORAGE_KEY = 'insuranceFinancingScenario';
 const IMPORT_BONDS_KEY = 'selectedBonds';
 const IMPORT_FLAG_KEY = 'insuranceFinancingAutoImport';
+const IMPORT_RETURN_STEP_KEY = 'insuranceFinancingImportReturnStep';
 const fundProducts = typeof externalFundProducts !== 'undefined' ? externalFundProducts : [];
 const DEFAULT_EXCHANGE_RATES = {
   USD: 32.0,
@@ -1326,9 +1327,9 @@ function getMaxAccessibleStep() {
 }
 
 // === Step Navigation ===
-function goToStep(step) {
+function goToStep(step, force = false) {
   if (step < 1 || step > 4) return;
-  if (step > getMaxAccessibleStep()) return;
+  if (!force && step > getMaxAccessibleStep()) return;
   state.currentStep = step;
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('step' + step).classList.add('active');
@@ -2156,6 +2157,10 @@ function clearFunds() {
 }
 
 function openBondScreeningTool() {
+  saveState();
+  if (canUseStorage()) {
+    localStorage.setItem(IMPORT_RETURN_STEP_KEY, '3');
+  }
   const returnUrl = encodeURIComponent(window.location.href);
   window.location.href = `beautified-bond-tool.html?returnUrl=${returnUrl}`;
 }
@@ -2314,11 +2319,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const shouldAutoImport = params.get('autoImportBonds') === '1' || localStorage.getItem(IMPORT_FLAG_KEY) === '1';
     if (shouldAutoImport && localStorage.getItem(IMPORT_BONDS_KEY)) {
       importSelectedBonds();
+      const returnStep = parseInt(localStorage.getItem(IMPORT_RETURN_STEP_KEY) || '3', 10) || 3;
       localStorage.removeItem(IMPORT_FLAG_KEY);
+      localStorage.removeItem(IMPORT_RETURN_STEP_KEY);
       if (params.get('autoImportBonds') === '1') {
         const cleanUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, '', cleanUrl);
       }
+      goToStep(returnStep, true);
     }
   } catch (e) {
     console.warn('Auto import skipped:', e);
