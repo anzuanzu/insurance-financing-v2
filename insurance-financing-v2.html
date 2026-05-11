@@ -142,6 +142,16 @@
       display: block; font-size: 0.85rem; font-weight: 600;
       color: var(--text); margin-bottom: 6px;
     }
+    .form-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .form-label-row .form-label {
+      margin-bottom: 0;
+    }
     .form-label .hint { font-weight: 400; color: var(--text-light); font-size: 0.75rem; }
     .form-input {
       width: 100%; padding: 12px 14px; border: 1px solid var(--border);
@@ -242,6 +252,8 @@
     }
     .bond-total .row .val { font-weight: 700; }
     .bond-total .row.net { font-size: 1rem; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 10px; margin-top: 4px; }
+    .bond-total .row.sub-row { font-size: 0.8rem; opacity: 0.8; padding: 2px 0 2px 8px; }
+    .bond-total .row.sub-row .sub-val { font-weight: 600; }
     .allocation-warning {
       background: #fef3c7; color: #92400e; padding: 10px 14px; border-radius: 8px;
       font-size: 0.82rem; margin-top: 8px; display: flex; align-items: center; gap: 8px;
@@ -371,6 +383,10 @@
     .inline-btn.accent { color: var(--accent); border-color: #f5deb3; }
     .action-row {
       display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+    }
+    .fund-import-status {
+      display: inline-flex; align-items: center; min-height: 34px;
+      font-size: 0.78rem; color: var(--text-light);
     }
     .empty-state {
       padding: 20px; text-align: center; color: var(--text-light); font-size: 0.84rem;
@@ -550,6 +566,36 @@
         <div><strong id="selProductCode"></strong> <span id="selProductName"></span></div>
         <div style="margin-top:4px;"><span id="selProductCurrencyBadge" class="search-option currency-tag"></span></div>
       </div>
+      <div class="form-group hidden" id="xindeliPayPeriodGroup">
+        <label class="form-label">鑫得利繳費年期</label>
+        <select class="form-input" id="xindeliPayPeriod" onchange="handleXindeliPayPeriodChange()">
+          <option value="2">年繳（兩年期）</option>
+          <option value="single">躉繳</option>
+        </select>
+      </div>
+      <div class="form-group hidden" id="xumanxinPayPeriodGroup">
+        <label class="form-label">旭滿鑫繳費年期</label>
+        <select class="form-input" id="xumanxinPayPeriod" onchange="handleXumanxinPayPeriodChange()">
+          <option value="2">年繳（兩年期）</option>
+          <option value="single">躉繳</option>
+        </select>
+      </div>
+      <div class="form-row" id="insuranceProfileRow">
+        <div class="form-group">
+          <label class="form-label">保險年齡</label>
+          <div class="input-group">
+            <input type="number" class="form-input" id="insuranceAge" inputmode="numeric" min="0" max="110" step="1" placeholder="例：19" oninput="recalcFinancing('profile')">
+            <span class="input-suffix">歲</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">性別</label>
+          <select class="form-input" id="insuredGender" onchange="recalcFinancing('profile')">
+            <option value="male">男性</option>
+            <option value="female">女性</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -567,18 +613,32 @@
 
       <div class="form-row" id="commonAmountRow">
         <div class="form-group" id="sumInsuredGroup">
-          <label class="form-label">保額 <span class="hint" id="sumInsuredCurrLabel">(USD)</span></label>
-          <input type="number" class="form-input" id="sumInsured" inputmode="decimal" placeholder="300,0000" oninput="recalcFinancing()">
+          <div class="form-label-row">
+            <label class="form-label">保額 <span class="hint" id="sumInsuredCurrLabel">(USD)</span></label>
+            <button class="inline-btn hidden" type="button" id="estimateSumInsuredBtn" onclick="applyEstimatedSumInsured()"><i class="fas fa-wand-magic-sparkles"></i> 依保費估算</button>
+          </div>
+          <input type="number" class="form-input" id="sumInsured" inputmode="decimal" placeholder="300,000" oninput="recalcFinancing('sumInsured')" onblur="normalizeSumInsuredField()">
+          <div class="exchange-info hidden" id="sumInsuredEstimateHint">
+            <i class="fas fa-calculator"></i>
+            <span id="sumInsuredEstimateText" class="status"></span>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">保費 <span class="hint" id="premiumCurrLabel">(USD)</span></label>
-          <input type="number" class="form-input" id="premium" inputmode="decimal" placeholder="508,200" oninput="recalcFinancing()">
+          <input type="number" class="form-input" id="premium" inputmode="decimal" placeholder="508,200" oninput="recalcFinancing('premium')">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">融資利率 (%)</label>
           <input type="number" class="form-input" id="financingRate" inputmode="decimal" value="2.38" step="0.01" oninput="recalcFinancing()">
+        </div>
+        <div class="form-group" id="coverageYearGroup">
+          <label class="form-label">保障倍數年度</label>
+          <div class="input-group">
+            <input type="number" class="form-input" id="coverageYear" inputmode="numeric" value="20" min="1" max="100" step="1" oninput="recalcFinancing()">
+            <span class="input-suffix">年</span>
+          </div>
         </div>
       </div>
       <div class="form-row" id="policyOnlyValueRow">
@@ -671,12 +731,13 @@
   <section class="step-panel" id="step3">
     <div class="card">
       <div class="card-title"><i class="fas fa-chart-line"></i> 投資配置</div>
-      <div style="font-size:0.85rem; color:var(--text-light); margin-bottom:12px;">
-        可投資金額：<strong id="availableAmount" style="color:var(--accent);">-</strong>
+      <div style="margin-bottom:14px;">
+        <div style="font-size:0.8rem; color:var(--text-light); margin-bottom:4px;">可投資金額</div>
+        <div style="font-size:1.25rem; font-weight:700; color:var(--accent); line-height:1.4;" id="availableAmount">-</div>
+        <div style="font-size:0.9rem; color:var(--text-light); margin-top:2px;" id="availableAmountUsd"></div>
       </div>
       <div class="action-row">
         <button class="inline-btn accent" type="button" onclick="openBondScreeningTool()"><i class="fas fa-arrow-up-right-from-square"></i> 開啟債券篩選工具</button>
-        <button class="inline-btn success" type="button" id="importBondsBtn" onclick="importSelectedBonds()"><i class="fas fa-file-import"></i> 匯入篩選債券</button>
         <button class="inline-btn danger" type="button" onclick="clearBonds()"><i class="fas fa-trash"></i> 清空債券</button>
       </div>
       <div class="investment-section-title"><i class="fas fa-building-columns"></i> 債券投資</div>
@@ -695,6 +756,13 @@
         <i class="fas fa-plus-circle"></i> 新增債券（最多 5 檔）
       </button>
       <div class="investment-section-title"><i class="fas fa-chart-pie"></i> 基金投資</div>
+      <div class="action-row">
+        <input type="file" id="pledgeFundFileInput" accept=".xlsx,.xls" class="hidden" onchange="importPledgeFundList(event)">
+        <button class="inline-btn success" type="button" onclick="triggerPledgeFundImport()">
+          <i class="fas fa-file-import"></i> 匯入可質借基金清單
+        </button>
+        <span class="fund-import-status" id="pledgeFundImportStatus">尚未匯入可質借基金清單</span>
+      </div>
       <div class="mode-toggle" id="fundModeToggle">
         <button class="mode-option active" type="button" onclick="setInvestmentMode('fund', 'single')" id="fundModeSingle">
           <span class="title">單一投資</span>
@@ -730,6 +798,14 @@
           <span>年度融資成本</span>
           <span class="val" id="totalFinCost">0</span>
         </div>
+        <div class="row sub-row" id="subRowPolicyLoan">
+          <span>└ 保單借款</span>
+          <span class="val sub-val" id="totalPolicyLoanCost">0</span>
+        </div>
+        <div class="row sub-row" id="subRowPledgeLoan" style="display:none;">
+          <span>└ 投資借款</span>
+          <span class="val sub-val" id="totalPledgeLoanCost">0</span>
+        </div>
         <div class="row net">
           <span>年度淨息收</span>
           <span class="val" id="netIncome">0</span>
@@ -754,6 +830,8 @@
         <div class="stat-card"><div class="stat-label">保費</div><div class="stat-value" id="resPremium">-</div></div>
         <div class="stat-card accent"><div class="stat-label">融資金額 (TWD)</div><div class="stat-value" id="resFinancing">-</div></div>
         <div class="stat-card"><div class="stat-label">融資利率</div><div class="stat-value" id="resRate">-</div></div>
+        <div class="stat-card"><div class="stat-label">保障倍數年度</div><div class="stat-value" id="resCoverageYear">-</div></div>
+        <div class="stat-card"><div class="stat-label">該年度預估保障</div><div class="stat-value" id="resProjectedBenefit">-</div></div>
       </div>
     </div>
 
@@ -892,11 +970,12 @@
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">投資面額</label>
-        <input type="number" class="form-input" id="bondFaceValue" inputmode="numeric" placeholder="200000">
+        <input type="number" class="form-input" id="bondFaceValue" inputmode="numeric" placeholder="200000" step="10000">
+        <div id="bondFaceValueHint" style="display:none; font-size:0.78rem; margin-top:4px;"></div>
       </div>
       <div class="form-group">
         <label class="form-label">參考買入價</label>
-        <input type="number" class="form-input" id="bondBuyPrice" inputmode="decimal" step="0.01" placeholder="100.50">
+        <input type="number" class="form-input" id="bondBuyPrice" inputmode="decimal" step="0.01" placeholder="100.50" oninput="autoFillFaceValue()">
       </div>
     </div>
     <div class="form-row">
@@ -907,6 +986,18 @@
       <div class="form-group">
         <label class="form-label">剩餘到期年</label>
         <input type="number" class="form-input" id="bondMaturityYears" inputmode="decimal" step="0.01" placeholder="10.5">
+      </div>
+    </div>
+    <div id="bondLoanRatioGroup" style="display:none;">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">質借成數 (%)</label>
+          <input type="number" class="form-input" id="bondLoanRatio" inputmode="decimal" step="1" value="72" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">質押利率 (%)</label>
+          <input type="number" class="form-input" id="bondPledgeRate" inputmode="decimal" step="0.01" value="2.38" min="0">
+        </div>
       </div>
     </div>
     <div class="form-group">
@@ -943,25 +1034,38 @@
         <div class="product-options-list" id="fundNameOptions"></div>
       </div>
     </div>
+    <div class="form-group">
+      <label class="form-label">投資金額 (TWD)</label>
+      <input type="number" class="form-input" id="fundInvestmentAmount" inputmode="numeric" placeholder="3000000">
+      <div id="fundAmountHint" style="display:none; font-size:0.78rem; margin-top:4px;"></div>
+    </div>
     <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">投資金額 (TWD)</label>
-        <input type="number" class="form-input" id="fundInvestmentAmount" inputmode="numeric" placeholder="3000000">
-      </div>
       <div class="form-group">
         <label class="form-label">年化配息率 (%)</label>
         <input type="number" class="form-input" id="fundDividendRate" inputmode="decimal" step="0.01" placeholder="7">
       </div>
+      <div class="form-group">
+        <label class="form-label">配息頻率</label>
+        <select class="form-input" id="fundDividendFrequency">
+          <option value="12">月配</option>
+          <option value="4">季配</option>
+          <option value="2">半年配</option>
+          <option value="1">年配</option>
+          <option value="0">不配息</option>
+        </select>
+      </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">配息頻率</label>
-      <select class="form-input" id="fundDividendFrequency">
-        <option value="12">月配</option>
-        <option value="4">季配</option>
-        <option value="2">半年配</option>
-        <option value="1">年配</option>
-        <option value="0">不配息</option>
-      </select>
+    <div id="fundLoanRatioGroup" style="display:none;">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">質借成數 (%)</label>
+          <input type="number" class="form-input" id="fundLoanRatio" inputmode="decimal" step="1" value="72" min="1" max="100">
+        </div>
+        <div class="form-group">
+          <label class="form-label">質押利率 (%)</label>
+          <input type="number" class="form-input" id="fundPledgeRate" inputmode="decimal" step="0.01" value="2.38" min="0">
+        </div>
+      </div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-cancel" onclick="closeFundModal()">取消</button>
@@ -1003,6 +1107,17 @@
 </div>
 
 <script src="fund_data.js"></script>
+<script src="pledge_fund_data.js?v=20260511-1"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="wq6_coverage_data.js?v=20260511-2"></script>
+<script src="wsj_coverage_data.js?v=20260511-2"></script>
+<script src="wsk_coverage_data.js?v=20260511-2"></script>
+<script src="wsh_coverage_data.js?v=20260511-2"></script>
+<script src="wsi_coverage_data.js?v=20260511-2"></script>
+<script src="wef_coverage_data.js?v=20260511-2"></script>
+<script src="wja_coverage_data.js?v=20260511-2"></script>
+<script src="aba_coverage_data.js?v=20260511-2"></script>
+<script src="wus_coverage_data.js?v=20260511-2"></script>
 <script>
 // === Product Data ===
 const PREMIUM_FINANCING_PRODUCTS = [
@@ -1010,8 +1125,8 @@ const PREMIUM_FINANCING_PRODUCTS = [
   { code: "WUS", name: "國泰人壽鑽美滿利率變動型美元終身壽險(定期給付型)", shortName: "鑽美滿", currency: "USD" },
   { code: "WEF", name: "國泰人壽泰美好利率變動型美元終身壽險(定期給付型)", shortName: "泰美好", currency: "USD" },
   { code: "WQ6", name: "國泰人壽美添增鑫利率變動型美元終身壽險", shortName: "美添增鑫", currency: "USD" },
-  { code: "WSJ", name: "國泰人壽鑫得利利率變動型終身壽險", shortName: "鑫得利", currency: "TWD" },
-  { code: "WSH", name: "國泰人壽旭滿鑫利率變動型終身壽險(定期給付型)", shortName: "旭滿鑫", currency: "TWD" },
+  { code: "WSK", name: "國泰人壽鑫得利利率變動型終身壽險", shortName: "鑫得利", currency: "TWD", aliases: ["WSJ", "鑫得利", "躉繳", "兩年期"] },
+  { code: "WSH", name: "國泰人壽旭滿鑫利率變動型終身壽險(定期給付型)", shortName: "旭滿鑫", currency: "TWD", aliases: ["WSI", "旭滿鑫", "躉繳", "兩年期"] },
   { code: "WJA", name: "國泰人壽鑽美鑫利率變動型美元終身壽險(定期給付型)", shortName: "鑽美鑫", currency: "USD" },
 ];
 
@@ -1106,8 +1221,8 @@ const POLICY_FINANCING_PRODUCTS = [
   {code:"WSC",name:"國泰人壽旭滿益利率變動型終身壽險(定期給付型)",shortName:"旭滿益利變終身壽",currency:"TWD"},
   {code:"WSE",name:"國泰人壽花威望利率變動型終身壽險",shortName:"花威望利變終身壽",currency:"TWD"},
   {code:"WSH",name:"國泰人壽旭滿鑫利率變動型終身壽險(定期給付型)",shortName:"旭滿鑫利變終身壽",currency:"TWD"},
-  {code:"WSJ",name:"國泰人壽鑫得利利率變動型終身壽險",shortName:"鑫得利利變終身壽",currency:"TWD"},
-  {code:"WSK",name:"國泰人壽鑫得利利率變動型終身壽險",shortName:"鑫得利利變終身壽",currency:"TWD"},
+  {code:"WSJ",name:"國泰人壽鑫得利利率變動型終身壽險（躉繳）",shortName:"鑫得利利變終身壽（躉繳）",currency:"TWD"},
+  {code:"WSK",name:"國泰人壽鑫得利利率變動型終身壽險（2年繳）",shortName:"鑫得利利變終身壽（2年繳）",currency:"TWD"},
   {code:"WSL",name:"國泰人壽萬得利利率變動型終身壽險(定期給付型)",shortName:"萬得利利變壽",currency:"TWD"},
   {code:"WSO",name:"國泰人壽雙美添益利率變動型美元終身壽險(定期給付型)",shortName:"雙美添益利變美元",currency:"USD"},
   {code:"WTB",name:"國泰人壽樂添多利利率變動型終身壽險",shortName:"樂添多利利變終身壽",currency:"TWD"},
@@ -1161,7 +1276,12 @@ const POLICY_FINANCING_PRODUCTS = [
 
 const STORAGE_KEY = 'insuranceFinancingScenario';
 const IMPORT_BONDS_KEY = 'selectedBonds';
+const IMPORT_FLAG_KEY = 'insuranceFinancingAutoImport';
+const IMPORT_RETURN_STEP_KEY = 'insuranceFinancingImportReturnStep';
+const PLEDGE_FUND_PRODUCTS_KEY = 'pledgeFundProducts';
 const fundProducts = typeof externalFundProducts !== 'undefined' ? externalFundProducts : [];
+const repoPledgeFundProducts = typeof pledgeFundProducts !== 'undefined' ? pledgeFundProducts : [];
+let importedPledgeFundProducts = loadPledgeFundProducts();
 const DEFAULT_EXCHANGE_RATES = {
   USD: 32.0,
   TWD: 1,
@@ -1169,15 +1289,420 @@ const DEFAULT_EXCHANGE_RATES = {
   EUR: 34.8,
   GBP: 40.6
 };
+const HIGH_PREMIUM_DISCOUNT_TIERS = [
+  { minTablePremium: 0, discount: 0 },
+  { minTablePremium: 100000, discount: 0.005 },
+  { minTablePremium: 200000, discount: 0.015 }
+];
+const PRODUCT_SUM_INSURED_ESTIMATORS = {
+  ABA: {
+    currency: 'USD',
+    unitSize: 1000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: HIGH_PREMIUM_DISCOUNT_TIERS,
+    rateByAge: {
+      0: 1065.4, 1: 1065.2, 2: 1065.2, 3: 1065.0, 4: 1064.9, 5: 1064.5, 6: 1064.5, 7: 1064.5, 8: 1064.5, 9: 1064.5, 10: 1064.5,
+      11: 1064.5, 12: 1064.5, 13: 1064.5, 14: 1064.5, 15: 1064.5, 16: 1064.5, 17: 1064.5, 18: 1064.5, 19: 1064.4, 20: 1064.4,
+      21: 1064.1, 22: 1063.7, 23: 1063.4, 24: 1063.0, 25: 1062.7, 26: 1062.4, 27: 1062.0, 28: 1061.9, 29: 1061.3, 30: 1061.0,
+      31: 1060.6, 32: 1060.2, 33: 1059.6, 34: 1059.1, 35: 1058.8, 36: 1058.4, 37: 1058.1, 38: 1057.9, 39: 1057.9, 40: 1058.0,
+      41: 1058.0, 42: 1058.0, 43: 1058.0, 44: 1058.0, 45: 1058.0, 46: 1058.0, 47: 1058.1, 48: 1058.1, 49: 1058.1, 50: 1058.1,
+      51: 1058.2, 52: 1058.2, 53: 1058.2, 54: 1058.2, 55: 1058.3, 56: 1058.3, 57: 1058.3, 58: 1058.4, 59: 1058.6, 60: 1058.6,
+      61: 1058.9, 62: 1059.9, 63: 1061.0, 64: 1062.3, 65: 1063.4, 66: 1063.7, 67: 1063.7, 68: 1063.9, 69: 1064.3, 70: 1065.0,
+      71: 1065.4, 72: 1065.7, 73: 1066.5, 74: 1067.1, 75: 1068.0, 76: 1069.8, 77: 1071.7, 78: 1073.7, 79: 1075.7, 80: 1078.2,
+      81: 1079.5, 82: 1080.9, 83: 1082.6, 84: 1084.5, 85: 1087.0
+    },
+    rateByGender: {
+      female: {
+        0: 1065.3, 1: 1065.3, 2: 1065.3, 3: 1065.0, 4: 1065.0, 5: 1064.7, 6: 1064.7, 7: 1064.7, 8: 1064.7, 9: 1064.7,
+        10: 1064.7, 11: 1064.7, 12: 1064.7, 13: 1064.7, 14: 1064.7, 15: 1064.7, 16: 1064.7, 17: 1064.7, 18: 1064.7, 19: 1064.7,
+        20: 1064.6, 21: 1064.3, 22: 1064.0, 23: 1063.7, 24: 1063.4, 25: 1062.9, 26: 1062.7, 27: 1062.4, 28: 1062.4, 29: 1061.8,
+        30: 1061.5, 31: 1061.2, 32: 1060.9, 33: 1060.5, 34: 1060.3, 35: 1059.9, 36: 1059.8, 37: 1059.5, 38: 1059.3, 39: 1059.0,
+        40: 1058.7, 41: 1058.7, 42: 1058.7, 43: 1058.7, 44: 1058.7, 45: 1058.7, 46: 1058.7, 47: 1058.7, 48: 1058.7, 49: 1058.7,
+        50: 1058.7, 51: 1058.9, 52: 1059.1, 53: 1059.3, 54: 1059.5, 55: 1059.7, 56: 1059.7, 57: 1060.0, 58: 1060.2, 59: 1060.4,
+        60: 1060.6, 61: 1061.4, 62: 1062.2, 63: 1063.4, 64: 1064.6, 65: 1065.5, 66: 1066.0, 67: 1066.3, 68: 1067.1, 69: 1067.8,
+        70: 1068.7, 71: 1068.8, 72: 1068.9, 73: 1069.3, 74: 1069.5, 75: 1069.8, 76: 1071.2, 77: 1072.4, 78: 1073.6, 79: 1075.0,
+        80: 1076.9, 81: 1078.4, 82: 1080.2, 83: 1082.1, 84: 1084.7, 85: 1087.3
+      }
+    }
+  },
+  WUS: {
+    currency: 'USD',
+    unitSize: 1000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: [
+      { minTablePremium: 0, discount: 0 },
+      { minTablePremium: 500000, discount: 0.01 }
+    ],
+    rateByAge: {
+      0: 52.5, 1: 54.4, 2: 56.4, 3: 58.4, 4: 60.6, 5: 62.7, 6: 65.0, 7: 67.4, 8: 69.9, 9: 72.6,
+      10: 75.3, 11: 78.1, 12: 81.1, 13: 84.1, 14: 87.2, 15: 90.1, 16: 93.5, 17: 96.9, 18: 100.5, 19: 104.2,
+      20: 108.1, 21: 112.1, 22: 116.3, 23: 120.6, 24: 125.1, 25: 129.4, 26: 134.2, 27: 139.2, 28: 144.4, 29: 149.8,
+      30: 155.3, 31: 161.1, 32: 167.0, 33: 173.2, 34: 179.7, 35: 185.8, 36: 192.7, 37: 199.8, 38: 207.2, 39: 214.8,
+      40: 222.7, 41: 230.8, 42: 239.3, 43: 248.0, 44: 257.0, 45: 266.2, 46: 275.8, 47: 285.7, 48: 295.9, 49: 306.6,
+      50: 317.4, 51: 328.6, 52: 340.3, 53: 352.4, 54: 364.9, 55: 377.9, 56: 391.2, 57: 405.0, 58: 419.3, 59: 434.0,
+      60: 449.0, 61: 464.5, 62: 480.7, 63: 497.4, 64: 514.4, 65: 532.0, 66: 550.1, 67: 568.8, 68: 588.1, 69: 607.7,
+      70: 628.0, 71: 648.7, 72: 670.2, 73: 692.3, 74: 715.5, 75: 739.5
+    },
+    rateByGender: {
+      male: {
+        0: 66.6, 1: 69.0, 2: 71.5, 3: 74.2, 4: 76.9, 5: 79.7, 6: 82.6, 7: 85.7, 8: 88.9, 9: 92.3,
+        10: 95.7, 11: 99.3, 12: 102.9, 13: 106.7, 14: 110.6, 15: 114.4, 16: 118.5, 17: 122.7, 18: 127.1, 19: 131.7,
+        20: 136.4, 21: 141.3, 22: 146.4, 23: 151.7, 24: 157.2, 25: 162.7, 26: 168.6, 27: 174.7, 28: 181.1, 29: 187.7,
+        30: 194.4, 31: 201.4, 32: 208.6, 33: 216.1, 34: 223.8, 35: 231.5, 36: 239.7, 37: 248.1, 38: 256.8, 39: 265.8,
+        40: 274.9, 41: 284.3, 42: 294.1, 43: 304.1, 44: 314.4, 45: 324.4, 46: 335.3, 47: 346.5, 48: 358.0, 49: 369.9,
+        50: 381.7, 51: 393.8, 52: 406.7, 53: 420.0, 54: 433.6, 55: 447.6, 56: 462.0, 57: 476.9, 58: 492.2, 59: 507.9,
+        60: 523.5, 61: 539.6, 62: 556.5, 63: 574.0, 64: 591.8, 65: 610.2, 66: 629.0, 67: 648.1, 68: 667.7, 69: 687.4,
+        70: 707.5, 71: 728.2, 72: 749.6, 73: 772.0, 74: 795.9, 75: 821.1
+      },
+      female: {
+        0: 52.5, 1: 54.4, 2: 56.4, 3: 58.4, 4: 60.6, 5: 62.7, 6: 65.0, 7: 67.4, 8: 69.9, 9: 72.6,
+        10: 75.3, 11: 78.1, 12: 81.1, 13: 84.1, 14: 87.2, 15: 90.1, 16: 93.5, 17: 96.9, 18: 100.5, 19: 104.2,
+        20: 108.1, 21: 112.1, 22: 116.3, 23: 120.6, 24: 125.1, 25: 129.4, 26: 134.2, 27: 139.2, 28: 144.4, 29: 149.8,
+        30: 155.3, 31: 161.1, 32: 167.0, 33: 173.2, 34: 179.7, 35: 185.8, 36: 192.7, 37: 199.8, 38: 207.2, 39: 214.8,
+        40: 222.7, 41: 230.8, 42: 239.3, 43: 248.0, 44: 257.0, 45: 266.2, 46: 275.8, 47: 285.7, 48: 295.9, 49: 306.6,
+        50: 317.4, 51: 328.6, 52: 340.3, 53: 352.4, 54: 364.9, 55: 377.9, 56: 391.2, 57: 405.0, 58: 419.3, 59: 434.0,
+        60: 449.0, 61: 464.5, 62: 480.7, 63: 497.4, 64: 514.4, 65: 532.0, 66: 550.1, 67: 568.8, 68: 588.1, 69: 607.7,
+        70: 628.0, 71: 648.7, 72: 670.2, 73: 692.3, 74: 715.5, 75: 739.5
+      }
+    }
+  },
+  WEF: {
+    currency: 'USD',
+    unitSize: 1000,
+    maxUnitAmount: 2000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: [
+      { minTablePremium: 0, discount: 0 },
+      { minTablePremium: 65000, discount: 0.01 }
+    ],
+    rateByAge: {
+      16: 166.0, 17: 171.0, 18: 175.0, 19: 181.0, 20: 186.0, 21: 191.0, 22: 197.0, 23: 204.0, 24: 210.0, 25: 216.0,
+      26: 223.0, 27: 229.0, 28: 237.0, 29: 244.0, 30: 251.0, 31: 259.0, 32: 267.0, 33: 274.0, 34: 282.0, 35: 291.0,
+      36: 299.0, 37: 309.0, 38: 318.0, 39: 327.0, 40: 337.0, 41: 347.0, 42: 357.0, 43: 368.0, 44: 379.0, 45: 390.0,
+      46: 401.0, 47: 413.0, 48: 424.0, 49: 437.0, 50: 450.0, 51: 462.0, 52: 475.0, 53: 488.0, 54: 503.0, 55: 517.0,
+      56: 532.0, 57: 546.0, 58: 562.0, 59: 578.0, 60: 594.0, 61: 612.0, 62: 634.0, 63: 660.0, 64: 684.0, 65: 706.0,
+      66: 727.0, 67: 747.0, 68: 769.0, 69: 795.0, 70: 819.0, 71: 832.0, 72: 845.0, 73: 857.0, 74: 869.0, 75: 883.0
+    },
+    rateByGender: {
+      female: {
+        16: 135.0, 17: 140.0, 18: 143.0, 19: 147.0, 20: 152.0, 21: 155.0, 22: 160.0, 23: 165.0, 24: 171.0, 25: 175.0,
+        26: 180.0, 27: 187.0, 28: 192.0, 29: 200.0, 30: 205.0, 31: 213.0, 32: 218.0, 33: 225.0, 34: 233.0, 35: 239.0,
+        36: 247.0, 37: 255.0, 38: 262.0, 39: 271.0, 40: 280.0, 41: 289.0, 42: 299.0, 43: 307.0, 44: 317.0, 45: 327.0,
+        46: 337.0, 47: 348.0, 48: 359.0, 49: 370.0, 50: 381.0, 51: 394.0, 52: 406.0, 53: 419.0, 54: 431.0, 55: 444.0,
+        56: 458.0, 57: 471.0, 58: 486.0, 59: 500.0, 60: 516.0, 61: 533.0, 62: 549.0, 63: 567.0, 64: 586.0, 65: 606.0,
+        66: 627.0, 67: 649.0, 68: 672.0, 69: 695.0, 70: 715.0, 71: 729.0, 72: 742.0, 73: 754.0, 74: 766.0, 75: 780.0
+      }
+    }
+  },
+  WQ6: {
+    currency: 'USD',
+    unitSize: 1000,
+    maxUnitAmount: 3000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: HIGH_PREMIUM_DISCOUNT_TIERS,
+    rateByAge: {
+      0: 594.3, 1: 598.6, 2: 603.0, 3: 607.3, 4: 611.7, 5: 616.0, 6: 620.6, 7: 625.2, 8: 629.8, 9: 634.4,
+      10: 639.0, 11: 643.6, 12: 648.3, 13: 652.9, 14: 657.6, 15: 662.2, 16: 666.9, 17: 671.6, 18: 676.3, 19: 681.0,
+      20: 685.7, 21: 690.3, 22: 695.0, 23: 699.6, 24: 704.3, 25: 708.9, 26: 713.7, 27: 718.4, 28: 723.2, 29: 727.9,
+      30: 732.7, 31: 737.5, 32: 742.2, 33: 747.0, 34: 751.7, 35: 756.5, 36: 761.3, 37: 766.2, 38: 771.0, 39: 775.9,
+      40: 780.7, 41: 785.8, 42: 790.9, 43: 796.1, 44: 801.2, 45: 806.3, 46: 811.4, 47: 816.5, 48: 821.6, 49: 826.7,
+      50: 831.8, 51: 837.3, 52: 842.9, 53: 848.4, 54: 854.0, 55: 859.5, 56: 864.6, 57: 869.7, 58: 874.9, 59: 880.0,
+      60: 885.1, 61: 891.2, 62: 897.2, 63: 903.3, 64: 909.3, 65: 915.4, 66: 920.3, 67: 925.3, 68: 930.2, 69: 935.2,
+      70: 940.1, 71: 944.9, 72: 949.6, 73: 954.4, 74: 959.1, 75: 963.9, 76: 969.2, 77: 974.5, 78: 979.9, 79: 985.2,
+      80: 990.5, 81: 994.7, 82: 998.9, 83: 1003.1, 84: 1007.3, 85: 1011.5
+    },
+    rateByGender: {
+      female: {
+        0: 566.5, 1: 570.7, 2: 574.8, 3: 579, 4: 583.1, 5: 587.3, 6: 591.8, 7: 596.2, 8: 600.7, 9: 605.1,
+        10: 609.6, 11: 614.1, 12: 618.6, 13: 623, 14: 627.5, 15: 632, 16: 636.6, 17: 641.3, 18: 645.9, 19: 650.6,
+        20: 655.2, 21: 659.8, 22: 664.4, 23: 669, 24: 673.6, 25: 678.2, 26: 683, 27: 687.7, 28: 692.5, 29: 697.2,
+        30: 702, 31: 706.9, 32: 711.8, 33: 716.6, 34: 721.5, 35: 726.4, 36: 731.5, 37: 736.6, 38: 741.7, 39: 746.8,
+        40: 751.9, 41: 757.3, 42: 762.7, 43: 768, 44: 773.4, 45: 778.8, 46: 784.3, 47: 789.7, 48: 795.2, 49: 800.6,
+        50: 806.1, 51: 811.8, 52: 817.6, 53: 823.3, 54: 829.1, 55: 834.8, 56: 840.6, 57: 846.4, 58: 852.2, 59: 858,
+        60: 863.8, 61: 870.3, 62: 876.7, 63: 883.2, 64: 889.6, 65: 896.1, 66: 902, 67: 907.9, 68: 913.9, 69: 919.8,
+        70: 925.7, 71: 931, 72: 936.3, 73: 941.6, 74: 946.9, 75: 952.2, 76: 957.9, 77: 963.6, 78: 969.2, 79: 974.9,
+        80: 980.6, 81: 986, 82: 991.3, 83: 996.7, 84: 1002, 85: 1007.4
+      }
+    }
+  },
+  WSJ: {
+    currency: 'TWD',
+    unitSize: 10000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: [
+      { minTablePremium: 0, discount: 0 },
+      { minTablePremium: 500000, discount: 0.009 },
+      { minTablePremium: 2000000, discount: 0.018 }
+    ],
+    rateByAge: {
+      0: 9335.0, 1: 9353.0, 2: 9371.0, 3: 9389.0, 4: 9407.0, 5: 9425.0, 6: 9442.0, 7: 9458.0, 8: 9475.0, 9: 9491.0,
+      10: 9508.0, 11: 9522.0, 12: 9537.0, 13: 9551.0, 14: 9566.0, 15: 9580.0, 16: 9595.0, 17: 9610.0, 18: 9624.0, 19: 9639.0,
+      20: 9654.0, 21: 9667.0, 22: 9680.0, 23: 9694.0, 24: 9707.0, 25: 9720.0, 26: 9734.0, 27: 9748.0, 28: 9762.0, 29: 9776.0,
+      30: 9790.0, 31: 9802.0, 32: 9813.0, 33: 9825.0, 34: 9835.0, 35: 9848.0, 36: 9858.0, 37: 9868.0, 38: 9877.0, 39: 9887.0,
+      40: 9897.0, 41: 9908.0, 42: 9919.0, 43: 9930.0, 44: 9941.0, 45: 9952.0, 46: 9959.0, 47: 9967.0, 48: 9974.0, 49: 9981.0,
+      50: 9987.0, 51: 9996.0, 52: 10005.0, 53: 10015.0, 54: 10022.0, 55: 10033.0, 56: 10040.0, 57: 10049.0, 58: 10055.0, 59: 10062.0,
+      60: 10069.0, 61: 10078.0, 62: 10086.0, 63: 10094.0, 64: 10100.0, 65: 10112.0, 66: 10119.0, 67: 10127.0, 68: 10134.0, 69: 10142.0,
+      70: 10149.0, 71: 10162.0, 72: 10174.0, 73: 10187.0, 74: 10199.0, 75: 10212.0, 76: 10228.0, 77: 10243.0, 78: 10259.0, 79: 10274.0,
+      80: 10290.0, 81: 10304.0, 82: 10318.0, 83: 10332.0, 84: 10346.0, 85: 10360.0
+    },
+    rateByGender: {
+      female: {
+        0: 8990.0, 1: 9007.0, 2: 9024.0, 3: 9041.0, 4: 9058.0, 5: 9075.0, 6: 9092.0, 7: 9109.0, 8: 9126.0, 9: 9143.0,
+        10: 9160.0, 11: 9176.0, 12: 9192.0, 13: 9208.0, 14: 9224.0, 15: 9240.0, 16: 9257.0, 17: 9274.0, 18: 9291.0, 19: 9308.0,
+        20: 9325.0, 21: 9341.0, 22: 9357.0, 23: 9373.0, 24: 9389.0, 25: 9405.0, 26: 9422.0, 27: 9438.0, 28: 9455.0, 29: 9471.0,
+        30: 9488.0, 31: 9502.0, 32: 9517.0, 33: 9531.0, 34: 9546.0, 35: 9560.0, 36: 9576.0, 37: 9592.0, 38: 9608.0, 39: 9624.0,
+        40: 9640.0, 41: 9654.0, 42: 9668.0, 43: 9682.0, 44: 9695.0, 45: 9710.0, 46: 9725.0, 47: 9740.0, 48: 9755.0, 49: 9770.0,
+        50: 9785.0, 51: 9798.0, 52: 9811.0, 53: 9824.0, 54: 9837.0, 55: 9850.0, 56: 9865.0, 57: 9881.0, 58: 9895.0, 59: 9910.0,
+        60: 9925.0, 61: 9938.0, 62: 9949.0, 63: 9961.0, 64: 9970.0, 65: 9986.0, 66: 10000.0, 67: 10016.0, 68: 10032.0, 69: 10046.0,
+        70: 10060.0, 71: 10076.0, 72: 10092.0, 73: 10108.0, 74: 10124.0, 75: 10140.0, 76: 10157.0, 77: 10174.0, 78: 10191.0, 79: 10208.0,
+        80: 10225.0, 81: 10240.0, 82: 10255.0, 83: 10270.0, 84: 10285.0, 85: 10300.0
+      }
+    }
+  },
+  WSK: {
+    currency: 'TWD',
+    unitSize: 10000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: [
+      { minTablePremium: 0, discount: 0 },
+      { minTablePremium: 500000, discount: 0.01 },
+      { minTablePremium: 2000000, discount: 0.02 }
+    ],
+    rateByAge: {
+      0: 4838.0, 1: 4847.0, 2: 4856.0, 3: 4864.0, 4: 4873.0, 5: 4882.0, 6: 4891.0, 7: 4900.0, 8: 4909.0, 9: 4917.0,
+      10: 4925.0, 11: 4933.0, 12: 4941.0, 13: 4949.0, 14: 4957.0, 15: 4965.0, 16: 4973.0, 17: 4981.0, 18: 4989.0, 19: 4997.0,
+      20: 5005.0, 21: 5012.0, 22: 5019.0, 23: 5026.0, 24: 5033.0, 25: 5040.0, 26: 5047.0, 27: 5054.0, 28: 5061.0, 29: 5068.0,
+      30: 5075.0, 31: 5081.0, 32: 5087.0, 33: 5093.0, 34: 5098.0, 35: 5105.0, 36: 5110.0, 37: 5114.0, 38: 5119.0, 39: 5124.0,
+      40: 5128.0, 41: 5132.0, 42: 5136.0, 43: 5141.0, 44: 5143.0, 45: 5149.0, 46: 5154.0, 47: 5158.0, 48: 5163.0, 49: 5167.0,
+      50: 5172.0, 51: 5176.0, 52: 5181.0, 53: 5185.0, 54: 5188.0, 55: 5194.0, 56: 5198.0, 57: 5201.0, 58: 5205.0, 59: 5208.0,
+      60: 5212.0, 61: 5217.0, 62: 5221.0, 63: 5223.0, 64: 5227.0, 65: 5235.0, 66: 5242.0, 67: 5249.0, 68: 5256.0, 69: 5263.0,
+      70: 5270.0, 71: 5276.0, 72: 5282.0, 73: 5288.0, 74: 5294.0, 75: 5300.0, 76: 5311.0, 77: 5322.0, 78: 5333.0, 79: 5344.0,
+      80: 5355.0
+    },
+    rateByGender: {
+      female: {
+        0: 4655.0, 1: 4664.0, 2: 4673.0, 3: 4682.0, 4: 4691.0, 5: 4700.0, 6: 4709.0, 7: 4718.0, 8: 4727.0, 9: 4736.0,
+        10: 4745.0, 11: 4754.0, 12: 4763.0, 13: 4771.0, 14: 4780.0, 15: 4790.0, 16: 4798.0, 17: 4806.0, 18: 4814.0, 19: 4822.0,
+        20: 4830.0, 21: 4839.0, 22: 4847.0, 23: 4855.0, 24: 4864.0, 25: 4872.0, 26: 4881.0, 27: 4889.0, 28: 4898.0, 29: 4906.0,
+        30: 4915.0, 31: 4923.0, 32: 4931.0, 33: 4939.0, 34: 4947.0, 35: 4955.0, 36: 4963.0, 37: 4971.0, 38: 4979.0, 39: 4987.0,
+        40: 4995.0, 41: 5002.0, 42: 5009.0, 43: 5016.0, 44: 5023.0, 45: 5030.0, 46: 5038.0, 47: 5046.0, 48: 5054.0, 49: 5062.0,
+        50: 5070.0, 51: 5077.0, 52: 5084.0, 53: 5092.0, 54: 5098.0, 55: 5106.0, 56: 5113.0, 57: 5121.0, 58: 5128.0, 59: 5136.0,
+        60: 5143.0, 61: 5149.0, 62: 5155.0, 63: 5161.0, 64: 5165.0, 65: 5174.0, 66: 5183.0, 67: 5192.0, 68: 5202.0, 69: 5211.0,
+        70: 5220.0, 71: 5228.0, 72: 5236.0, 73: 5243.0, 74: 5250.0, 75: 5258.0, 76: 5266.0, 77: 5275.0, 78: 5283.0, 79: 5292.0,
+        80: 5300.0
+      }
+    }
+  },
+  WSH: {
+    currency: 'TWD',
+    unitSize: 10000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: [
+      { minTablePremium: 0, discount: 0 },
+      { minTablePremium: 1200000, discount: 0.005 },
+      { minTablePremium: 2000000, discount: 0.01 }
+    ],
+    rateByAge: {
+      16: 3299.0, 17: 3362.0, 18: 3426.0, 19: 3491.0, 20: 3557.0, 21: 3624.0, 22: 3693.0, 23: 3764.0, 24: 3835.0, 25: 3908.0,
+      26: 3983.0, 27: 4058.0, 28: 4136.0, 29: 4214.0, 30: 4293.0, 31: 4375.0, 32: 4459.0, 33: 4544.0, 34: 4631.0, 35: 4719.0,
+      36: 4808.0, 37: 4899.0, 38: 4990.0, 39: 5083.0, 40: 5175.0, 41: 5269.0, 42: 5365.0, 43: 5462.0, 44: 5561.0, 45: 5661.0,
+      46: 5761.0, 47: 5864.0, 48: 5967.0, 49: 6072.0, 50: 6173.0, 51: 6276.0, 52: 6384.0, 53: 6495.0, 54: 6606.0, 55: 6719.0,
+      56: 6834.0, 57: 6951.0, 58: 7070.0, 59: 7190.0, 60: 7305.0, 61: 7422.0, 62: 7547.0, 63: 7674.0, 64: 7802.0, 65: 7933.0,
+      66: 8065.0, 67: 8200.0, 68: 8339.0, 69: 8477.0, 70: 8620.0
+    },
+    rateByGender: {
+      female: {
+        16: 2916.0, 17: 2973.0, 18: 3030.0, 19: 3089.0, 20: 3149.0, 21: 3211.0, 22: 3274.0, 23: 3339.0, 24: 3404.0, 25: 3471.0,
+        26: 3539.0, 27: 3608.0, 28: 3678.0, 29: 3750.0, 30: 3823.0, 31: 3898.0, 32: 3975.0, 33: 4054.0, 34: 4134.0, 35: 4215.0,
+        36: 4298.0, 37: 4383.0, 38: 4468.0, 39: 4556.0, 40: 4644.0, 41: 4735.0, 42: 4828.0, 43: 4922.0, 44: 5018.0, 45: 5116.0,
+        46: 5214.0, 47: 5312.0, 48: 5415.0, 49: 5517.0, 50: 5620.0, 51: 5724.0, 52: 5831.0, 53: 5939.0, 54: 6049.0, 55: 6161.0,
+        56: 6274.0, 57: 6388.0, 58: 6505.0, 59: 6623.0, 60: 6740.0, 61: 6862.0, 62: 6988.0, 63: 7117.0, 64: 7246.0, 65: 7379.0,
+        66: 7509.0, 67: 7642.0, 68: 7778.0, 69: 7917.0, 70: 8060.0
+      }
+    }
+  },
+  WSI: {
+    currency: 'TWD',
+    unitSize: 10000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: [
+      { minTablePremium: 0, discount: 0 },
+      { minTablePremium: 800000, discount: 0.005 },
+      { minTablePremium: 1500000, discount: 0.01 }
+    ],
+    rateByAge: {
+      16: 1682.0, 17: 1714.0, 18: 1746.0, 19: 1780.0, 20: 1814.0, 21: 1848.0, 22: 1883.0, 23: 1919.0, 24: 1955.0, 25: 1992.0,
+      26: 2030.0, 27: 2068.0, 28: 2108.0, 29: 2148.0, 30: 2188.0, 31: 2230.0, 32: 2273.0, 33: 2316.0, 34: 2360.0, 35: 2405.0,
+      36: 2450.0, 37: 2496.0, 38: 2543.0, 39: 2590.0, 40: 2637.0, 41: 2685.0, 42: 2734.0, 43: 2784.0, 44: 2834.0, 45: 2885.0,
+      46: 2936.0, 47: 2988.0, 48: 3041.0, 49: 3095.0, 50: 3147.0, 51: 3201.0, 52: 3257.0, 53: 3314.0, 54: 3372.0, 55: 3430.0,
+      56: 3490.0, 57: 3551.0, 58: 3613.0, 59: 3676.0, 60: 3737.0, 61: 3802.0, 62: 3869.0, 63: 3938.0, 64: 4007.0, 65: 4079.0,
+      66: 4153.0, 67: 4229.0, 68: 4309.0, 69: 4392.0, 70: 4480.0
+    },
+    rateByGender: {
+      female: {
+        16: 1486.0, 17: 1515.0, 18: 1544.0, 19: 1574.0, 20: 1605.0, 21: 1636.0, 22: 1668.0, 23: 1701.0, 24: 1734.0, 25: 1768.0,
+        26: 1802.0, 27: 1837.0, 28: 1873.0, 29: 1909.0, 30: 1946.0, 31: 1985.0, 32: 2024.0, 33: 2065.0, 34: 2106.0, 35: 2148.0,
+        36: 2190.0, 37: 2233.0, 38: 2278.0, 39: 2322.0, 40: 2368.0, 41: 2414.0, 42: 2462.0, 43: 2510.0, 44: 2559.0, 45: 2608.0,
+        46: 2658.0, 47: 2708.0, 48: 2760.0, 49: 2812.0, 50: 2864.0, 51: 2917.0, 52: 2972.0, 53: 3027.0, 54: 3083.0, 55: 3140.0,
+        56: 3199.0, 57: 3258.0, 58: 3318.0, 59: 3379.0, 60: 3441.0, 61: 3504.0, 62: 3569.0, 63: 3635.0, 64: 3701.0, 65: 3770.0,
+        66: 3838.0, 67: 3908.0, 68: 3980.0, 69: 4056.0, 70: 4135.0
+      }
+    }
+  },
+  WJA: {
+    currency: 'USD',
+    unitSize: 1000,
+    treatPremiumAsFirstYearPaid: true,
+    discountTiers: [
+      { minTablePremium: 0, discount: 0 },
+      { minTablePremium: 50000, discount: 0.01 },
+      { minTablePremium: 200000, discount: 0.02 },
+      { minTablePremium: 500000, discount: 0.03 },
+      { minTablePremium: 800000, discount: 0.04 },
+      { minTablePremium: 1200000, discount: 0.055 },
+      { minTablePremium: 1600000, discount: 0.07 }
+    ],
+    rateByAge: {
+      0: 98.8, 1: 101.7, 2: 104.8, 3: 107.9, 4: 111.2, 5: 114.6, 6: 118.1, 7: 121.7, 8: 125.4, 9: 129.2,
+      10: 133.1, 11: 137.2, 12: 141.5, 13: 145.8, 14: 150.3, 15: 154.8, 16: 159.3, 17: 164.0, 18: 168.8, 19: 173.7,
+      20: 178.8, 21: 184.3, 22: 189.9, 23: 195.7, 24: 201.7, 25: 207.9, 26: 214.3, 27: 220.9, 28: 227.8, 29: 234.8,
+      30: 241.9, 31: 249.3, 32: 256.8, 33: 264.7, 34: 272.6, 35: 280.8, 36: 289.2, 37: 297.9, 38: 306.7, 39: 315.8,
+      40: 324.8, 41: 334.2, 42: 344.0, 43: 354.0, 44: 364.1, 45: 374.5, 46: 385.1, 47: 395.9, 48: 407.0, 49: 418.4,
+      50: 429.6, 51: 441.1, 52: 453.2, 53: 465.6, 54: 478.1, 55: 491.0, 56: 504.1, 57: 517.5, 58: 531.2, 59: 545.0,
+      60: 558.8, 61: 572.7, 62: 587.4, 63: 602.3, 64: 617.3, 65: 632.7, 66: 648.1, 67: 663.7, 68: 679.6, 69: 695.4,
+      70: 710.6, 71: 720.6, 72: 731.0, 73: 742.9, 74: 758.1, 75: 771.2, 76: 786.1, 77: 798.9, 78: 819.2, 79: 836.5,
+      80: 858.1, 81: 876.6, 82: 896.1, 83: 916.8, 84: 941.2, 85: 981.1
+    },
+    rateByGender: {
+      female: {
+        0: 80.6, 1: 83.0, 2: 85.6, 3: 88.2, 4: 90.9, 5: 93.7, 6: 96.5, 7: 99.4, 8: 102.4, 9: 105.5,
+        10: 108.7, 11: 112.1, 12: 115.6, 13: 119.3, 14: 123.0, 15: 126.8, 16: 130.7, 17: 134.7, 18: 138.8, 19: 143.1,
+        20: 147.5, 21: 152.2, 22: 157.1, 23: 162.1, 24: 167.3, 25: 172.6, 26: 178.0, 27: 183.6, 28: 189.4, 29: 195.4,
+        30: 201.5, 31: 207.8, 32: 214.3, 33: 221.1, 34: 228.0, 35: 235.1, 36: 242.4, 37: 249.9, 38: 257.7, 39: 265.6,
+        40: 273.8, 41: 282.3, 42: 291.1, 43: 300.1, 44: 309.4, 45: 318.9, 46: 328.7, 47: 338.7, 48: 349.1, 49: 359.7,
+        50: 370.5, 51: 381.5, 52: 393.0, 53: 404.9, 54: 416.9, 55: 429.3, 56: 442.0, 57: 455.1, 58: 468.4, 59: 482.1,
+        60: 495.9, 61: 509.9, 62: 524.4, 63: 539.2, 64: 554.2, 65: 569.4, 66: 585.0, 67: 600.9, 68: 617.1, 69: 633.6,
+        70: 650.0, 71: 660.5, 72: 674.7, 73: 689.0, 74: 702.1, 75: 718.5, 76: 736.2, 77: 754.1, 78: 770.9, 79: 784.7,
+        80: 809.8, 81: 828.6, 82: 847.6, 83: 869.5, 84: 893.1, 85: 919.9
+      }
+    }
+  }
+};
+const PRODUCT_COVERAGE_MODELS = {
+  ABA: {
+    premiumBase: 563009,
+    faceAmountBase: 537000,
+    currency: 'USD',
+    deathBenefitByYear: {
+      1: 571583, 2: 587587, 3: 604040, 4: 620953, 5: 641218, 6: 669098, 7: 679086, 8: 689320, 9: 699616, 10: 710157,
+      11: 720762, 12: 731612, 13: 742586, 14: 753684, 15: 765026, 16: 776494, 17: 788146, 18: 799983, 19: 811943, 20: 824150,
+      21: 836481, 22: 849057, 23: 861758, 24: 874704, 25: 887836, 26: 901152, 27: 914653, 28: 928402, 29: 942335, 30: 956453,
+      31: 970818, 32: 985367, 33: 1000163, 34: 1015145, 35: 1030372, 36: 1045847, 37: 1061507, 38: 1077412, 39: 1093565, 40: 1110026,
+      41: 1126672, 42: 1143563, 43: 1160703, 44: 1178088, 45: 1195782, 46: 1213723, 47: 1231909, 48: 1250404, 49: 1269147, 50: 1288197,
+      51: 1307494, 52: 1327098, 53: 1347012, 54: 1367233, 55: 1387763, 56: 1408540, 57: 1429686, 58: 1451141, 59: 1472903, 60: 1494974,
+      61: 1517353, 62: 1540164, 63: 1563222, 64: 1586649, 65: 1610446, 66: 1634614, 67: 1659089, 68: 1683997, 69: 1709211, 70: 1734796,
+      71: 1760813, 72: 1787199, 73: 1813956, 74: 1841083, 75: 1868579, 76: 1896506, 77: 1924805, 78: 1953472, 79: 1982510, 80: 2011856,
+      81: 2041448, 82: 2071226, 83: 2100942, 84: 2130349, 85: 2158894, 86: 2185527
+    }
+  },
+  WUS: {
+    premiumBase: 719928,
+    faceAmountBase: 12000000,
+    currency: 'USD',
+    deathBenefitByYear: {}
+  },
+  WEF: {
+    premiumBase: 358380,
+    faceAmountBase: 2000000,
+    currency: 'USD',
+    deathBenefitByYear: {}
+  },
+  WQ6: {
+    premiumBase: 135519,
+    faceAmountBase: 200000,
+    currency: 'USD',
+    deathBenefitByYear: {
+      1: 245024, 2: 255309, 3: 266050, 4: 277226, 5: 288854, 6: 300951, 7: 313580, 8: 326717, 9: 340429, 10: 354692,
+      11: 369526, 12: 385005, 13: 337815, 14: 351957, 15: 366711, 16: 382052, 17: 398053, 18: 414639, 19: 431933, 20: 449912,
+      21: 468604, 22: 488031, 23: 444846, 24: 463368, 25: 482618, 26: 502680, 27: 523473, 28: 545081, 29: 567590, 30: 590918,
+      31: 615155, 32: 640398, 33: 595830, 34: 616494, 35: 637889, 36: 660042, 37: 682925, 38: 706670, 39: 731144, 40: 758404,
+      41: 789471, 42: 821733, 43: 838041, 44: 867145, 45: 897275, 46: 928400, 47: 960619, 48: 993901, 49: 1028424, 50: 1064087,
+      51: 1101077, 52: 1139289, 53: 1178762, 54: 1219700, 55: 1261990, 56: 1305847, 57: 1351152, 58: 1398043, 59: 1446575, 60: 1496708,
+      61: 1548692, 62: 1602392, 63: 1658072, 64: 1715590, 65: 1775115, 66: 1836718, 67: 1900468, 68: 1966441, 69: 2034592, 70: 2105240,
+      71: 2178350, 72: 2253872, 73: 2332158, 74: 2413027, 75: 2496707, 76: 2583441, 77: 2673040, 78: 2765748, 79: 2861834, 80: 2961092,
+      81: 3063793, 82: 3170226, 83: 3280174, 84: 3394113, 85: 3511813, 86: 3633780
+    },
+    deathBenefitByGender: {
+      female: {
+        1: 233928, 2: 243795, 3: 254066, 4: 264794, 5: 276002, 6: 287622, 7: 299757, 8: 312430, 9: 325567, 10: 339332,
+        11: 353603, 12: 368499, 13: 323408, 14: 337026, 15: 351237, 16: 366066, 17: 381486, 18: 397576, 19: 414306, 20: 431704,
+        21: 449848, 22: 468768, 23: 427435, 24: 445437, 25: 464150, 26: 483658, 27: 503937, 28: 525074, 29: 547103, 30: 570000,
+        31: 593859, 32: 618717, 33: 595830, 34: 616494, 35: 637889, 36: 660042, 37: 682925, 38: 706670, 39: 731144, 40: 756538,
+        41: 782770, 42: 809987, 43: 838041, 44: 867145, 45: 897275, 46: 928400, 47: 960619, 48: 993901, 49: 1028424, 50: 1064087,
+        51: 1101077, 52: 1139289, 53: 1178762, 54: 1219700, 55: 1261990, 56: 1305847, 57: 1351152, 58: 1398043, 59: 1446575, 60: 1496708,
+        61: 1548692, 62: 1602392, 63: 1658072, 64: 1715590, 65: 1775115, 66: 1836718, 67: 1900468, 68: 1966441, 69: 2034592, 70: 2105240,
+        71: 2178350, 72: 2253872, 73: 2332158, 74: 2413027, 75: 2496707, 76: 2583441, 77: 2673040, 78: 2765748, 79: 2861834, 80: 2961092,
+        81: 3063793, 82: 3170226, 83: 3280174, 84: 3394113, 85: 3511813, 86: 3633780
+      }
+    }
+  },
+  WSJ: {
+    premiumBase: 56792988,
+    faceAmountBase: 60000000,
+    currency: 'TWD',
+    deathBenefitByYear: {}
+  },
+  WSK: {
+    premiumBase: 29382360,
+    faceAmountBase: 60000000,
+    currency: 'TWD',
+    deathBenefitByYear: {
+      1: 47059200, 2: 106122600, 3: 107137200, 4: 108163200, 5: 109189200, 6: 110238000, 7: 111275400, 8: 112335600, 9: 113407200, 10: 114478800,
+      11: 115550400, 12: 116633400, 13: 99158400, 14: 100099200, 15: 101049600, 16: 102000000, 17: 102950400, 18: 103910400, 19: 104860800, 20: 105820800,
+      21: 106790400, 22: 107740800, 23: 95146800, 24: 96020400, 25: 96902400, 26: 97776000, 27: 98649600, 28: 99523200, 29: 100396800, 30: 101262000,
+      31: 102127200, 32: 102992400, 33: 89085600, 34: 89899200, 35: 90712800, 36: 91526400, 37: 92340000, 38: 93153600, 39: 93960000, 40: 94773600,
+      41: 95580000, 42: 96379200, 43: 89152800, 44: 89958000, 45: 90763200, 46: 91568400, 47: 92367000, 48: 93165600, 49: 93957600, 50: 94743000,
+      51: 95521800, 52: 96280800, 53: 90117000, 54: 90967680, 55: 91824480, 56: 92687400, 57: 93556440, 58: 94425480, 59: 95294520, 60: 96169680,
+      61: 97038720, 62: 97907760, 63: 98776800, 64: 99645840, 65: 100502640, 66: 101359440, 67: 102210120, 68: 103048560, 69: 103880880, 70: 104694840,
+      71: 105502680, 72: 106286040, 73: 105648000, 74: 106488000, 75: 107340000, 76: 108198000, 77: 109068000, 78: 109938000, 79: 110820000, 80: 111708000,
+      81: 112596000, 82: 113502000, 83: 114408000, 84: 115320000, 85: 116244000, 86: 117174000
+    }
+  },
+  WSH: {
+    premiumBase: 20736540,
+    faceAmountBase: 60000000,
+    currency: 'TWD',
+    deathBenefitByYear: {}
+  },
+  WSI: {
+    premiumBase: 10573200,
+    faceAmountBase: 60000000,
+    currency: 'TWD',
+    deathBenefitByYear: {}
+  },
+  WJA: {
+    premiumBase: 61746,
+    faceAmountBase: 300000,
+    currency: 'USD',
+    deathBenefitByYear: {}
+  }
+};
 
 // === State ===
 let state = {
   currentStep: 1,
   financingType: null, // 'premium' or 'policy'
   selectedProduct: null,
+  productScenarioCache: {},
+  insuranceAge: 19,
+  insuredGender: 'male',
+  xindeliPayPeriod: '2',
+  xumanxinPayPeriod: '2',
   sumInsured: 0,
   premium: 0,
   policyValue: 0,
+  amountInputMode: 'premium',
+  coverageYear: 20,
   financingRate: 2.38,
   usdTwdRate: 32.00,
   ltvRatio: 85,
@@ -1198,6 +1723,104 @@ let state = {
   editingStructuredIndex: -1,
 };
 
+function createDefaultProductScenario() {
+  return {
+    insuranceAge: 19,
+    insuredGender: 'male',
+    xindeliPayPeriod: '2',
+    xumanxinPayPeriod: '2',
+    sumInsured: 0,
+    premium: 0,
+    policyValue: 0,
+    amountInputMode: 'premium',
+    coverageYear: 20,
+    financingRate: 2.38,
+    usdTwdRate: 32.0,
+    ltvRatio: state.financingType === 'premium' ? 50 : 85,
+    usdDiscount: 90,
+    financingAmount: 0,
+    financingOriginalAmount: 0,
+    selfFundAmount: 0,
+    exchangeRates: { ...DEFAULT_EXCHANGE_RATES },
+    investmentModes: {
+      bond: 'single',
+      fund: 'single'
+    },
+    bonds: [],
+    funds: [],
+    structuredProducts: []
+  };
+}
+
+function getProductScenarioKey(product = state.selectedProduct, financingType = state.financingType) {
+  if (!product || !product.code || !financingType) return null;
+  return `${financingType}:${product.code}`;
+}
+
+function saveCurrentProductScenarioSnapshot() {
+  const key = getProductScenarioKey();
+  if (!key) return;
+  state.productScenarioCache[key] = {
+    insuranceAge: state.insuranceAge,
+    insuredGender: state.insuredGender,
+    xindeliPayPeriod: state.xindeliPayPeriod || '2',
+    xumanxinPayPeriod: state.xumanxinPayPeriod || '2',
+    sumInsured: state.sumInsured,
+    premium: state.premium,
+    policyValue: state.policyValue,
+    amountInputMode: state.amountInputMode,
+    coverageYear: state.coverageYear,
+    financingRate: state.financingRate,
+    usdTwdRate: state.usdTwdRate,
+    ltvRatio: state.ltvRatio,
+    usdDiscount: state.usdDiscount,
+    financingAmount: state.financingAmount,
+    financingOriginalAmount: state.financingOriginalAmount,
+    selfFundAmount: state.selfFundAmount,
+    exchangeRates: { ...state.exchangeRates },
+    investmentModes: { ...(state.investmentModes || { bond: 'single', fund: 'single' }) },
+    bonds: Array.isArray(state.bonds) ? JSON.parse(JSON.stringify(state.bonds)) : [],
+    funds: Array.isArray(state.funds) ? JSON.parse(JSON.stringify(state.funds)) : [],
+    structuredProducts: Array.isArray(state.structuredProducts) ? JSON.parse(JSON.stringify(state.structuredProducts)) : []
+  };
+}
+
+function restoreProductScenarioSnapshot(product) {
+  const key = getProductScenarioKey(product);
+  const snapshot = key ? state.productScenarioCache[key] : null;
+  const next = snapshot ? {
+    ...createDefaultProductScenario(),
+    ...snapshot,
+    exchangeRates: { ...DEFAULT_EXCHANGE_RATES, ...(snapshot.exchangeRates || {}) },
+    investmentModes: { bond: 'single', fund: 'single', ...(snapshot.investmentModes || {}) },
+    bonds: Array.isArray(snapshot.bonds) ? snapshot.bonds : [],
+    funds: Array.isArray(snapshot.funds) ? snapshot.funds : [],
+    structuredProducts: Array.isArray(snapshot.structuredProducts) ? snapshot.structuredProducts : []
+  } : createDefaultProductScenario();
+
+  state.insuranceAge = next.insuranceAge;
+  state.insuredGender = next.insuredGender;
+  state.xindeliPayPeriod = next.xindeliPayPeriod || '2';
+  state.xumanxinPayPeriod = next.xumanxinPayPeriod || '2';
+  state.sumInsured = next.sumInsured;
+  state.premium = next.premium;
+  state.policyValue = next.policyValue;
+  state.amountInputMode = next.amountInputMode || 'premium';
+  state.coverageYear = next.coverageYear;
+  state.financingRate = next.financingRate;
+  state.usdTwdRate = next.usdTwdRate;
+  state.ltvRatio = next.ltvRatio;
+  state.usdDiscount = next.usdDiscount;
+  state.financingAmount = next.financingAmount;
+  state.financingOriginalAmount = next.financingOriginalAmount;
+  state.selfFundAmount = next.selfFundAmount;
+  state.exchangeRates = { ...DEFAULT_EXCHANGE_RATES, ...next.exchangeRates };
+  state.investmentModes = { bond: 'single', fund: 'single', ...next.investmentModes };
+  state.bonds = JSON.parse(JSON.stringify(next.bonds));
+  state.funds = JSON.parse(JSON.stringify(next.funds));
+  state.structuredProducts = JSON.parse(JSON.stringify(next.structuredProducts));
+}
+
 // === Formatting ===
 function fmt(n) {
   if (isNaN(n) || n === null || n === undefined) return '-';
@@ -1206,6 +1829,16 @@ function fmt(n) {
 function fmtDec(n, d=2) {
   if (isNaN(n)) return '-';
   return parseFloat(n).toLocaleString('zh-TW', { minimumFractionDigits: d, maximumFractionDigits: d });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
 }
 
 // === Storage ===
@@ -1234,6 +1867,7 @@ function loadState() {
     state = {
       ...state,
       ...parsed,
+      productScenarioCache: parsed.productScenarioCache || {},
       exchangeRates: { ...DEFAULT_EXCHANGE_RATES, ...(parsed.exchangeRates || {}) },
       investmentModes: {
         bond: 'single',
@@ -1255,6 +1889,106 @@ function clearSavedState() {
   localStorage.removeItem(STORAGE_KEY);
 }
 
+function loadPledgeFundProducts() {
+  if (!canUseStorage()) return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PLEDGE_FUND_PRODUCTS_KEY) || '[]');
+    return Array.isArray(parsed)
+      ? parsed
+          .map(item => ({
+            code: String(item.code || '').trim().toUpperCase(),
+            name: String(item.name || '').trim()
+          }))
+          .filter(item => item.code && item.name)
+      : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function savePledgeFundProducts(products) {
+  importedPledgeFundProducts = Array.isArray(products) ? products : [];
+  if (canUseStorage()) {
+    localStorage.setItem(PLEDGE_FUND_PRODUCTS_KEY, JSON.stringify(importedPledgeFundProducts));
+  }
+  updatePledgeFundImportStatus();
+}
+
+function getFundProductOptions() {
+  const merged = [];
+  const seen = new Set();
+  [...importedPledgeFundProducts, ...repoPledgeFundProducts, ...fundProducts].forEach(product => {
+    const code = String(product.code || '').trim().toUpperCase();
+    const name = String(product.name || '').trim();
+    if (!code || !name || seen.has(code)) return;
+    seen.add(code);
+    merged.push({ code, name });
+  });
+  return merged;
+}
+
+function updatePledgeFundImportStatus() {
+  const statusEl = document.getElementById('pledgeFundImportStatus');
+  if (!statusEl) return;
+  if (importedPledgeFundProducts.length) {
+    statusEl.textContent = `本機已匯入 ${importedPledgeFundProducts.length.toLocaleString('zh-TW')} 筆，可在新增基金搜尋`;
+  } else if (repoPledgeFundProducts.length) {
+    statusEl.textContent = `GitHub 清單 ${repoPledgeFundProducts.length.toLocaleString('zh-TW')} 筆，可在新增基金搜尋`;
+  } else {
+    statusEl.textContent = '尚未匯入可質借基金清單';
+  }
+}
+
+function triggerPledgeFundImport() {
+  const fileInput = document.getElementById('pledgeFundFileInput');
+  if (fileInput) fileInput.click();
+}
+
+function importPledgeFundList(event) {
+  const fileInput = event?.target;
+  const file = fileInput?.files?.[0];
+  if (!file) return;
+  if (typeof XLSX === 'undefined') {
+    alert('Excel 讀取套件尚未載入，請確認網路連線後重新整理。');
+    fileInput.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      const imported = [];
+      const seen = new Set();
+
+      rows.slice(1).forEach(row => {
+        const code = String(row[0] || '').trim().toUpperCase();
+        const name = String(row[2] || '').trim();
+        if (!code || !name || seen.has(code)) return;
+        seen.add(code);
+        imported.push({ code, name });
+      });
+
+      if (!imported.length) {
+        alert('沒有讀到基金資料，請確認 A 欄為基金商品代碼、C 欄為基金中文名稱，且第 1 列為標題。');
+        return;
+      }
+
+      savePledgeFundProducts(imported);
+      alert(`已匯入 ${imported.length.toLocaleString('zh-TW')} 筆可質借基金清單`);
+    } catch (err) {
+      console.error('Import pledge fund list failed:', err);
+      alert('匯入失敗，請確認檔案為 .xlsx 格式。');
+    } finally {
+      fileInput.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function hasImportedBondsWaiting() {
   if (!canUseStorage()) return false;
   try {
@@ -1267,6 +2001,7 @@ function hasImportedBondsWaiting() {
 
 function updateImportButtonState() {
   const btn = document.getElementById('importBondsBtn');
+  if (!btn) return;
   const hasData = hasImportedBondsWaiting();
   btn.disabled = !hasData;
   btn.style.opacity = hasData ? '1' : '0.45';
@@ -1285,7 +2020,7 @@ function inferFundCurrency(text) {
 
 function applyStateToForm() {
   if (state.financingType) {
-    selectType(state.financingType);
+    selectType(state.financingType, { preserveInputs: true });
   } else {
     document.getElementById('selectedTypeDisplay').textContent = '尚未選擇';
     updateFinancingUI();
@@ -1294,6 +2029,11 @@ function applyStateToForm() {
   document.getElementById('sumInsured').value = state.sumInsured || '';
   document.getElementById('premium').value = state.premium || '';
   document.getElementById('policyValue').value = state.policyValue || '';
+  document.getElementById('insuranceAge').value = state.insuranceAge ?? 19;
+  document.getElementById('insuredGender').value = state.insuredGender || 'male';
+  document.getElementById('xindeliPayPeriod').value = state.xindeliPayPeriod || '2';
+  document.getElementById('xumanxinPayPeriod').value = state.xumanxinPayPeriod || '2';
+  document.getElementById('coverageYear').value = state.coverageYear || 20;
   document.getElementById('financingRate').value = state.financingRate ?? 2.38;
   document.getElementById('usdTwdRate').value = state.exchangeRates.USD ?? state.usdTwdRate ?? DEFAULT_EXCHANGE_RATES.USD;
   document.getElementById('audTwdRate').value = state.exchangeRates.AUD ?? DEFAULT_EXCHANGE_RATES.AUD;
@@ -1304,7 +2044,7 @@ function applyStateToForm() {
 
   if (state.financingType && state.selectedProduct) {
     const product = getProducts().find(p => p.code === state.selectedProduct.code) || state.selectedProduct;
-    selectProduct(product);
+    selectProduct(product, { restoreScenario: false });
   } else {
     recalcFinancing();
   }
@@ -1325,9 +2065,9 @@ function getMaxAccessibleStep() {
 }
 
 // === Step Navigation ===
-function goToStep(step) {
+function goToStep(step, force = false) {
   if (step < 1 || step > 4) return;
-  if (step > getMaxAccessibleStep()) return;
+  if (!force && step > getMaxAccessibleStep()) return;
   state.currentStep = step;
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('step' + step).classList.add('active');
@@ -1371,10 +2111,10 @@ function nextStep() {
     return;
   }
   if (state.currentStep === 2) {
+    recalcFinancing();
     if (!state.selectedProduct) { alert('請選擇保險商品'); return; }
     if (state.financingType === 'premium' && (!state.premium || state.premium <= 0)) { alert('請輸入保費'); return; }
     if (state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
-    recalcFinancing();
   }
   goToStep(state.currentStep + 1);
 }
@@ -1382,19 +2122,46 @@ function nextStep() {
 function prevStep() { goToStep(state.currentStep - 1); }
 
 // === Step 1: Type Selection ===
-function selectType(type) {
+function selectType(type, options = {}) {
+  const { preserveInputs = false } = options;
+
+  if (!preserveInputs && state.financingType && state.financingType !== type) {
+    saveCurrentProductScenarioSnapshot();
+  }
   state.financingType = type;
-  state.ltvRatio = type === 'premium' ? 50 : 85;
+  state.ltvRatio = preserveInputs
+    ? (state.ltvRatio ?? (type === 'premium' ? 50 : 85))
+    : (type === 'premium' ? 50 : 85);
   document.getElementById('ltvRatio').value = state.ltvRatio;
   document.getElementById('typeCardPremium').classList.toggle('selected', type === 'premium');
   document.getElementById('typeCardPolicy').classList.toggle('selected', type === 'policy');
-  state.selectedProduct = null;
-  document.getElementById('productSearch').value = '';
-  document.getElementById('selectedProductInfo').classList.add('hidden');
-  document.getElementById('productDropdown').innerHTML = '';
-  document.getElementById('productDropdown').classList.remove('show');
+  if (!preserveInputs) {
+    state.selectedProduct = null;
+    state.sumInsured = 0;
+    state.premium = 0;
+    state.policyValue = 0;
+    state.amountInputMode = 'premium';
+    state.financingAmount = 0;
+    state.financingOriginalAmount = 0;
+    state.selfFundAmount = 0;
+    state.bonds = [];
+    state.funds = [];
+    state.structuredProducts = [];
+    state.investmentModes = { bond: 'single', fund: 'single' };
+    document.getElementById('sumInsuredEstimateHint').classList.add('hidden');
+    document.getElementById('estimateSumInsuredBtn').classList.add('hidden');
+    document.getElementById('sumInsured').value = '';
+    document.getElementById('premium').value = '';
+    document.getElementById('policyValue').value = '';
+    document.getElementById('productSearch').value = '';
+    document.getElementById('selectedProductInfo').classList.add('hidden');
+    document.getElementById('xindeliPayPeriodGroup').classList.add('hidden');
+    document.getElementById('xumanxinPayPeriodGroup').classList.add('hidden');
+    document.getElementById('productDropdown').innerHTML = '';
+    document.getElementById('productDropdown').classList.remove('show');
+  }
 
-  const label = type === 'premium' ? '保費融資（7 檔商品）' : '保單融資（163 檔商品）';
+  const label = type === 'premium' ? `保費融資（${PREMIUM_FINANCING_PRODUCTS.length} 檔商品）` : '保單融資（163 檔商品）';
   document.getElementById('selectedTypeDisplay').textContent = label;
   updateFinancingUI();
   updateStepAvailability();
@@ -1406,11 +2173,14 @@ function updateFinancingUI() {
     document.getElementById('financingCardTitle').textContent = '融資參數';
     document.getElementById('premiumSettingsPanel').classList.add('hidden');
     document.getElementById('policySettingsPanel').classList.add('hidden');
+    document.getElementById('commonAmountRow').classList.remove('hidden');
     document.getElementById('sumInsuredGroup').classList.remove('hidden');
+    document.getElementById('insuranceProfileRow').classList.remove('hidden');
+    document.getElementById('coverageYearGroup').classList.remove('hidden');
     document.getElementById('policyOnlyValueRow').classList.remove('hidden');
     document.getElementById('policyValueGroup').classList.remove('hidden');
     document.getElementById('usdDiscountGroup').classList.remove('hidden');
-    document.getElementById('multiCurrencyRateGrid').classList.remove('hidden');
+    document.getElementById('multiCurrencyRateGrid').classList.add('hidden');
     document.getElementById('ltvRatioLabel').textContent = '保價金成數';
     document.getElementById('dispBaseLabel').textContent = '保價金';
     document.getElementById('dispRatioLabel').textContent = '× 保價金成數';
@@ -1422,11 +2192,14 @@ function updateFinancingUI() {
   document.getElementById('financingCardTitle').textContent = isPremium ? '保費融資設定' : '保單融資設定';
   document.getElementById('premiumSettingsPanel').classList.toggle('hidden', !isPremium);
   document.getElementById('policySettingsPanel').classList.toggle('hidden', isPremium);
-  document.getElementById('sumInsuredGroup').classList.toggle('hidden', isPremium);
+  document.getElementById('commonAmountRow').classList.toggle('hidden', !isPremium);
+  document.getElementById('sumInsuredGroup').classList.toggle('hidden', !isPremium);
+  document.getElementById('insuranceProfileRow').classList.toggle('hidden', !isPremium);
+  document.getElementById('coverageYearGroup').classList.toggle('hidden', !isPremium);
   document.getElementById('policyOnlyValueRow').classList.toggle('hidden', isPremium);
   document.getElementById('policyValueGroup').classList.toggle('hidden', isPremium);
   document.getElementById('usdDiscountGroup').classList.toggle('hidden', isPremium);
-  document.getElementById('multiCurrencyRateGrid').classList.toggle('hidden', isPremium);
+  document.getElementById('multiCurrencyRateGrid').classList.add('hidden');
   document.getElementById('ltvRatioLabel').textContent = isPremium ? '融資成數' : '保價金成數';
   document.getElementById('dispBaseLabel').textContent = isPremium ? '保費' : '保價金';
   document.getElementById('dispRatioLabel').textContent = isPremium ? '× 融資成數' : '× 保價金成數';
@@ -1438,6 +2211,94 @@ function updateFinancingUI() {
 // === Step 2: Product Search ===
 function getProducts() {
   return state.financingType === 'premium' ? PREMIUM_FINANCING_PRODUCTS : POLICY_FINANCING_PRODUCTS;
+}
+
+function canonicalizeProductForFinancing(product) {
+  if (!product) return product;
+  if (state.financingType === 'premium' && product.code === 'WSJ') {
+    return PREMIUM_FINANCING_PRODUCTS.find(p => p.code === 'WSK') || product;
+  }
+  if (state.financingType === 'premium' && product.code === 'WSI') {
+    return PREMIUM_FINANCING_PRODUCTS.find(p => p.code === 'WSH') || product;
+  }
+  return product;
+}
+
+function isXindeliProduct(product = state.selectedProduct) {
+  return !!product && (product.code === 'WSJ' || product.code === 'WSK');
+}
+
+function isXumanxinProduct(product = state.selectedProduct) {
+  return !!product && (product.code === 'WSH' || product.code === 'WSI');
+}
+
+function getEffectiveProductCode(product = state.selectedProduct) {
+  if (!product) return null;
+  if (state.financingType === 'premium' && isXindeliProduct(product)) {
+    return state.xindeliPayPeriod === 'single' ? 'WSJ' : 'WSK';
+  }
+  if (state.financingType === 'premium' && isXumanxinProduct(product)) {
+    return state.xumanxinPayPeriod === 'single' ? 'WSH' : 'WSI';
+  }
+  return product.code;
+}
+
+function updateXindeliPayPeriodUI() {
+  const group = document.getElementById('xindeliPayPeriodGroup');
+  const select = document.getElementById('xindeliPayPeriod');
+  if (!group || !select) return;
+  const show = state.financingType === 'premium' && isXindeliProduct();
+  group.classList.toggle('hidden', !show);
+  select.value = state.xindeliPayPeriod || '2';
+  updateXindeliProductDisplay();
+
+  updateXumanxinPayPeriodUI();
+}
+
+function updateXindeliProductDisplay() {
+  if (!(state.financingType === 'premium' && isXindeliProduct())) return;
+  const effectiveCode = getEffectiveProductCode();
+  const termLabel = state.xindeliPayPeriod === 'single' ? '躉繳' : '年繳（兩年期）';
+  document.getElementById('selProductCode').textContent = effectiveCode;
+  document.getElementById('selProductName').textContent = `國泰人壽鑫得利利率變動型終身壽險（${termLabel}）`;
+  document.getElementById('productSearch').value = `${effectiveCode} - 鑫得利（${termLabel}）`;
+}
+
+function handleXindeliPayPeriodChange() {
+  const select = document.getElementById('xindeliPayPeriod');
+  state.xindeliPayPeriod = select ? select.value : '2';
+  state.amountInputMode = state.sumInsured > 0 ? 'sumInsured' : 'premium';
+  updateXindeliProductDisplay();
+  recalcFinancing('sumInsured');
+  saveState();
+}
+
+function updateXumanxinPayPeriodUI() {
+  const group = document.getElementById('xumanxinPayPeriodGroup');
+  const select = document.getElementById('xumanxinPayPeriod');
+  if (!group || !select) return;
+  const show = state.financingType === 'premium' && isXumanxinProduct();
+  group.classList.toggle('hidden', !show);
+  select.value = state.xumanxinPayPeriod || '2';
+  updateXumanxinProductDisplay();
+}
+
+function updateXumanxinProductDisplay() {
+  if (!(state.financingType === 'premium' && isXumanxinProduct())) return;
+  const effectiveCode = getEffectiveProductCode();
+  const termLabel = state.xumanxinPayPeriod === 'single' ? '躉繳' : '年繳（兩年期）';
+  document.getElementById('selProductCode').textContent = effectiveCode;
+  document.getElementById('selProductName').textContent = `國泰人壽旭滿鑫利率變動型終身壽險(定期給付型)（${termLabel}）`;
+  document.getElementById('productSearch').value = `${effectiveCode} - 旭滿鑫（${termLabel}）`;
+}
+
+function handleXumanxinPayPeriodChange() {
+  const select = document.getElementById('xumanxinPayPeriod');
+  state.xumanxinPayPeriod = select ? select.value : '2';
+  state.amountInputMode = state.sumInsured > 0 ? 'sumInsured' : 'premium';
+  updateXumanxinProductDisplay();
+  recalcFinancing('sumInsured');
+  saveState();
 }
 
 function renderProductOptions(query = '') {
@@ -1452,7 +2313,10 @@ function renderProductOptions(query = '') {
   const products = getProducts();
   const matches = (q
     ? products.filter(p =>
-        p.code.toLowerCase().includes(q) || p.name.toLowerCase().includes(q) || p.shortName.toLowerCase().includes(q)
+        p.code.toLowerCase().includes(q) ||
+        p.name.toLowerCase().includes(q) ||
+        p.shortName.toLowerCase().includes(q) ||
+        (p.aliases || []).some(alias => alias.toLowerCase().includes(q))
       )
     : products
   ).slice(0, 30);
@@ -1494,8 +2358,25 @@ document.addEventListener('click', function(e) {
   }
 });
 
-function selectProduct(product) {
+function selectProduct(product, options = {}) {
+  product = canonicalizeProductForFinancing(product);
+  const { restoreScenario = true } = options;
+  const previousKey = getProductScenarioKey();
+  const nextKey = getProductScenarioKey(product, state.financingType);
+  if (previousKey && previousKey !== nextKey) {
+    saveCurrentProductScenarioSnapshot();
+  }
+
   state.selectedProduct = product;
+  if (state.financingType === 'premium' && isXindeliProduct(product) && !state.xindeliPayPeriod) {
+    state.xindeliPayPeriod = '2';
+  }
+  if (state.financingType === 'premium' && isXumanxinProduct(product) && !state.xumanxinPayPeriod) {
+    state.xumanxinPayPeriod = '2';
+  }
+  if (restoreScenario) {
+    restoreProductScenarioSnapshot(product);
+  }
   document.getElementById('productSearch').value = product.code + ' - ' + product.shortName;
   document.getElementById('selectedProductInfo').classList.remove('hidden');
   document.getElementById('selProductCode').textContent = product.code;
@@ -1503,17 +2384,35 @@ function selectProduct(product) {
   const badge = document.getElementById('selProductCurrencyBadge');
   badge.textContent = product.currency;
   badge.className = 'search-option currency-tag ' + product.currency.toLowerCase();
+  updateXindeliPayPeriodUI();
 
   const isUsd = product.currency === 'USD';
   const currLabel = isUsd ? '(USD)' : '(TWD)';
   document.getElementById('sumInsuredCurrLabel').textContent = currLabel;
   document.getElementById('premiumCurrLabel').textContent = currLabel;
   document.getElementById('policyValueCurrLabel').textContent = currLabel;
-  document.getElementById('exchangeRateGroup').classList.toggle('hidden', !isUsd);
+  document.getElementById('insuranceAge').value = state.insuranceAge ?? 19;
+  document.getElementById('insuredGender').value = state.insuredGender || 'male';
+  document.getElementById('sumInsured').value = state.sumInsured || '';
+  document.getElementById('premium').value = state.premium || '';
+  document.getElementById('policyValue').value = state.policyValue || '';
+  document.getElementById('coverageYear').value = state.coverageYear || 20;
+  document.getElementById('financingRate').value = state.financingRate ?? 2.38;
+  document.getElementById('usdTwdRate').value = state.exchangeRates.USD ?? state.usdTwdRate ?? DEFAULT_EXCHANGE_RATES.USD;
+  document.getElementById('audTwdRate').value = state.exchangeRates.AUD ?? DEFAULT_EXCHANGE_RATES.AUD;
+  document.getElementById('eurTwdRate').value = state.exchangeRates.EUR ?? DEFAULT_EXCHANGE_RATES.EUR;
+  document.getElementById('gbpTwdRate').value = state.exchangeRates.GBP ?? DEFAULT_EXCHANGE_RATES.GBP;
+  document.getElementById('ltvRatio').value = state.ltvRatio ?? (state.financingType === 'premium' ? 50 : 85);
+  document.getElementById('usdDiscount').value = state.usdDiscount ?? 90;
+  document.getElementById('exchangeRateGroup').classList.toggle('hidden', state.financingType === 'premium' && !isUsd);
   document.getElementById('dispExchangeRow').classList.toggle('hidden', !isUsd);
   updateFinancingUI();
 
   recalcFinancing();
+  renderBondSlots();
+  renderFundSlots();
+  renderStructuredSlots();
+  updateBondSummary();
   saveState();
 }
 
@@ -1524,11 +2423,11 @@ function setupFundSelectors() {
   const nameOptions = document.getElementById('fundNameOptions');
 
   function renderCodeOptions(matches) {
-    codeOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${product.code}">${product.code}</div>`).join('');
+    codeOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${escapeHtml(product.code)}">${escapeHtml(product.code)} - ${escapeHtml(product.name)}</div>`).join('');
     codeOptions.style.display = matches.length ? 'block' : 'none';
     codeOptions.querySelectorAll('.product-option').forEach(option => {
       option.addEventListener('click', () => {
-        const product = fundProducts.find(p => p.code === option.dataset.code);
+        const product = getFundProductOptions().find(p => p.code === option.dataset.code);
         if (!product) return;
         codeInput.value = product.code;
         nameInput.value = product.name;
@@ -1538,11 +2437,11 @@ function setupFundSelectors() {
   }
 
   function renderNameOptions(matches) {
-    nameOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${product.code}">${product.name}</div>`).join('');
+    nameOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${escapeHtml(product.code)}">${escapeHtml(product.name)} (${escapeHtml(product.code)})</div>`).join('');
     nameOptions.style.display = matches.length ? 'block' : 'none';
     nameOptions.querySelectorAll('.product-option').forEach(option => {
       option.addEventListener('click', () => {
-        const product = fundProducts.find(p => p.code === option.dataset.code);
+        const product = getFundProductOptions().find(p => p.code === option.dataset.code);
         if (!product) return;
         codeInput.value = product.code;
         nameInput.value = product.name;
@@ -1551,15 +2450,21 @@ function setupFundSelectors() {
     });
   }
 
-  codeInput.addEventListener('focus', () => renderCodeOptions(fundProducts.slice(0, 50)));
+  codeInput.addEventListener('focus', () => renderCodeOptions(getFundProductOptions().slice(0, 50)));
   codeInput.addEventListener('input', () => {
     const q = codeInput.value.trim().toLowerCase();
-    renderCodeOptions(fundProducts.filter(p => p.code.toLowerCase().includes(q)).slice(0, 50));
+    const products = getFundProductOptions();
+    const exact = products.find(p => p.code.toLowerCase() === q);
+    if (exact) nameInput.value = exact.name;
+    renderCodeOptions(products.filter(p => p.code.toLowerCase().includes(q)).slice(0, 50));
   });
-  nameInput.addEventListener('focus', () => renderNameOptions(fundProducts.slice(0, 50)));
+  nameInput.addEventListener('focus', () => renderNameOptions(getFundProductOptions().slice(0, 50)));
   nameInput.addEventListener('input', () => {
     const q = nameInput.value.trim().toLowerCase();
-    renderNameOptions(fundProducts.filter(p => p.name.toLowerCase().includes(q)).slice(0, 50));
+    const products = getFundProductOptions();
+    const exact = products.find(p => p.name.toLowerCase() === q);
+    if (exact) codeInput.value = exact.code;
+    renderNameOptions(products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 50));
   });
 
   document.addEventListener('click', (e) => {
@@ -1577,9 +2482,313 @@ function getCurrencyRate(currency) {
   return state.exchangeRates[normalized] || state.exchangeRates.USD || DEFAULT_EXCHANGE_RATES.USD;
 }
 
-function recalcFinancing() {
+function resolveTablePremiumFromPaidAmount(paidPremium, tiers = HIGH_PREMIUM_DISCOUNT_TIERS) {
+  if (!paidPremium || paidPremium <= 0) return null;
+  const sortedTiers = [...tiers].sort((a, b) => a.minTablePremium - b.minTablePremium);
+  for (let i = sortedTiers.length - 1; i >= 0; i -= 1) {
+    const current = sortedTiers[i];
+    const next = sortedTiers[i + 1];
+    const tablePremium = paidPremium / (1 - current.discount);
+    const inLowerBound = tablePremium >= current.minTablePremium;
+    const inUpperBound = !next || tablePremium < next.minTablePremium;
+    if (inLowerBound && inUpperBound) {
+      return {
+        tablePremium,
+        discount: current.discount
+      };
+    }
+  }
+  const fallback = sortedTiers[0];
+  return {
+    tablePremium: paidPremium / (1 - fallback.discount),
+    discount: fallback.discount
+  };
+}
+
+function resolvePaidAmountFromTablePremium(tablePremium, tiers = HIGH_PREMIUM_DISCOUNT_TIERS) {
+  if (!tablePremium || tablePremium <= 0) return null;
+  const sortedTiers = [...tiers].sort((a, b) => a.minTablePremium - b.minTablePremium);
+  const roundedTablePremium = Math.round(tablePremium);
+  let matched = sortedTiers[0];
+  for (const tier of sortedTiers) {
+    if (roundedTablePremium >= tier.minTablePremium) matched = tier;
+  }
+  const discountAmount = Math.round(roundedTablePremium * matched.discount);
+  return {
+    paidPremium: roundedTablePremium - discountAmount,
+    discount: matched.discount
+  };
+}
+
+function getEstimatorRate(estimator, insuranceAge, insuredGender = 'male') {
+  if (!estimator) return null;
+  const genderKey = insuredGender === 'female' ? 'female' : 'male';
+  const rateTable = (estimator.rateByGender && estimator.rateByGender[genderKey]) || estimator.rateByAge;
+  const ageKeys = Object.keys(rateTable).map(Number).sort((a, b) => a - b);
+  if (ageKeys.length === 0) return null;
+  const normalizedAge = Math.min(Math.max(parseInt(insuranceAge, 10) || ageKeys[0], ageKeys[0]), ageKeys[ageKeys.length - 1]);
+  const rate = rateTable[normalizedAge];
+  if (!rate) return null;
+  return { normalizedAge, rate };
+}
+
+function estimateSumInsuredFromPaidPremium(productCode, paidPremium, insuranceAge, insuredGender = 'male') {
+  const estimator = PRODUCT_SUM_INSURED_ESTIMATORS[productCode];
+  if (!estimator || !paidPremium || paidPremium <= 0) return null;
+
+  const rateInfo = getEstimatorRate(estimator, insuranceAge, insuredGender);
+  if (!rateInfo) return null;
+  const { normalizedAge, rate } = rateInfo;
+
+  const premiumInfo = estimator.treatPremiumAsFirstYearPaid
+    ? resolveTablePremiumFromPaidAmount(paidPremium, estimator.discountTiers || HIGH_PREMIUM_DISCOUNT_TIERS)
+    : { tablePremium: paidPremium, discount: 0 };
+  if (!premiumInfo || !premiumInfo.tablePremium) return null;
+
+  const rawUnitAmount = premiumInfo.tablePremium / rate;
+  const maxUnitAmount = estimator.maxUnitAmount || Infinity;
+  const roundedUnitAmount = Math.min(maxUnitAmount, Math.max(1, Math.round(rawUnitAmount)));
+  const unitSize = estimator.unitSize || 1;
+  const tablePremium = Math.round(roundedUnitAmount * rate);
+  const paidInfo = estimator.treatPremiumAsFirstYearPaid
+    ? resolvePaidAmountFromTablePremium(tablePremium, estimator.discountTiers || HIGH_PREMIUM_DISCOUNT_TIERS)
+    : { paidPremium: tablePremium, discount: 0 };
+
+  return {
+    productCode,
+    currency: estimator.currency,
+    age: normalizedAge,
+    rate,
+    paidPremium: paidInfo ? paidInfo.paidPremium : paidPremium,
+    originalPaidPremium: paidPremium,
+    tablePremium,
+    discount: paidInfo ? paidInfo.discount : premiumInfo.discount,
+    rawUnitAmount,
+    roundedUnitAmount,
+    faceAmount: roundedUnitAmount * unitSize,
+    unitLabel: estimator.currency === 'USD' ? '千美元' : `千${estimator.currency}`,
+    maxExceeded: rawUnitAmount > maxUnitAmount,
+    maxFaceAmount: Number.isFinite(maxUnitAmount) ? maxUnitAmount * unitSize : null
+  };
+}
+
+function estimatePaidPremiumFromSumInsured(productCode, faceAmount, insuranceAge, insuredGender = 'male') {
+  const estimator = PRODUCT_SUM_INSURED_ESTIMATORS[productCode];
+  if (!estimator || !faceAmount || faceAmount <= 0) return null;
+  const rateInfo = getEstimatorRate(estimator, insuranceAge, insuredGender);
+  if (!rateInfo) return null;
+  const { normalizedAge, rate } = rateInfo;
+  const unitSize = estimator.unitSize || 1;
+  const maxUnitAmount = estimator.maxUnitAmount || Infinity;
+  const rawUnitAmount = faceAmount / unitSize;
+  const roundedUnitAmount = Math.min(maxUnitAmount, Math.max(1, Math.round(rawUnitAmount)));
+  const tablePremium = Math.round(roundedUnitAmount * rate);
+  const paidInfo = estimator.treatPremiumAsFirstYearPaid
+    ? resolvePaidAmountFromTablePremium(tablePremium, estimator.discountTiers || HIGH_PREMIUM_DISCOUNT_TIERS)
+    : { paidPremium: tablePremium, discount: 0 };
+  if (!paidInfo) return null;
+  return {
+    productCode,
+    currency: estimator.currency,
+    age: normalizedAge,
+    rate,
+    tablePremium,
+    paidPremium: paidInfo.paidPremium,
+    discount: paidInfo.discount,
+    rawUnitAmount,
+    roundedUnitAmount,
+    faceAmount: roundedUnitAmount * unitSize,
+    unitLabel: estimator.currency === 'USD' ? '千美元' : `千${estimator.currency}`,
+    maxExceeded: rawUnitAmount > maxUnitAmount,
+    maxFaceAmount: Number.isFinite(maxUnitAmount) ? maxUnitAmount * unitSize : null
+  };
+}
+
+function updateSumInsuredEstimateUI() {
+  const hintEl = document.getElementById('sumInsuredEstimateHint');
+  const textEl = document.getElementById('sumInsuredEstimateText');
+  const btnEl = document.getElementById('estimateSumInsuredBtn');
+  const productCode = getEffectiveProductCode();
+  const estimate = estimateSumInsuredFromPaidPremium(productCode, state.premium, state.insuranceAge, state.insuredGender);
+
+  if (!estimate) {
+    hintEl.classList.add('hidden');
+    btnEl.classList.add('hidden');
+    textEl.textContent = '';
+    return null;
+  }
+
+  btnEl.classList.remove('hidden');
+  hintEl.classList.remove('hidden');
+  const maxText = estimate.maxExceeded ? `，已套用上限 ${fmt(estimate.maxFaceAmount)} ${estimate.currency}` : '';
+  textEl.textContent = `依 ${estimate.productCode} 費率表估算：約 ${fmt(estimate.faceAmount)} ${estimate.currency}（${fmt(estimate.roundedUnitAmount)} ${estimate.unitLabel}，年齡 ${estimate.age}，折減前保費約 ${fmt(estimate.tablePremium)} ${estimate.currency}${maxText}）`;
+  return estimate;
+}
+
+function showPremiumEstimateFromSumInsured(estimate) {
+  const hintEl = document.getElementById('sumInsuredEstimateHint');
+  const textEl = document.getElementById('sumInsuredEstimateText');
+  const btnEl = document.getElementById('estimateSumInsuredBtn');
+  if (!estimate) {
+    hintEl.classList.add('hidden');
+    textEl.textContent = '';
+    return;
+  }
+  btnEl.classList.add('hidden');
+  hintEl.classList.remove('hidden');
+  const maxText = estimate.maxExceeded ? `，已套用上限 ${fmt(estimate.maxFaceAmount)} ${estimate.currency}` : '';
+  textEl.textContent = `依 ${estimate.productCode} 保額反推：實繳保費約 ${fmt(Math.round(estimate.paidPremium))} ${estimate.currency}（${fmt(estimate.roundedUnitAmount)} ${estimate.unitLabel}，年齡 ${estimate.age}，折減前保費約 ${fmt(estimate.tablePremium)} ${estimate.currency}${maxText}）`;
+}
+
+function applyEstimatedSumInsured() {
+  const estimate = updateSumInsuredEstimateUI();
+  if (!estimate) {
+    alert('目前這個商品或輸入條件還無法依保費估算保額。');
+    return;
+  }
+  document.getElementById('sumInsured').value = estimate.faceAmount;
+  state.sumInsured = estimate.faceAmount;
+  recalcFinancing();
+}
+
+function normalizeProductFaceAmount(productCode, faceAmount) {
+  const amount = parseFloat(faceAmount) || 0;
+  if (amount <= 0) return 0;
+  const estimator = PRODUCT_SUM_INSURED_ESTIMATORS[productCode];
+  const unitSize = estimator ? (estimator.unitSize || 1) : 1;
+  if (unitSize > 1 && amount > 0 && amount < unitSize * 10) {
+    return amount * unitSize;
+  }
+  return amount;
+}
+
+function normalizeSumInsuredField() {
+  const input = document.getElementById('sumInsured');
+  if (!input || input.value.trim() === '') return;
+  const normalized = normalizeProductFaceAmount(getEffectiveProductCode(), input.value);
+  if (normalized > 0) {
+    input.value = normalized;
+    state.sumInsured = normalized;
+    recalcFinancing('sumInsuredFinal');
+  }
+}
+
+function getAgeGenderModeledDeathBenefit(productCode, year, insuranceAge, insuredGender) {
+  const normalizedYear = Math.max(1, Math.min(100, parseInt(year, 10) || 1));
+  if (productCode === 'WQ6' && window.WQ6_COVERAGE_BY_AGE_GENDER) {
+    const genderKey = insuredGender === 'female' ? 'female' : 'male';
+    const ageKey = String(Math.max(0, Math.min(85, parseInt(insuranceAge, 10) || 0)));
+    const ageTable = window.WQ6_COVERAGE_BY_AGE_GENDER[genderKey] && window.WQ6_COVERAGE_BY_AGE_GENDER[genderKey][ageKey];
+    const amount = Array.isArray(ageTable) ? ageTable[normalizedYear - 1] : null;
+    if (amount) {
+      return {
+        amount,
+        baseFaceAmount: window.WQ6_COVERAGE_BY_AGE_GENDER.baseFaceAmount || null
+      };
+    }
+  }
+  if (productCode === 'WSJ' && window.WSJ_COVERAGE_BY_AGE_GENDER) {
+    const genderKey = insuredGender === 'female' ? 'female' : 'male';
+    const ageKey = String(Math.max(0, Math.min(85, parseInt(insuranceAge, 10) || 0)));
+    const ageTable = window.WSJ_COVERAGE_BY_AGE_GENDER[genderKey] && window.WSJ_COVERAGE_BY_AGE_GENDER[genderKey][ageKey];
+    const amount = Array.isArray(ageTable) ? ageTable[normalizedYear - 1] : null;
+    if (amount) {
+      return {
+        amount,
+        baseFaceAmount: window.WSJ_COVERAGE_BY_AGE_GENDER.baseFaceAmount || null
+      };
+    }
+  }
+  if (productCode === 'WSK' && window.WSK_COVERAGE_BY_AGE_GENDER) {
+    const genderKey = insuredGender === 'female' ? 'female' : 'male';
+    const ageKey = String(Math.max(0, Math.min(80, parseInt(insuranceAge, 10) || 0)));
+    const ageTable = window.WSK_COVERAGE_BY_AGE_GENDER[genderKey] && window.WSK_COVERAGE_BY_AGE_GENDER[genderKey][ageKey];
+    const amount = Array.isArray(ageTable) ? ageTable[normalizedYear - 1] : null;
+    if (amount) {
+      return {
+        amount,
+        baseFaceAmount: window.WSK_COVERAGE_BY_AGE_GENDER.baseFaceAmount || null
+      };
+    }
+  }
+  const xumanxinCoverage = productCode === 'WSH'
+    ? window.WSH_COVERAGE_BY_AGE_GENDER
+    : productCode === 'WSI'
+      ? window.WSI_COVERAGE_BY_AGE_GENDER
+      : productCode === 'WJA' || productCode === 'ABA' || productCode === 'WUS' || productCode === 'WEF'
+        ? (productCode === 'WJA'
+          ? window.WJA_COVERAGE_BY_AGE_GENDER
+          : productCode === 'ABA'
+            ? window.ABA_COVERAGE_BY_AGE_GENDER
+            : productCode === 'WUS'
+              ? window.WUS_COVERAGE_BY_AGE_GENDER
+              : window.WEF_COVERAGE_BY_AGE_GENDER)
+        : null;
+  if (xumanxinCoverage) {
+    const genderKey = insuredGender === 'female' ? 'female' : 'male';
+    const minAge = productCode === 'WJA' || productCode === 'ABA' || productCode === 'WUS' ? 0 : 16;
+    const maxAge = productCode === 'WUS' || productCode === 'WEF' ? 75 : productCode === 'WJA' || productCode === 'ABA' ? 85 : 70;
+    const ageKey = String(Math.max(minAge, Math.min(maxAge, parseInt(insuranceAge, 10) || minAge)));
+    const ageTable = xumanxinCoverage[genderKey] && xumanxinCoverage[genderKey][ageKey];
+    const amount = Array.isArray(ageTable) ? ageTable[normalizedYear - 1] : null;
+    if (amount) {
+      return {
+        amount,
+        baseFaceAmount: xumanxinCoverage.baseFaceAmount || null
+      };
+    }
+  }
+  return null;
+}
+
+function getProjectedDeathBenefit(productCode, premiumAmount, year, insuranceAge, sumInsuredAmount, insuredGender = 'male') {
+  const model = PRODUCT_COVERAGE_MODELS[productCode];
+  if (!model) return null;
+  const normalizedYear = Math.max(1, Math.min(100, parseInt(year, 10) || 1));
+  const genderKey = insuredGender === 'female' ? 'female' : 'male';
+  const ageGenderModeled = getAgeGenderModeledDeathBenefit(productCode, normalizedYear, insuranceAge, insuredGender);
+  const benefitTable = (model.deathBenefitByGender && model.deathBenefitByGender[genderKey]) || model.deathBenefitByYear;
+  const modeledValue = ageGenderModeled ? ageGenderModeled.amount : benefitTable[normalizedYear];
+  if (!modeledValue) return null;
+  const explicitFaceAmount = normalizeProductFaceAmount(productCode, sumInsuredAmount);
+  let scale = premiumAmount && premiumAmount > 0 ? premiumAmount / model.premiumBase : 0;
+  const baseFaceAmount = (ageGenderModeled && ageGenderModeled.baseFaceAmount) || model.faceAmountBase;
+  if (baseFaceAmount) {
+    if (explicitFaceAmount > 0) {
+      scale = explicitFaceAmount / baseFaceAmount;
+    } else {
+      const estimate = estimateSumInsuredFromPaidPremium(productCode, premiumAmount, insuranceAge, insuredGender);
+      if (estimate && estimate.faceAmount > 0) {
+        scale = estimate.faceAmount / baseFaceAmount;
+      }
+    }
+  }
+  if (!scale || scale <= 0) return null;
+  return {
+    year: normalizedYear,
+    currency: model.currency,
+    amount: modeledValue * scale
+  };
+}
+
+function recalcFinancing(source = '') {
+  if (source === 'premium' || source === 'sumInsured' || source === 'sumInsuredFinal') {
+    state.amountInputMode = source;
+  }
   const pv = parseFloat(document.getElementById('policyValue').value) || 0;
-  const premium = parseFloat(document.getElementById('premium').value) || 0;
+  const premiumInput = document.getElementById('premium');
+  const premiumRawValue = premiumInput.value.trim();
+  const premium = parseFloat(premiumInput.value) || 0;
+  const sumInsuredInput = document.getElementById('sumInsured');
+  const sumInsuredRawValue = sumInsuredInput.value.trim();
+  const isClearingPremium = source === 'premium' && premiumRawValue === '';
+  const isClearingSumInsured = source === 'sumInsured' && sumInsuredRawValue === '';
+  if (source === 'profile' && !state.amountInputMode) {
+    state.amountInputMode = state.sumInsured > 0 ? 'sumInsured' : 'premium';
+  }
+  const insuranceAge = parseInt(document.getElementById('insuranceAge').value, 10) || 0;
+  const insuredGender = document.getElementById('insuredGender').value || 'male';
+  const coverageYear = parseInt(document.getElementById('coverageYear').value, 10) || 20;
   const rate = parseFloat(document.getElementById('financingRate').value) || 2.38;
   const usdRate = parseFloat(document.getElementById('usdTwdRate').value) || 32;
   const audRate = parseFloat(document.getElementById('audTwdRate').value) || DEFAULT_EXCHANGE_RATES.AUD;
@@ -1589,8 +2798,14 @@ function recalcFinancing() {
   const discount = parseFloat(document.getElementById('usdDiscount').value) || 90;
 
   state.policyValue = pv;
-  state.sumInsured = parseFloat(document.getElementById('sumInsured').value) || 0;
-  state.premium = premium;
+  state.insuranceAge = Math.max(0, Math.min(110, insuranceAge));
+  state.insuredGender = insuredGender;
+  state.sumInsured = isClearingSumInsured ? 0 : normalizeProductFaceAmount(getEffectiveProductCode(), sumInsuredInput.value);
+  if (!isClearingSumInsured && source !== 'sumInsured' && state.sumInsured && String(sumInsuredInput.value) !== String(state.sumInsured)) {
+    sumInsuredInput.value = state.sumInsured;
+  }
+  state.premium = isClearingPremium ? 0 : premium;
+  state.coverageYear = Math.max(1, Math.min(100, coverageYear));
   state.financingRate = rate;
   state.usdTwdRate = usdRate;
   state.exchangeRates = {
@@ -1603,15 +2818,53 @@ function recalcFinancing() {
   state.ltvRatio = ltv;
   state.usdDiscount = discount;
 
+  const productCode = getEffectiveProductCode();
+  if (isClearingPremium || isClearingSumInsured) {
+    document.getElementById('sumInsuredEstimateHint').classList.add('hidden');
+    document.getElementById('sumInsuredEstimateText').textContent = '';
+    document.getElementById('estimateSumInsuredBtn').classList.toggle('hidden', isClearingPremium || !state.premium);
+  } else if (state.financingType === 'premium' && productCode) {
+    const amountInputMode = source === 'profile'
+      ? (state.amountInputMode || (state.premium ? 'premium' : 'sumInsured'))
+      : (source || state.amountInputMode || (state.premium ? 'premium' : 'sumInsured'));
+    if ((amountInputMode === 'sumInsured' || amountInputMode === 'sumInsuredFinal' || (!state.premium && state.sumInsured > 0)) && state.sumInsured > 0) {
+      const premiumEstimate = estimatePaidPremiumFromSumInsured(productCode, state.sumInsured, state.insuranceAge, state.insuredGender);
+      if (premiumEstimate) {
+        state.sumInsured = premiumEstimate.faceAmount;
+        state.premium = Math.round(premiumEstimate.paidPremium);
+        if (source !== 'sumInsured' || premiumEstimate.maxExceeded) {
+          sumInsuredInput.value = state.sumInsured;
+        }
+        premiumInput.value = state.premium;
+        showPremiumEstimateFromSumInsured(premiumEstimate);
+      }
+    } else {
+      const estimate = updateSumInsuredEstimateUI();
+      if (estimate && (amountInputMode === 'premium' || !state.sumInsured || state.sumInsured <= 0)) {
+        state.sumInsured = estimate.faceAmount;
+        state.premium = estimate.maxExceeded ? Math.round(estimate.paidPremium) : state.premium;
+        sumInsuredInput.value = state.sumInsured;
+        if (estimate.maxExceeded) premiumInput.value = state.premium;
+      }
+    }
+  } else {
+    const estimate = updateSumInsuredEstimateUI();
+    if (estimate && (!state.sumInsured || state.sumInsured <= 0)) {
+      sumInsuredInput.value = estimate.faceAmount;
+      state.sumInsured = estimate.faceAmount;
+    }
+  }
+
   const isUsd = state.selectedProduct && state.selectedProduct.currency === 'USD';
   const originalCurrency = state.selectedProduct ? state.selectedProduct.currency : (isUsd ? 'USD' : 'TWD');
   const isPremium = state.financingType === 'premium';
   let finAmount = 0;
   let financingOriginalAmount = 0;
   let selfFundAmount = 0;
+  const effectivePremium = state.premium;
   if (isPremium) {
-    financingOriginalAmount = premium * (ltv / 100);
-    selfFundAmount = Math.max(premium - financingOriginalAmount, 0);
+    financingOriginalAmount = effectivePremium * (ltv / 100);
+    selfFundAmount = Math.max(effectivePremium - financingOriginalAmount, 0);
     finAmount = isUsd ? financingOriginalAmount * usdRate : financingOriginalAmount;
   } else {
     financingOriginalAmount = isUsd
@@ -1626,7 +2879,7 @@ function recalcFinancing() {
 
   const annualCost = finAmount * (rate / 100);
 
-  document.getElementById('dispPolicyValue').textContent = fmt(isPremium ? premium : pv) + ' ' + originalCurrency;
+  document.getElementById('dispPolicyValue').textContent = fmt(isPremium ? effectivePremium : pv) + ' ' + originalCurrency;
   document.getElementById('dispExchangeRate').textContent = fmtDec(usdRate, 2);
   document.getElementById('dispLtv').textContent = ltv + '%';
   document.getElementById('dispDiscount').textContent = discount + '%';
@@ -1682,6 +2935,10 @@ function calculateBondAmounts(rawBond) {
   const investmentTwd = Math.round(investmentAmount * rate);
   const annualCouponOriginal = faceValue * (couponRate / 100);
   const annualCouponTwd = Math.round(annualCouponOriginal * rate);
+  const loanRatio = rawBond.loanRatio != null ? parseFloat(rawBond.loanRatio) : 0.72;
+  const loanAmount = Math.round(investmentAmount * loanRatio);
+  const pledgeRate = rawBond.pledgeRate != null ? parseFloat(rawBond.pledgeRate) : 2.38;
+  const pledgeCostTwd = Math.round(loanAmount * (pledgeRate / 100) * rate);
 
   return {
     ...rawBond,
@@ -1693,7 +2950,11 @@ function calculateBondAmounts(rawBond) {
     divFreq: parseInt(rawBond.divFreq, 10) || 2,
     investmentAmount,
     investmentTwd,
-    annualCouponTwd
+    annualCouponTwd,
+    loanRatio,
+    loanAmount,
+    pledgeRate,
+    pledgeCostTwd
   };
 }
 
@@ -1701,6 +2962,10 @@ function calculateFundAmounts(rawFund) {
   const investmentAmountTwd = Math.round(parseFloat(rawFund.investmentAmountTwd) || 0);
   const dividendRate = parseFloat(rawFund.dividendRate) || 0;
   const annualDividendTwd = Math.round(investmentAmountTwd * (dividendRate / 100));
+  const loanRatio = rawFund.loanRatio != null ? parseFloat(rawFund.loanRatio) : 0.72;
+  const loanAmountTwd = Math.round(investmentAmountTwd * loanRatio);
+  const pledgeRate = rawFund.pledgeRate != null ? parseFloat(rawFund.pledgeRate) : 2.38;
+  const pledgeCostTwd = Math.round(loanAmountTwd * (pledgeRate / 100));
 
   return {
     ...rawFund,
@@ -1708,7 +2973,11 @@ function calculateFundAmounts(rawFund) {
     investmentAmountTwd,
     dividendRate,
     dividendFrequency: parseInt(rawFund.dividendFrequency, 10) || 12,
-    annualDividendTwd
+    annualDividendTwd,
+    loanRatio,
+    loanAmountTwd,
+    pledgeRate,
+    pledgeCostTwd
   };
 }
 
@@ -1738,10 +3007,50 @@ function openAddBondModal() {
   document.getElementById('bondCouponRate').value = '';
   document.getElementById('bondMaturityYears').value = '';
   document.getElementById('bondDivFreq').value = '2';
+  document.getElementById('bondLoanRatio').value = '72';
+  document.getElementById('bondPledgeRate').value = '2.38';
+  const isPledged = state.investmentModes?.bond === 'pledged';
+  document.getElementById('bondLoanRatioGroup').style.display = isPledged ? '' : 'none';
+  const hintEl = document.getElementById('bondFaceValueHint');
+  if (isPledged && state.bonds.length > 0) {
+    hintEl.textContent = '輸入參考買入價後，面額將依前一檔質借金額自動計算';
+    hintEl.style.color = 'var(--text-light)';
+    hintEl.style.display = '';
+  } else {
+    hintEl.style.display = 'none';
+  }
   document.getElementById('bondModal').classList.add('show');
 }
 
 function closeBondModal() { document.getElementById('bondModal').classList.remove('show'); }
+
+function autoFillFaceValue() {
+  const isPledged = state.investmentModes?.bond === 'pledged';
+  const isAdding = state.editingBondIndex === -1;
+  if (!isPledged || !isAdding || state.bonds.length === 0) return;
+
+  const buyPrice = parseFloat(document.getElementById('bondBuyPrice').value);
+  if (!buyPrice || buyPrice <= 0) return;
+
+  const prevBond = state.bonds[state.bonds.length - 1];
+  const prevLoanAmount = prevBond?.loanAmount;
+  if (!prevLoanAmount) return;
+
+  const rawFaceValue = prevLoanAmount / (buyPrice / 100);
+  const floored = Math.floor(rawFaceValue / 10000) * 10000;
+  const hintEl = document.getElementById('bondFaceValueHint');
+
+  if (floored < 200000) {
+    document.getElementById('bondFaceValue').value = 200000;
+    hintEl.innerHTML = `<i class="fas fa-triangle-exclamation"></i> 計算面額 ${fmt(Math.round(rawFaceValue))} 不足 200,000，已設為最低限額，請留意`;
+    hintEl.style.color = 'var(--danger)';
+  } else {
+    document.getElementById('bondFaceValue').value = floored;
+    hintEl.textContent = `自動帶入：${fmt(prevLoanAmount)} ÷ (${fmtDec(buyPrice)} / 100) ≈ ${fmt(floored)}`;
+    hintEl.style.color = 'var(--text-light)';
+  }
+  hintEl.style.display = '';
+}
 
 function openAddFundModal() {
   if (state.funds.length >= 5) { alert('最多新增 5 檔基金'); return; }
@@ -1750,9 +3059,23 @@ function openAddFundModal() {
   document.getElementById('fundModalConfirmBtn').textContent = '新增';
   document.getElementById('fundCode').value = '';
   document.getElementById('fundName').value = '';
-  document.getElementById('fundInvestmentAmount').value = '';
   document.getElementById('fundDividendRate').value = '';
   document.getElementById('fundDividendFrequency').value = '12';
+  document.getElementById('fundLoanRatio').value = '72';
+  document.getElementById('fundPledgeRate').value = '2.38';
+  const isPledged = state.investmentModes?.fund === 'pledged';
+  document.getElementById('fundLoanRatioGroup').style.display = isPledged ? '' : 'none';
+  const hintEl = document.getElementById('fundAmountHint');
+  if (isPledged && state.funds.length > 0) {
+    const prevLoan = state.funds[state.funds.length - 1]?.loanAmountTwd;
+    document.getElementById('fundInvestmentAmount').value = prevLoan || '';
+    hintEl.textContent = `自動帶入：依前一檔質借金額 ${fmt(prevLoan)} TWD`;
+    hintEl.style.color = 'var(--text-light)';
+    hintEl.style.display = '';
+  } else {
+    document.getElementById('fundInvestmentAmount').value = '';
+    hintEl.style.display = 'none';
+  }
   document.getElementById('fundModal').classList.add('show');
 }
 
@@ -1772,6 +3095,32 @@ function openAddStructuredModal() {
 
 function closeStructuredModal() { document.getElementById('structuredModal').classList.remove('show'); }
 
+function recalcPledgedFundChain() {
+  if (state.investmentModes?.fund !== 'pledged' || state.funds.length < 2) return;
+  for (let i = 1; i < state.funds.length; i++) {
+    const prev = state.funds[i - 1];
+    const cur = state.funds[i];
+    if (!prev.loanAmountTwd) continue;
+    state.funds[i] = calculateFundAmounts({ ...cur, investmentAmountTwd: prev.loanAmountTwd });
+    state.funds[i]._autoCalc = true;
+  }
+}
+
+function recalcPledgedChain() {
+  if (state.investmentModes?.bond !== 'pledged' || state.bonds.length < 2) return;
+  for (let i = 1; i < state.bonds.length; i++) {
+    const prev = state.bonds[i - 1];
+    const cur = state.bonds[i];
+    if (!prev.loanAmount || !cur.buyPrice) continue;
+    const rawFaceValue = prev.loanAmount / (cur.buyPrice / 100);
+    const floored = Math.floor(rawFaceValue / 10000) * 10000;
+    const newFaceValue = floored < 200000 ? 200000 : floored;
+    state.bonds[i] = calculateBondAmounts({ ...cur, faceValue: newFaceValue });
+    state.bonds[i]._autoCalc = true;
+    state.bonds[i]._underMin = floored < 200000;
+  }
+}
+
 function saveBond() {
   const code = document.getElementById('bondCode').value.trim();
   const name = document.getElementById('bondName').value.trim();
@@ -1782,12 +3131,15 @@ function saveBond() {
   const couponRate = parseFloat(document.getElementById('bondCouponRate').value) || 0;
   const maturityYears = parseFloat(document.getElementById('bondMaturityYears').value) || 0;
   const divFreq = parseInt(document.getElementById('bondDivFreq').value) || 2;
+  const isPledged = state.investmentModes?.bond === 'pledged';
+  const loanRatio = isPledged ? (parseFloat(document.getElementById('bondLoanRatio').value) || 72) / 100 : 0;
+  const pledgeRate = isPledged ? (parseFloat(document.getElementById('bondPledgeRate').value) || 2.38) : 0;
 
   if (!code || !name || faceValue <= 0) { alert('請填寫商品代碼、名稱及投資面額'); return; }
 
   const bond = calculateBondAmounts({
     code, name, currency, rating, faceValue, buyPrice, couponRate,
-    maturityYears, divFreq
+    maturityYears, divFreq, loanRatio, pledgeRate
   });
 
   if (state.editingBondIndex >= 0) {
@@ -1797,6 +3149,7 @@ function saveBond() {
   }
 
   state.bonds.sort((a, b) => b.maturityYears - a.maturityYears);
+  recalcPledgedChain();
   closeBondModal();
   renderBondSlots();
   updateBondSummary();
@@ -1815,13 +3168,19 @@ function saveFund() {
     return;
   }
 
+  const isPledgedFund = state.investmentModes?.fund === 'pledged';
+  const loanRatio = isPledgedFund ? (parseFloat(document.getElementById('fundLoanRatio').value) || 72) / 100 : 0;
+  const pledgeRate = isPledgedFund ? (parseFloat(document.getElementById('fundPledgeRate').value) || 2.38) : 0;
+
   const fund = calculateFundAmounts({
     code,
     name,
     currency: inferFundCurrency(name),
     investmentAmountTwd,
     dividendRate,
-    dividendFrequency
+    dividendFrequency,
+    loanRatio,
+    pledgeRate
   });
 
   if (state.editingFundIndex >= 0) {
@@ -1830,6 +3189,7 @@ function saveFund() {
     state.funds.push(fund);
   }
 
+  recalcPledgedFundChain();
   closeFundModal();
   renderFundSlots();
   updateBondSummary();
@@ -1868,6 +3228,11 @@ function editBond(index) {
   document.getElementById('bondCouponRate').value = bond.couponRate;
   document.getElementById('bondMaturityYears').value = bond.maturityYears;
   document.getElementById('bondDivFreq').value = bond.divFreq;
+  document.getElementById('bondLoanRatio').value = Math.round((bond.loanRatio ?? 0.72) * 100);
+  document.getElementById('bondPledgeRate').value = fmtDec(bond.pledgeRate ?? 2.38, 2);
+  const isPledged = state.investmentModes?.bond === 'pledged';
+  document.getElementById('bondLoanRatioGroup').style.display = isPledged ? '' : 'none';
+  document.getElementById('bondFaceValueHint').style.display = 'none';
   document.getElementById('bondModal').classList.add('show');
 }
 
@@ -1881,6 +3246,11 @@ function editFund(index) {
   document.getElementById('fundInvestmentAmount').value = fund.investmentAmountTwd;
   document.getElementById('fundDividendRate').value = fund.dividendRate;
   document.getElementById('fundDividendFrequency').value = fund.dividendFrequency;
+  document.getElementById('fundLoanRatio').value = Math.round((fund.loanRatio ?? 0.72) * 100);
+  document.getElementById('fundPledgeRate').value = fmtDec(fund.pledgeRate ?? 2.38, 2);
+  const isPledged = state.investmentModes?.fund === 'pledged';
+  document.getElementById('fundLoanRatioGroup').style.display = isPledged ? '' : 'none';
+  document.getElementById('fundAmountHint').style.display = 'none';
   document.getElementById('fundModal').classList.add('show');
 }
 
@@ -1920,6 +3290,13 @@ function deleteStructured(index) {
 function renderBondSlots() {
   const container = document.getElementById('bondSlots');
   document.getElementById('availableAmount').textContent = fmt(state.financingAmount) + ' TWD';
+  const usdRate = state.exchangeRates?.USD || state.usdTwdRate || 32;
+  const usdEl = document.getElementById('availableAmountUsd');
+  if (usdRate && state.financingAmount > 0) {
+    usdEl.textContent = '≈ USD ' + fmtDec(state.financingAmount / usdRate, 0);
+  } else {
+    usdEl.textContent = '';
+  }
   const bondModeLabel = getInvestmentModeLabel(state.investmentModes?.bond);
 
   if (state.bonds.length === 0) {
@@ -1929,6 +3306,7 @@ function renderBondSlots() {
     return;
   }
 
+  const isPledgedBond = state.investmentModes?.bond === 'pledged';
   container.innerHTML = state.bonds.map((b, i) => `
     <div class="bond-slot">
       <div class="bond-slot-header">
@@ -1947,6 +3325,26 @@ function renderBondSlots() {
         <div class="bond-info-row"><span class="label">買入價 / 投資額</span><span class="value">${fmtDec(b.buyPrice)} / ${fmt(b.investmentAmount)} ${b.currency}</span></div>
         <div class="bond-info-row"><span class="label">票息率</span><span class="value">${fmtDec(b.couponRate, 3)}%</span></div>
         <div class="bond-info-row"><span class="label">剩餘到期年</span><span class="value">${fmtDec(b.maturityYears)} 年</span></div>
+        ${isPledgedBond ? `
+        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:4px -16px 0;">
+          <span class="label">質借成數</span>
+          <span class="value">${Math.round((b.loanRatio ?? 0.72) * 100)}%</span>
+        </div>
+        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+          <span class="label"><strong>質借金額</strong></span>
+          <span class="value" style="color:var(--warning); font-weight:600;">${fmt(b.loanAmount)} ${b.currency}</span>
+        </div>
+        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+          <span class="label">質押利率</span>
+          <span class="value">${fmtDec(b.pledgeRate ?? 2.38, 2)}%</span>
+        </div>
+        <div class="bond-info-row" style="background:#fff0f0; padding:6px 16px; margin:0 -16px 0;">
+          <span class="label"><strong>年質借成本 (TWD)</strong></span>
+          <span class="value" style="color:var(--danger); font-weight:600;">-${fmt(b.pledgeCostTwd)}</span>
+        </div>
+        ${i > 0 && b._autoCalc ? `<div style="font-size:0.75rem; color:${b._underMin ? 'var(--danger)' : 'var(--text-light)'}; padding:4px 0 0; text-align:right;">
+          ${b._underMin ? '⚠️ 面額不足 200,000，已設為最低限額' : '✦ 面額依前檔質借金額自動計算'}
+        </div>` : ''}` : ''}
         <div class="bond-info-row" style="background:#f0f8ff; margin:4px -16px -14px; padding:8px 16px; border-radius:0 0 12px 12px;">
           <span class="label"><strong>年配息 (TWD)</strong></span>
           <span class="value" style="color:var(--accent);">${fmt(b.annualCouponTwd)}</span>
@@ -1963,11 +3361,12 @@ function renderFundSlots() {
   const container = document.getElementById('fundSlots');
   const fundModeLabel = getInvestmentModeLabel(state.investmentModes?.fund);
   if (state.funds.length === 0) {
-    container.innerHTML = `<div class="empty-state">目前投資方式：${fundModeLabel}。尚未新增基金，可由 fund_data.js 商品庫搜尋基金名稱或代碼後帶入。</div>`;
+    container.innerHTML = `<div class="empty-state">目前投資方式：${fundModeLabel}。尚未新增基金，可由 fund_data.js 商品庫或匯入的可質借基金清單搜尋基金名稱或代碼後帶入。</div>`;
     document.getElementById('addFundBtn').classList.toggle('hidden', false);
     return;
   }
 
+  const isPledgedFund = state.investmentModes?.fund === 'pledged';
   container.innerHTML = state.funds.map((f, i) => `
     <div class="bond-slot">
       <div class="bond-slot-header">
@@ -1985,6 +3384,24 @@ function renderFundSlots() {
         <div class="bond-info-row"><span class="label">投資金額</span><span class="value">${fmt(f.investmentAmountTwd)} TWD</span></div>
         <div class="bond-info-row"><span class="label">年化配息率</span><span class="value">${fmtDec(f.dividendRate, 2)}%</span></div>
         <div class="bond-info-row"><span class="label">配息頻率</span><span class="value">${formatDividendFrequency(f.dividendFrequency)}</span></div>
+        ${isPledgedFund ? `
+        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:4px -16px 0;">
+          <span class="label">質借成數</span>
+          <span class="value">${Math.round((f.loanRatio ?? 0.72) * 100)}%</span>
+        </div>
+        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+          <span class="label"><strong>質借金額</strong></span>
+          <span class="value" style="color:var(--warning); font-weight:600;">${fmt(f.loanAmountTwd)} TWD</span>
+        </div>
+        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+          <span class="label">質押利率</span>
+          <span class="value">${fmtDec(f.pledgeRate ?? 2.38, 2)}%</span>
+        </div>
+        <div class="bond-info-row" style="background:#fff0f0; padding:6px 16px; margin:0 -16px 0;">
+          <span class="label"><strong>年質借成本 (TWD)</strong></span>
+          <span class="value" style="color:var(--danger); font-weight:600;">-${fmt(f.pledgeCostTwd)}</span>
+        </div>
+        ${i > 0 && f._autoCalc ? `<div style="font-size:0.75rem; color:var(--text-light); padding:4px 0 0; text-align:right;">✦ 投資金額依前檔質借金額自動計算</div>` : ''}` : ''}
         <div class="bond-info-row" style="background:#f0f8ff; margin:4px -16px -14px; padding:8px 16px; border-radius:0 0 12px 12px;">
           <span class="label"><strong>年配息 (TWD)</strong></span>
           <span class="value" style="color:var(--accent);">${fmt(f.annualDividendTwd)}</span>
@@ -2043,6 +3460,8 @@ function getInvestmentModeLabel(mode) {
 
 function setInvestmentMode(category, mode) {
   state.investmentModes[category] = mode;
+  if (category === 'bond') recalcPledgedChain();
+  if (category === 'fund') recalcPledgedFundChain();
   updateInvestmentModeUI();
   renderBondSlots();
   renderFundSlots();
@@ -2068,12 +3487,20 @@ function updateBondSummary() {
   const totalStructuredInvTwd = state.structuredProducts.reduce((s, p) => s + p.investmentAmountTwd, 0);
   const totalInvTwd = totalBondInvTwd + totalFundInvTwd + totalStructuredInvTwd;
   const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const finCost = state.financingAmount * (state.financingRate / 100);
+  const mainFinCost = state.financingAmount * (state.financingRate / 100);
+  const isPledgedBond = state.investmentModes?.bond === 'pledged';
+  const isPledgedFund = state.investmentModes?.fund === 'pledged';
+  const totalPledgeCost = (isPledgedBond ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
+    + (isPledgedFund ? state.funds.reduce((s, f) => s + (f.pledgeCostTwd || 0), 0) : 0);
+  const finCost = mainFinCost + totalPledgeCost;
   const net = totalCoupon - finCost;
 
   document.getElementById('totalAllocated').textContent = fmt(totalInvTwd) + ' TWD';
   document.getElementById('totalCoupon').textContent = fmt(totalCoupon) + ' TWD';
   document.getElementById('totalFinCost').textContent = fmt(finCost) + ' TWD';
+  document.getElementById('totalPolicyLoanCost').textContent = fmt(mainFinCost) + ' TWD';
+  document.getElementById('totalPledgeLoanCost').textContent = fmt(totalPledgeCost) + ' TWD';
+  document.getElementById('subRowPledgeLoan').style.display = (isPledgedBond && totalPledgeCost > 0) ? '' : 'none';
   document.getElementById('netIncome').textContent = fmt(net) + ' TWD';
 
   document.getElementById('allocationWarning').classList.toggle('hidden', totalInvTwd <= state.financingAmount * 1.01);
@@ -2081,16 +3508,20 @@ function updateBondSummary() {
 }
 
 function normalizeImportedBond(importedBond) {
+  const loanPct = parseFloat(String(importedBond.loanPercentage || '72').replace('%', '')) || 72;
+  const pledgeRate = 2.38;
   return calculateBondAmounts({
     code: importedBond.code || '',
     name: importedBond.name || '',
     currency: importedBond.currency || 'USD',
     rating: importedBond.rating || '',
     faceValue: parseFloat(importedBond.investmentAmount) || 100000,
-    buyPrice: parseFloat(importedBond.referencePrice) || 100,
+    buyPrice: (parseFloat(importedBond.referencePrice) || 100) + 3,
     couponRate: parseFloat(String(importedBond.interestRate || '').replace('%', '')) || 0,
     maturityYears: parseFloat(importedBond.remainingTerm) || 0,
-    divFreq: parseInt(importedBond.dividendFrequency, 10) || 2
+    divFreq: parseInt(importedBond.dividendFrequency, 10) || 2,
+    loanRatio: loanPct / 100,
+    pledgeRate
   });
 }
 
@@ -2099,6 +3530,8 @@ function importSelectedBonds() {
     alert('目前瀏覽器無法使用暫存資料，無法匯入篩選債券');
     return;
   }
+
+  saveCurrentProductScenarioSnapshot();
 
   let imported;
   try {
@@ -2130,6 +3563,7 @@ function importSelectedBonds() {
   state.bonds = [...state.bonds, ...merged].slice(0, 5).sort((a, b) => b.maturityYears - a.maturityYears);
   const importedCount = Math.max(0, state.bonds.length - Math.min(beforeCount, 5));
   localStorage.removeItem(IMPORT_BONDS_KEY);
+  recalcPledgedChain();
   renderBondSlots();
   updateBondSummary();
   saveState();
@@ -2155,7 +3589,12 @@ function clearFunds() {
 }
 
 function openBondScreeningTool() {
-  window.open('beautified-bond-tool.html', '_blank');
+  saveState();
+  if (canUseStorage()) {
+    localStorage.setItem(IMPORT_RETURN_STEP_KEY, '3');
+  }
+  const returnUrl = encodeURIComponent(window.location.href);
+  window.location.href = `beautified-bond-tool.html?returnUrl=${returnUrl}`;
 }
 
 function resetScenario() {
@@ -2164,9 +3603,13 @@ function resetScenario() {
     currentStep: 1,
     financingType: null,
     selectedProduct: null,
+    productScenarioCache: {},
+    insuranceAge: 19,
+    insuredGender: 'male',
     sumInsured: 0,
     premium: 0,
     policyValue: 0,
+    coverageYear: 20,
     financingRate: 2.38,
     usdTwdRate: DEFAULT_EXCHANGE_RATES.USD,
     ltvRatio: 85,
@@ -2211,6 +3654,7 @@ function renderResults() {
   document.getElementById('resPremium').textContent = fmt(state.premium) + currSuffix;
   document.getElementById('resFinancing').textContent = fmt(state.financingAmount);
   document.getElementById('resRate').textContent = fmtDec(state.financingRate) + '%';
+  document.getElementById('resCoverageYear').textContent = (state.coverageYear || 20) + ' 年';
 
   const tbody = document.getElementById('resultBondBody');
   tbody.innerHTML = state.bonds.length > 0
@@ -2252,7 +3696,12 @@ function renderResults() {
     : '<tr><td colspan="5" class="result-empty">尚未配置 FCN / ELI，故無相關收益明細。</td></tr>';
 
   const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const finCost = state.financingAmount * (state.financingRate / 100);
+  const mainFinCostRes = state.financingAmount * (state.financingRate / 100);
+  const isPledgedBondRes = state.investmentModes?.bond === 'pledged';
+  const isPledgedFundRes = state.investmentModes?.fund === 'pledged';
+  const totalPledgeCostRes = (isPledgedBondRes ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
+    + (isPledgedFundRes ? state.funds.reduce((s, f) => s + (f.pledgeCostTwd || 0), 0) : 0);
+  const finCost = mainFinCostRes + totalPledgeCostRes;
   const net = totalCoupon - finCost;
 
   document.getElementById('resCoupon').textContent = fmt(totalCoupon);
@@ -2263,18 +3712,36 @@ function renderResults() {
   netCard.classList.toggle('negative', net < 0);
   document.getElementById('resNetMonthly').textContent = '每月約 ' + fmt(net / 12) + ' TWD';
 
+  const effectiveProductCode = getEffectiveProductCode(p);
+  const latestFaceAmount = p
+    ? normalizeProductFaceAmount(effectiveProductCode, document.getElementById('sumInsured').value || state.sumInsured)
+    : state.sumInsured;
+  if (latestFaceAmount > 0) state.sumInsured = latestFaceAmount;
   const premiumTwd = isUsd ? state.premium * state.usdTwdRate : state.premium;
-  const sumInsuredTwd = isUsd ? state.sumInsured * state.usdTwdRate : state.sumInsured;
-  const covBefore = premiumTwd > 0 ? (sumInsuredTwd / premiumTwd) : 0;
+  const projectedBenefit = p ? getProjectedDeathBenefit(effectiveProductCode, state.premium, state.coverageYear, state.insuranceAge, latestFaceAmount, state.insuredGender) : null;
+  const projectedBenefitOriginal = projectedBenefit
+    ? projectedBenefit.amount
+    : (isUsd ? state.sumInsured : state.sumInsured);
+  const projectedBenefitTwd = projectedBenefit
+    ? projectedBenefit.amount * getCurrencyRate(projectedBenefit.currency)
+    : (isUsd ? state.sumInsured * state.usdTwdRate : state.sumInsured);
+  const projectedBenefitLabel = projectedBenefit
+    ? `${fmt(projectedBenefitOriginal)} ${projectedBenefit.currency}`
+    : `${fmt(projectedBenefitOriginal)}${currSuffix}`;
+  document.getElementById('resProjectedBenefit').textContent = projectedBenefitLabel;
+
+  const covBefore = premiumTwd > 0 ? (projectedBenefitTwd / premiumTwd) : 0;
 
   let ownCapital;
   if (state.financingType === 'premium') {
-    ownCapital = premiumTwd - state.financingAmount;
+    ownCapital = state.selfFundAmount > 0
+      ? (isUsd ? state.selfFundAmount * state.usdTwdRate : state.selfFundAmount)
+      : premiumTwd - state.financingAmount;
     if (ownCapital <= 0) ownCapital = premiumTwd;
   } else {
     ownCapital = premiumTwd;
   }
-  const covAfter = ownCapital > 0 ? (sumInsuredTwd / ownCapital) : 0;
+  const covAfter = ownCapital > 0 ? (projectedBenefitTwd / ownCapital) : 0;
 
   document.getElementById('resCovBefore').textContent = fmtDec(covBefore, 1);
   document.getElementById('resCovAfter').textContent = fmtDec(covAfter, 1);
@@ -2291,6 +3758,7 @@ document.addEventListener('DOMContentLoaded', function() {
   renderStructuredSlots();
   updateBondSummary();
   updateImportButtonState();
+  updatePledgeFundImportStatus();
   setupFundSelectors();
   document.getElementById('typeCardPremium').addEventListener('click', function() { selectType('premium'); });
   document.getElementById('typeCardPolicy').addEventListener('click', function() { selectType('policy'); });
@@ -2307,6 +3775,23 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   goToStep(state.currentStep || 1);
   fetchRate();
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const shouldAutoImport = params.get('autoImportBonds') === '1' || localStorage.getItem(IMPORT_FLAG_KEY) === '1';
+    if (shouldAutoImport && localStorage.getItem(IMPORT_BONDS_KEY)) {
+      importSelectedBonds();
+      const returnStep = parseInt(localStorage.getItem(IMPORT_RETURN_STEP_KEY) || '3', 10) || 3;
+      localStorage.removeItem(IMPORT_FLAG_KEY);
+      localStorage.removeItem(IMPORT_RETURN_STEP_KEY);
+      if (params.get('autoImportBonds') === '1') {
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+      goToStep(returnStep, true);
+    }
+  } catch (e) {
+    console.warn('Auto import skipped:', e);
+  }
 });
 
 document.getElementById('bondModal').addEventListener('click', function(e) {
