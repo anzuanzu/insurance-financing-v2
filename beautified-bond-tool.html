@@ -546,6 +546,71 @@
       font-size: 0.9rem;
     }
 
+    .floating-export-btn {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 1000;
+      display: flex;
+      width: 88px;
+      min-height: 160px;
+      border: none;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+      color: var(--white);
+      box-shadow: 0 16px 32px rgba(63, 55, 201, 0.28);
+      padding: 16px 12px;
+      cursor: pointer;
+      transition: var(--transition);
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .floating-export-btn:hover {
+      transform: translateY(-50%) translateX(-3px);
+      box-shadow: 0 20px 36px rgba(63, 55, 201, 0.35);
+    }
+
+    .floating-export-btn.is-disabled {
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+      cursor: not-allowed;
+      box-shadow: 0 12px 24px rgba(100, 116, 139, 0.2);
+    }
+
+    .floating-export-btn.is-disabled:hover {
+      transform: translateY(-50%);
+    }
+
+    .floating-export-btn .floating-icon {
+      font-size: 1.35rem;
+    }
+
+    .floating-export-btn .floating-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .floating-export-btn .floating-count {
+      background-color: rgba(255,255,255,0.18);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      line-height: 1;
+      min-width: 56px;
+    }
+
+    .floating-export-btn .floating-note {
+      font-size: 0.72rem;
+      line-height: 1.35;
+      opacity: 0.92;
+    }
+
     /* Sheet info styles */
     .sheet-info {
       display: flex;
@@ -608,6 +673,30 @@
       .tab-btn {
         padding: 10px 16px;
         font-size: 0.9rem;
+      }
+
+      .floating-export-btn {
+        right: 16px;
+        bottom: 20px;
+        top: auto;
+        transform: none;
+        width: auto;
+        min-height: 0;
+        min-width: 160px;
+        padding: 14px 16px;
+        border-radius: 18px;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      .floating-export-btn:hover,
+      .floating-export-btn.is-disabled:hover {
+        transform: none;
+      }
+
+      .floating-export-btn .floating-title,
+      .floating-export-btn .floating-note {
+        text-align: left;
       }
     }
     
@@ -684,7 +773,7 @@
             <label for="currency-filter" class="filter-label">
               <i class="fas fa-dollar-sign"></i> 幣別 (Currency)
             </label>
-            <input type="text" id="currency-filter" class="filter-input" placeholder="輸入幣別 (例如: USD, HKD)">
+            <input type="text" id="currency-filter" class="filter-input" placeholder="輸入幣別 (例如: USD, HKD)" value="USD">
           </div>
 
           <!-- S&P Rating Filter -->
@@ -695,12 +784,12 @@
             <div class="filter-input-group">
               <select id="sp-rating-op" class="filter-select" style="width: 40%;">
                 <option value="=">=</option>
-                <option value=">=">>=</option>
+                <option value=">=" selected>>=</option>
                 <option value="<="><=</option>
                 <option value=">">&gt;</option>
                 <option value="<">&lt;</option>
               </select>
-              <input type="text" id="sp-rating-filter" class="filter-input" placeholder="例如: AAA, AA+, BBB-" style="width: 60%;">
+              <input type="text" id="sp-rating-filter" class="filter-input" placeholder="例如: AAA, AA+, BBB-" style="width: 60%;" value="A-">
             </div>
           </div>
           
@@ -712,23 +801,23 @@
             <div style="display: flex; flex-direction: column; gap: 10px;">
               <div class="filter-input-group">
                 <select id="years-to-maturity-op" class="filter-select" style="width: 40%;">
-                  <option value=">">&gt;</option>
+                  <option value=">" selected>&gt;</option>
                   <option value=">=">>=</option>
                   <option value="=">=</option>
                   <option value="<="><=</option>
                   <option value="<">&lt;</option>
                 </select>
-                <input type="number" id="years-to-maturity-filter" class="filter-input" placeholder="輸入起始年數" style="width: 60%;">
+                <input type="number" id="years-to-maturity-filter" class="filter-input" placeholder="輸入起始年數" style="width: 60%;" value="5">
               </div>
               <div class="filter-input-group">
                 <select id="years-to-maturity-op2" class="filter-select" style="width: 40%;">
-                  <option value="<">&lt;</option>
+                  <option value="<" selected>&lt;</option>
                   <option value="<="><=</option>
                   <option value="=">=</option>
                   <option value=">=">>=</option>
                   <option value=">">&gt;</option>
                 </select>
-                <input type="number" id="years-to-maturity-filter2" class="filter-input" placeholder="輸入結束年數" style="width: 60%;">
+                <input type="number" id="years-to-maturity-filter2" class="filter-input" placeholder="輸入結束年數" style="width: 60%;" value="11">
               </div>
             </div>
           </div>
@@ -758,12 +847,12 @@
             <div class="filter-input-group">
               <select id="coupon-op" class="filter-select" style="width: 40%;">
                 <option value="=">=</option>
-                <option value=">=">>=</option>
+                <option value=">=" selected>>=</option>
                 <option value="<="><=</option>
                 <option value=">">&gt;</option>
                 <option value="<">&lt;</option>
               </select>
-              <input type="number" id="coupon-filter" class="filter-input" placeholder="輸入票息率" step="0.01" style="width: 60%;">
+              <input type="number" id="coupon-filter" class="filter-input" placeholder="輸入票息率" step="0.01" style="width: 60%;" value="5.5">
             </div>
           </div>
           
@@ -865,6 +954,13 @@
       </div>
     </div>
   </div>
+
+  <button id="floating-export-btn" class="floating-export-btn is-disabled" type="button" aria-label="匯出全部選定債券（合併）">
+    <i class="fas fa-file-export floating-icon"></i>
+    <div class="floating-title">匯出選定債券</div>
+    <div class="floating-count" id="floating-export-count">0 / 5</div>
+    <div class="floating-note">合併匯出</div>
+  </button>
   
   <script>
     // ============================================================
@@ -915,6 +1011,124 @@
     
     // Active tab
     let activeTab = 'hot';
+    const MAX_SELECTED_BONDS = 5;
+    const selectedBondKeys = new Set();
+    const DEFAULT_FILTERS = {
+      issuer: '',
+      currency: 'USD',
+      spRatingOp: '>=',
+      spRating: 'A-',
+      yearsOp1: '>',
+      years1: '5',
+      yearsOp2: '<',
+      years2: '11',
+      buyPriceOp: '=',
+      buyPrice: '',
+      couponOp: '>=',
+      coupon: '5.5',
+      nextDividendDate: ''
+    };
+
+    function applyDefaultFiltersToForm() {
+      document.getElementById('issuer-filter').value = DEFAULT_FILTERS.issuer;
+      document.getElementById('currency-filter').value = DEFAULT_FILTERS.currency;
+      document.getElementById('sp-rating-op').value = DEFAULT_FILTERS.spRatingOp;
+      document.getElementById('sp-rating-filter').value = DEFAULT_FILTERS.spRating;
+      document.getElementById('years-to-maturity-op').value = DEFAULT_FILTERS.yearsOp1;
+      document.getElementById('years-to-maturity-filter').value = DEFAULT_FILTERS.years1;
+      document.getElementById('years-to-maturity-op2').value = DEFAULT_FILTERS.yearsOp2;
+      document.getElementById('years-to-maturity-filter2').value = DEFAULT_FILTERS.years2;
+      document.getElementById('buy-price-op').value = DEFAULT_FILTERS.buyPriceOp;
+      document.getElementById('buy-price-filter').value = DEFAULT_FILTERS.buyPrice;
+      document.getElementById('coupon-op').value = DEFAULT_FILTERS.couponOp;
+      document.getElementById('coupon-filter').value = DEFAULT_FILTERS.coupon;
+      document.getElementById('next-dividend-date-filter').value = DEFAULT_FILTERS.nextDividendDate;
+    }
+
+    function getSelectedCheckboxes() {
+      return Array.from(document.querySelectorAll('.bond-selector:checked'));
+    }
+
+    function getBondSelectionKey(sheetType, rowIndex) {
+      return `${sheetType}:${rowIndex}`;
+    }
+
+    function pruneSelectedBondKeys() {
+      const validKeys = new Set();
+      filteredDataHot.forEach((_, idx) => validKeys.add(getBondSelectionKey('hot', idx)));
+      filteredDataInventory.forEach((_, idx) => validKeys.add(getBondSelectionKey('inventory', idx)));
+      Array.from(selectedBondKeys).forEach(key => {
+        if (!validKeys.has(key)) selectedBondKeys.delete(key);
+      });
+    }
+
+    function syncCheckboxStatesFromSelection() {
+      document.querySelectorAll('.bond-selector').forEach(cb => {
+        const key = getBondSelectionKey(cb.dataset.sheetType, cb.dataset.rowIndex);
+        cb.checked = selectedBondKeys.has(key);
+      });
+    }
+
+    function updateFloatingExportButton(totalSelected) {
+      const floatingBtn = document.getElementById('floating-export-btn');
+      const floatingCount = document.getElementById('floating-export-count');
+      const canExport = totalSelected > 0 && totalSelected <= MAX_SELECTED_BONDS;
+      floatingBtn.classList.toggle('is-disabled', !canExport);
+      floatingBtn.disabled = !canExport;
+      floatingCount.textContent = `${totalSelected} / ${MAX_SELECTED_BONDS}`;
+    }
+
+    function handleBondSelectionChange(event) {
+      const checkbox = event && event.target ? event.target : null;
+      if (!checkbox) {
+        updateSelectedCounts();
+        return;
+      }
+
+      const key = getBondSelectionKey(checkbox.dataset.sheetType, checkbox.dataset.rowIndex);
+      if (checkbox.checked) {
+        if (selectedBondKeys.size >= MAX_SELECTED_BONDS) {
+          checkbox.checked = false;
+          syncCheckboxStatesFromSelection();
+          alert(`最多只能選擇 ${MAX_SELECTED_BONDS} 檔債券。`);
+          updateSelectedCounts();
+          return;
+        }
+        selectedBondKeys.add(key);
+      } else {
+        selectedBondKeys.delete(key);
+      }
+      syncCheckboxStatesFromSelection();
+      updateSelectedCounts();
+    }
+
+    function setCheckboxesChecked(checkboxes, checked, limitToMax = false) {
+      if (!checked) {
+        selectedBondKeys.clear();
+        syncCheckboxStatesFromSelection();
+        updateSelectedCounts();
+        return;
+      }
+
+      const candidates = Array.from(checkboxes || []);
+      let reachedLimit = false;
+      candidates.forEach(cb => {
+        const key = getBondSelectionKey(cb.dataset.sheetType, cb.dataset.rowIndex);
+        if (selectedBondKeys.has(key)) return;
+        if (limitToMax && selectedBondKeys.size >= MAX_SELECTED_BONDS) {
+          reachedLimit = true;
+          return;
+        }
+        selectedBondKeys.add(key);
+      });
+
+      syncCheckboxStatesFromSelection();
+      updateSelectedCounts();
+
+      if (limitToMax && reachedLimit) {
+        alert(`最多只能選擇 ${MAX_SELECTED_BONDS} 檔債券。`);
+      }
+    }
     
     // ============================================================
     // DOM elements
@@ -1346,6 +1560,8 @@
           displayResults('inventory', filteredDataInventory);
           displayCombinedResults();
           addExportFunctionality();
+          pruneSelectedBondKeys();
+          syncCheckboxStatesFromSelection();
           updateSelectedCounts();
           
         } catch (error) {
@@ -1399,6 +1615,8 @@
       document.getElementById('tab-hot-count').textContent = filteredDataHot.length;
       document.getElementById('tab-inventory-count').textContent = filteredDataInventory.length;
 
+      pruneSelectedBondKeys();
+      syncCheckboxStatesFromSelection();
       updateSelectedCounts();
     });
     
@@ -1475,25 +1693,14 @@
     // Reset filters
     // ============================================================
     resetFiltersBtn.addEventListener('click', function() {
-      document.getElementById('issuer-filter').value = '';
-      document.getElementById('currency-filter').value = '';
-      document.getElementById('sp-rating-op').value = '=';
-      document.getElementById('sp-rating-filter').value = '';
-      document.getElementById('years-to-maturity-op').value = '>';
-      document.getElementById('years-to-maturity-filter').value = '';
-      document.getElementById('years-to-maturity-op2').value = '<';
-      document.getElementById('years-to-maturity-filter2').value = '';
-      document.getElementById('buy-price-op').value = '=';
-      document.getElementById('buy-price-filter').value = '';
-      document.getElementById('coupon-op').value = '=';
-      document.getElementById('coupon-filter').value = '';
-      document.getElementById('next-dividend-date-filter').value = '';
+      applyDefaultFiltersToForm();
       
       filteredDataHot = [...allDataHot];
       filteredDataInventory = [...allDataInventory];
       sortStateHot = { column: null, order: 'asc' };
       sortStateInventory = { column: null, order: 'asc' };
       sortStateCombined = { column: null, order: 'asc' };
+      selectedBondKeys.clear();
 
       displayResults('hot', filteredDataHot);
       displayResults('inventory', filteredDataInventory);
@@ -1502,6 +1709,7 @@
       document.getElementById('tab-hot-count').textContent = filteredDataHot.length;
       document.getElementById('tab-inventory-count').textContent = filteredDataInventory.length;
 
+      syncCheckboxStatesFromSelection();
       updateSelectedCounts();
     });
     
@@ -1624,7 +1832,8 @@
         checkbox.className = 'bond-selector';
         checkbox.dataset.rowIndex = rowIndex;
         checkbox.dataset.sheetType = sheetType;
-        checkbox.addEventListener('change', updateSelectedCounts);
+        checkbox.checked = selectedBondKeys.has(getBondSelectionKey(sheetType, rowIndex));
+        checkbox.addEventListener('change', handleBondSelectionChange);
         tdSelect.appendChild(checkbox);
         tr.appendChild(tdSelect);
         
@@ -1875,7 +2084,8 @@
         checkbox.className = 'bond-selector';
         checkbox.dataset.rowIndex = item._rowIndex;
         checkbox.dataset.sheetType = item._sheetType;
-        checkbox.addEventListener('change', updateSelectedCounts);
+        checkbox.checked = selectedBondKeys.has(getBondSelectionKey(item._sheetType, item._rowIndex));
+        checkbox.addEventListener('change', handleBondSelectionChange);
         tdSelect.appendChild(checkbox);
         tr.appendChild(tdSelect);
 
@@ -1952,21 +2162,35 @@
     // Update selected counts
     // ============================================================
     function updateSelectedCounts() {
-      const hotChecked = document.querySelectorAll('#results-table-hot .bond-selector:checked').length;
-      const invChecked = document.querySelectorAll('#results-table-inventory .bond-selector:checked').length;
-      const total = hotChecked + invChecked;
+      let hotChecked = 0;
+      let invChecked = 0;
+      selectedBondKeys.forEach(key => {
+        if (key.startsWith('hot:')) hotChecked += 1;
+        if (key.startsWith('inventory:')) invChecked += 1;
+      });
+      const total = selectedBondKeys.size;
       
       document.getElementById('hot-selected-count').textContent = `熱門債券: ${hotChecked}`;
       document.getElementById('inventory-selected-count').textContent = `客戶庫存: ${invChecked}`;
-      document.getElementById('total-selected-count').textContent = `合計: ${total}`;
+      document.getElementById('total-selected-count').textContent = `合計: ${total} / ${MAX_SELECTED_BONDS}`;
       
       const bar = document.getElementById('selected-count-bar');
       bar.style.display = total > 0 ? 'flex' : 'none';
+      updateFloatingExportButton(total);
     }
     
     // ============================================================
     // Export functionality
     // ============================================================
+    function getReturnUrl() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('returnUrl') || '';
+      } catch (e) {
+        return '';
+      }
+    }
+
     function addExportFunctionality() {
       const actionsDiv = document.getElementById('export-actions');
       actionsDiv.innerHTML = ''; 
@@ -1985,6 +2209,14 @@
       openCalculatorBtn.className = 'btn btn-success';
       openCalculatorBtn.innerHTML = '<i class="fas fa-calculator"></i> 開啟計算器';
       openCalculatorBtn.addEventListener('click', function() {
+        const returnUrl = getReturnUrl();
+        if (returnUrl) {
+          try {
+            localStorage.setItem('insuranceFinancingAutoImport', '1');
+          } catch (e) {}
+          window.location.href = `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}autoImportBonds=1`;
+          return;
+        }
         window.open('beautified-bond-calculator.html', '_blank');
       });
       actionsDiv.appendChild(openCalculatorBtn);
@@ -1996,8 +2228,7 @@
       selectAllBtn.innerHTML = '<i class="fas fa-check-double"></i> 全選 (當前分頁)';
       selectAllBtn.addEventListener('click', function() {
         const tableId = `results-table-${activeTab}`;
-        document.querySelectorAll(`#${tableId} .bond-selector`).forEach(cb => cb.checked = true);
-        updateSelectedCounts();
+        setCheckboxesChecked(Array.from(document.querySelectorAll(`#${tableId} .bond-selector`)), true, true);
       });
       actionsDiv.appendChild(selectAllBtn);
 
@@ -2007,8 +2238,7 @@
       selectAllBothBtn.className = 'btn btn-warning';
       selectAllBothBtn.innerHTML = '<i class="fas fa-check-double"></i> 全選 (兩個分頁)';
       selectAllBothBtn.addEventListener('click', function() {
-        document.querySelectorAll('.bond-selector').forEach(cb => cb.checked = true);
-        updateSelectedCounts();
+        setCheckboxesChecked(Array.from(document.querySelectorAll('.bond-selector')), true, true);
       });
       actionsDiv.appendChild(selectAllBothBtn);
       
@@ -2018,24 +2248,27 @@
       deselectAllBtn.className = 'btn btn-danger';
       deselectAllBtn.innerHTML = '<i class="fas fa-times"></i> 取消全選';
       deselectAllBtn.addEventListener('click', function() {
-        document.querySelectorAll('.bond-selector').forEach(cb => cb.checked = false);
-        updateSelectedCounts();
+        setCheckboxesChecked(Array.from(document.querySelectorAll('.bond-selector')), false);
       });
       actionsDiv.appendChild(deselectAllBtn);
     }
     
     function exportSelectedBonds() {
-      const allChecked = document.querySelectorAll('.bond-selector:checked');
-      if (allChecked.length === 0) {
+      const selectedKeys = Array.from(selectedBondKeys);
+      if (selectedKeys.length === 0) {
         alert('請至少選擇一個債券');
+        return;
+      }
+      if (selectedKeys.length > MAX_SELECTED_BONDS) {
+        alert(`最多只能匯出 ${MAX_SELECTED_BONDS} 檔債券。`);
         return;
       }
       
       const selectedBonds = [];
       
-      allChecked.forEach(checkbox => {
-        const rowIndex = parseInt(checkbox.dataset.rowIndex);
-        const sheetType = checkbox.dataset.sheetType;
+      selectedKeys.forEach(selectionKey => {
+        const [sheetType, rowIndexRaw] = selectionKey.split(':');
+        const rowIndex = parseInt(rowIndexRaw, 10);
         const columns = sheetType === 'hot' ? COLUMNS_HOT : COLUMNS_INVENTORY;
         const dataSource = sheetType === 'hot' ? filteredDataHot : filteredDataInventory;
         const row = dataSource[rowIndex];
@@ -2068,14 +2301,28 @@
       });
       
       localStorage.setItem('selectedBonds', JSON.stringify(selectedBonds));
+      const returnUrl = getReturnUrl();
       
       const hotCount = selectedBonds.filter(b => b.source === '熱門債券').length;
       const invCount = selectedBonds.filter(b => b.source === '客戶庫存報價').length;
-      
+
+      if (returnUrl) {
+        try {
+          localStorage.setItem('insuranceFinancingAutoImport', '1');
+        } catch (e) {}
+        window.location.href = `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}autoImportBonds=1`;
+        return;
+      }
+
       alert(`已成功匯出 ${selectedBonds.length} 個債券。\n` +
             `（熱門債券: ${hotCount} 個, 客戶庫存報價: ${invCount} 個）\n` +
             `請點擊「開啟計算器」按鈕或直接開啟債券計算器頁面。`);
     }
+
+    document.getElementById('floating-export-btn').addEventListener('click', function() {
+      if (this.disabled) return;
+      exportSelectedBonds();
+    });
     
     // ============================================================
     // Drag & drop
