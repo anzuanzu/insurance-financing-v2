@@ -1,0 +1,12 @@
+.git
+.venv
+backend/.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+output
+*.zip
+.playwright-cli
+.claude

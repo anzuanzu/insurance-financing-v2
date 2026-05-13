@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: insurance-financing-quote-api
+    runtime: docker
+    rootDir: .
+    dockerfilePath: ./backend/Dockerfile
+    plan: starter
+    envVars:
+      - key: QUOTE_ENGINE
+        value: auto
