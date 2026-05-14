@@ -4,7 +4,7 @@ services:
     runtime: docker
     rootDir: .
     dockerfilePath: ./backend/Dockerfile
-    plan: starter
+    plan: free
     envVars:
       - key: QUOTE_ENGINE
         value: auto
