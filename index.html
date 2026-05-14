@@ -571,6 +571,7 @@
       <div id="selectedProductInfo" class="hidden" style="background:#f0f8ff; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:0.85rem;">
         <div><strong id="selProductCode"></strong> <span id="selProductName"></span></div>
         <div style="margin-top:4px;"><span id="selProductCurrencyBadge" class="search-option currency-tag"></span></div>
+        <div class="hidden" id="selProductDividendOption" style="margin-top:6px; color:var(--text-light);"></div>
       </div>
       <div class="form-group hidden" id="xindeliPayPeriodGroup">
         <label class="form-label">鑫得利繳費年期</label>
@@ -2169,7 +2170,11 @@ function selectType(type, options = {}) {
   document.getElementById('selectedTypeDisplay').textContent = label;
   updateFinancingUI();
   updateStepAvailability();
-  saveState();
+  if ((state.currentStep || 1) === 4) {
+    renderResults();
+  } else {
+    saveState();
+  }
 }
 
 function updateFinancingUI() {
@@ -2388,6 +2393,10 @@ function selectProduct(product, options = {}) {
   const badge = document.getElementById('selProductCurrencyBadge');
   badge.textContent = product.currency;
   badge.className = 'search-option currency-tag ' + product.currency.toLowerCase();
+  const dividendOption = document.getElementById('selProductDividendOption');
+  const isWusPremium = state.financingType === 'premium' && getEffectiveProductCode(product) === 'WUS';
+  dividendOption.textContent = isWusPremium ? '增值回饋分享金：第7年起持續增購保額' : '';
+  dividendOption.classList.toggle('hidden', !isWusPremium);
   updateXindeliPayPeriodUI();
 
   const isUsd = product.currency === 'USD';
@@ -2536,6 +2545,37 @@ function getEstimatorRate(estimator, insuranceAge, insuredGender = 'male') {
   return { normalizedAge, rate };
 }
 
+function findBestUnitAmountFromPaidPremium(estimator, paidPremium, rate) {
+  if (!estimator || !paidPremium || paidPremium <= 0 || !rate || rate <= 0) return null;
+  const tiers = estimator.discountTiers || HIGH_PREMIUM_DISCOUNT_TIERS;
+  const maxUnitAmount = estimator.maxUnitAmount || Math.max(10000, Math.ceil((paidPremium / rate) * 1.2));
+  let best = null;
+
+  for (let units = 1; units <= maxUnitAmount; units += 1) {
+    const tablePremium = Math.round(units * rate);
+    const paidInfo = estimator.treatPremiumAsFirstYearPaid
+      ? resolvePaidAmountFromTablePremium(tablePremium, tiers)
+      : { paidPremium: tablePremium, discount: 0 };
+    if (!paidInfo) continue;
+    const diff = Math.abs((paidInfo.paidPremium || 0) - paidPremium);
+    if (
+      !best ||
+      diff < best.diff ||
+      (diff === best.diff && units < best.units)
+    ) {
+      best = {
+        units,
+        diff,
+        tablePremium,
+        paidPremium: paidInfo.paidPremium,
+        discount: paidInfo.discount
+      };
+    }
+  }
+
+  return best;
+}
+
 function estimateSumInsuredFromPaidPremium(productCode, paidPremium, insuranceAge, insuredGender = 'male') {
   const estimator = PRODUCT_SUM_INSURED_ESTIMATORS[productCode];
   if (!estimator || !paidPremium || paidPremium <= 0) return null;
@@ -2549,14 +2589,19 @@ function estimateSumInsuredFromPaidPremium(productCode, paidPremium, insuranceAg
     : { tablePremium: paidPremium, discount: 0 };
   if (!premiumInfo || !premiumInfo.tablePremium) return null;
 
-  const rawUnitAmount = premiumInfo.tablePremium / rate;
   const maxUnitAmount = estimator.maxUnitAmount || Infinity;
-  const roundedUnitAmount = Math.min(maxUnitAmount, Math.max(1, Math.round(rawUnitAmount)));
   const unitSize = estimator.unitSize || 1;
-  const tablePremium = Math.round(roundedUnitAmount * rate);
-  const paidInfo = estimator.treatPremiumAsFirstYearPaid
-    ? resolvePaidAmountFromTablePremium(tablePremium, estimator.discountTiers || HIGH_PREMIUM_DISCOUNT_TIERS)
-    : { paidPremium: tablePremium, discount: 0 };
+  const bestUnitMatch = findBestUnitAmountFromPaidPremium(estimator, paidPremium, rate);
+  const rawUnitAmount = premiumInfo.tablePremium / rate;
+  const roundedUnitAmount = bestUnitMatch
+    ? Math.min(maxUnitAmount, Math.max(1, bestUnitMatch.units))
+    : Math.min(maxUnitAmount, Math.max(1, Math.round(rawUnitAmount)));
+  const tablePremium = bestUnitMatch ? bestUnitMatch.tablePremium : Math.round(roundedUnitAmount * rate);
+  const paidInfo = bestUnitMatch
+    ? { paidPremium: bestUnitMatch.paidPremium, discount: bestUnitMatch.discount }
+    : estimator.treatPremiumAsFirstYearPaid
+      ? resolvePaidAmountFromTablePremium(tablePremium, estimator.discountTiers || HIGH_PREMIUM_DISCOUNT_TIERS)
+      : { paidPremium: tablePremium, discount: 0 };
 
   return {
     productCode,
@@ -2897,7 +2942,11 @@ function recalcFinancing(source = '') {
     updateBondSummary();
   }
   updateStepAvailability();
-  saveState();
+  if ((state.currentStep || 1) === 4) {
+    renderResults();
+  } else {
+    saveState();
+  }
 }
 
 // === Exchange Rate ===
