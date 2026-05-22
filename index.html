@@ -841,6 +841,7 @@
         <div class="stat-card"><div class="stat-label">融資利率</div><div class="stat-value" id="resRate">-</div></div>
         <div class="stat-card result-premium-only"><div class="stat-label">保障倍數年度</div><div class="stat-value" id="resCoverageYear">-</div></div>
         <div class="stat-card result-premium-only"><div class="stat-label">該年度預估保障</div><div class="stat-value" id="resProjectedBenefit">-</div></div>
+        <div class="stat-card result-premium-only"><div class="stat-label">次一週年日解約金</div><div class="stat-value" id="resPolicyCashValue">-</div></div>
       </div>
     </div>
 
@@ -1124,8 +1125,9 @@
 <script src="wsi_coverage_data.js?v=20260511-2"></script>
 <script src="wef_coverage_data.js?v=20260511-2"></script>
 <script src="wja_coverage_data.js?v=20260511-2"></script>
-<script src="aba_coverage_data.js?v=20260511-2"></script>
-<script src="wus_coverage_data.js?v=20260511-2"></script>
+<script src="aba_coverage_data.js?v=20260522-3"></script>
+<script src="wus_coverage_data.js?v=20260522-3"></script>
+<script src="cash_value_data.js?v=20260522-2"></script>
 <script>
 // === Product Data ===
 const PREMIUM_FINANCING_PRODUCTS = [
@@ -2820,6 +2822,55 @@ function getProjectedDeathBenefit(productCode, premiumAmount, year, insuranceAge
   };
 }
 
+function getAgeGenderModeledCashValue(productCode, year, insuranceAge, insuredGender) {
+  const cashValueData = window.POLICY_CASH_VALUE_BY_PRODUCT && window.POLICY_CASH_VALUE_BY_PRODUCT[productCode];
+  if (!cashValueData) return null;
+  const normalizedYear = Math.max(1, Math.min(100, parseInt(year, 10) || 1));
+  const genderKey = insuredGender === 'female' ? 'female' : 'male';
+  const genderTable = cashValueData[genderKey] || {};
+  const rawAge = parseInt(insuranceAge, 10);
+  let ageKey = String(Number.isFinite(rawAge) ? rawAge : 0);
+
+  if (!cashValueData.isSparse) {
+    const ages = Object.keys(genderTable).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+    if (!ages.length) return null;
+    const boundedAge = Math.max(ages[0], Math.min(ages[ages.length - 1], Number.isFinite(rawAge) ? rawAge : ages[0]));
+    ageKey = String(boundedAge);
+  }
+
+  const ageTable = genderTable[ageKey];
+  const amount = Array.isArray(ageTable) ? ageTable[normalizedYear - 1] : null;
+  if (amount === null || amount === undefined || amount === '') return null;
+  const numericAmount = Number(amount);
+  if (!Number.isFinite(numericAmount)) return null;
+  return {
+    amount: numericAmount,
+    baseFaceAmount: cashValueData.baseFaceAmount || null,
+    currency: cashValueData.currency || (PRODUCT_COVERAGE_MODELS[productCode] && PRODUCT_COVERAGE_MODELS[productCode].currency) || state.currency
+  };
+}
+
+function getProjectedPolicyCashValue(productCode, premiumAmount, year, insuranceAge, sumInsuredAmount, insuredGender = 'male') {
+  const modeledCashValue = getAgeGenderModeledCashValue(productCode, year, insuranceAge, insuredGender);
+  if (!modeledCashValue || !modeledCashValue.baseFaceAmount) return null;
+  const explicitFaceAmount = normalizeProductFaceAmount(productCode, sumInsuredAmount);
+  let scale = 0;
+  if (explicitFaceAmount > 0) {
+    scale = explicitFaceAmount / modeledCashValue.baseFaceAmount;
+  } else {
+    const estimate = estimateSumInsuredFromPaidPremium(productCode, premiumAmount, insuranceAge, insuredGender);
+    if (estimate && estimate.faceAmount > 0) {
+      scale = estimate.faceAmount / modeledCashValue.baseFaceAmount;
+    }
+  }
+  if (!scale || scale <= 0) return null;
+  return {
+    year: Math.max(1, Math.min(100, parseInt(year, 10) || 1)),
+    currency: modeledCashValue.currency,
+    amount: modeledCashValue.amount * scale
+  };
+}
+
 function recalcFinancing(source = '') {
   if (source === 'premium' || source === 'sumInsured' || source === 'sumInsuredFinal') {
     state.amountInputMode = source;
@@ -3779,6 +3830,7 @@ function renderResults() {
 
   if (!isPremiumResult) {
     document.getElementById('resProjectedBenefit').textContent = '-';
+    document.getElementById('resPolicyCashValue').textContent = '-';
     document.getElementById('resCovBefore').textContent = '-';
     document.getElementById('resCovAfter').textContent = '-';
     saveState();
@@ -3802,6 +3854,10 @@ function renderResults() {
     ? `${fmt(projectedBenefitOriginal)} ${projectedBenefit.currency}`
     : `${fmt(projectedBenefitOriginal)}${currSuffix}`;
   document.getElementById('resProjectedBenefit').textContent = projectedBenefitLabel;
+  const projectedCashValue = p ? getProjectedPolicyCashValue(effectiveProductCode, state.premium, state.coverageYear, state.insuranceAge, latestFaceAmount, state.insuredGender) : null;
+  document.getElementById('resPolicyCashValue').textContent = projectedCashValue
+    ? `${fmt(projectedCashValue.amount)} ${projectedCashValue.currency}`
+    : '-';
 
   const covBefore = premiumTwd > 0 ? (projectedBenefitTwd / premiumTwd) : 0;
 
