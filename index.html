@@ -277,6 +277,46 @@
     .stat-card.negative .stat-value { color: var(--danger); }
     .stat-card.accent .stat-value { color: var(--accent); }
     .stat-card.full { grid-column: 1 / -1; }
+    .editable-stat-value {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .result-edit-input {
+      min-width: 0;
+      width: 100%;
+      max-width: 220px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      text-align: center;
+      padding: 4px 8px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .result-edit-input:hover {
+      border-color: rgba(26,58,92,0.15);
+      background: rgba(26,58,92,0.03);
+    }
+    .result-edit-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: white;
+      box-shadow: 0 0 0 3px rgba(26,58,92,0.08);
+    }
+    .result-edit-input:disabled {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    .result-edit-unit {
+      color: inherit;
+      white-space: nowrap;
+    }
 
     .coverage-compare {
       display: flex; align-items: center; justify-content: center;
@@ -840,8 +880,20 @@
         <div class="stat-card accent"><div class="stat-label">融資金額 (TWD)</div><div class="stat-value" id="resFinancing">-</div></div>
         <div class="stat-card"><div class="stat-label">融資利率</div><div class="stat-value" id="resRate">-</div></div>
         <div class="stat-card result-premium-only"><div class="stat-label">保障倍數年度</div><div class="stat-value" id="resCoverageYear">-</div></div>
-        <div class="stat-card result-premium-only"><div class="stat-label">該年度預估保障</div><div class="stat-value" id="resProjectedBenefit">-</div></div>
-        <div class="stat-card result-premium-only"><div class="stat-label">次一週年日解約金</div><div class="stat-value" id="resPolicyCashValue">-</div></div>
+        <div class="stat-card result-premium-only">
+          <div class="stat-label">該年度預估保障</div>
+          <div class="stat-value editable-stat-value">
+            <input type="text" class="result-edit-input" id="resProjectedBenefitInput" inputmode="numeric" placeholder="-" autocomplete="off">
+            <span class="result-edit-unit" id="resProjectedBenefitUnit"></span>
+          </div>
+        </div>
+        <div class="stat-card result-premium-only">
+          <div class="stat-label">次一週年日解約金</div>
+          <div class="stat-value editable-stat-value">
+            <input type="text" class="result-edit-input" id="resPolicyCashValueInput" inputmode="numeric" placeholder="-" autocomplete="off">
+            <span class="result-edit-unit" id="resPolicyCashValueUnit"></span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1730,7 +1782,24 @@ let state = {
   editingBondIndex: -1,
   editingFundIndex: -1,
   editingStructuredIndex: -1,
+  resultOverrides: {
+    signature: '',
+    projectedBenefitAmount: null,
+    projectedBenefitCurrency: '',
+    policyCashValueAmount: null,
+    policyCashValueCurrency: ''
+  }
 };
+
+function createDefaultResultOverrides() {
+  return {
+    signature: '',
+    projectedBenefitAmount: null,
+    projectedBenefitCurrency: '',
+    policyCashValueAmount: null,
+    policyCashValueCurrency: ''
+  };
+}
 
 function createDefaultProductScenario() {
   return {
@@ -1757,7 +1826,8 @@ function createDefaultProductScenario() {
     },
     bonds: [],
     funds: [],
-    structuredProducts: []
+    structuredProducts: [],
+    resultOverrides: createDefaultResultOverrides()
   };
 }
 
@@ -1850,6 +1920,122 @@ function escapeHtml(value) {
   }[char]));
 }
 
+function parseEditableResultNumber(value) {
+  const normalized = String(value ?? '').replace(/,/g, '').trim();
+  if (!normalized) return null;
+  const numeric = Number(normalized);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatEditableResultNumber(value) {
+  return value === null || value === undefined || value === '' || Number.isNaN(Number(value))
+    ? ''
+    : fmt(value);
+}
+
+function getResultOverrideSignature(productCode, faceAmount) {
+  return JSON.stringify({
+    financingType: state.financingType || '',
+    productCode: productCode || '',
+    premium: Number(state.premium || 0),
+    coverageYear: Number(state.coverageYear || 0),
+    insuranceAge: Number(state.insuranceAge || 0),
+    insuredGender: state.insuredGender || 'male',
+    faceAmount: Number(faceAmount || 0)
+  });
+}
+
+function ensureResultOverrides(signature = '') {
+  if (!state.resultOverrides || typeof state.resultOverrides !== 'object') {
+    state.resultOverrides = createDefaultResultOverrides();
+  }
+  if (signature && state.resultOverrides.signature !== signature) {
+    state.resultOverrides = {
+      ...createDefaultResultOverrides(),
+      signature
+    };
+  } else if (signature && !state.resultOverrides.signature) {
+    state.resultOverrides.signature = signature;
+  }
+  return state.resultOverrides;
+}
+
+function setEditableResultField(inputId, unitId, amount, currency, disabled = false) {
+  const input = document.getElementById(inputId);
+  const unit = document.getElementById(unitId);
+  if (!input || !unit) return;
+  input.disabled = disabled;
+  input.value = disabled ? '' : formatEditableResultNumber(amount);
+  input.placeholder = disabled ? '-' : '';
+  unit.textContent = disabled ? '' : (currency || '');
+}
+
+function applyCoverageComparison(projectedBenefitAmount, projectedBenefitCurrency) {
+  const premiumTwd = state.selectedProduct && state.selectedProduct.currency === 'USD'
+    ? state.premium * state.usdTwdRate
+    : state.premium;
+  const projectedBenefitTwd = Number(projectedBenefitAmount || 0) * getCurrencyRate(projectedBenefitCurrency || (state.selectedProduct && state.selectedProduct.currency) || 'TWD');
+  const covBefore = premiumTwd > 0 ? (projectedBenefitTwd / premiumTwd) : 0;
+
+  let ownCapital;
+  if (state.financingType === 'premium') {
+    ownCapital = state.selfFundAmount > 0
+      ? ((state.selectedProduct && state.selectedProduct.currency === 'USD') ? state.selfFundAmount * state.usdTwdRate : state.selfFundAmount)
+      : premiumTwd - state.financingAmount;
+    if (ownCapital <= 0) ownCapital = premiumTwd;
+  } else {
+    ownCapital = premiumTwd;
+  }
+  const covAfter = ownCapital > 0 ? (projectedBenefitTwd / ownCapital) : 0;
+
+  document.getElementById('resCovBefore').textContent = fmtDec(covBefore, 1);
+  document.getElementById('resCovAfter').textContent = fmtDec(covAfter, 1);
+}
+
+function handleEditableResultFocus(event) {
+  const numeric = parseEditableResultNumber(event.target.value);
+  if (numeric !== null) {
+    event.target.value = String(Math.round(numeric));
+  }
+}
+
+function handleEditableResultBlur(event) {
+  const numeric = parseEditableResultNumber(event.target.value);
+  event.target.value = numeric === null ? '' : formatEditableResultNumber(numeric);
+}
+
+function handleProjectedBenefitEdit(event) {
+  const input = event.target;
+  const numeric = parseEditableResultNumber(input.value);
+  ensureResultOverrides();
+  if (numeric === null) {
+    state.resultOverrides.projectedBenefitAmount = null;
+    const unitText = document.getElementById('resProjectedBenefitUnit').textContent.trim();
+    const fallbackCurrency = unitText || (state.selectedProduct && state.selectedProduct.currency) || 'TWD';
+    const productCode = getEffectiveProductCode(state.selectedProduct);
+    const latestFaceAmount = state.selectedProduct
+      ? normalizeProductFaceAmount(productCode, document.getElementById('sumInsured').value || state.sumInsured)
+      : state.sumInsured;
+    const projectedBenefit = state.selectedProduct
+      ? getProjectedDeathBenefit(productCode, state.premium, state.coverageYear, state.insuranceAge, latestFaceAmount, state.insuredGender)
+      : null;
+    applyCoverageComparison(projectedBenefit ? projectedBenefit.amount : state.sumInsured, projectedBenefit ? projectedBenefit.currency : fallbackCurrency);
+  } else {
+    state.resultOverrides.projectedBenefitAmount = numeric;
+    state.resultOverrides.projectedBenefitCurrency = document.getElementById('resProjectedBenefitUnit').textContent.trim() || ((state.selectedProduct && state.selectedProduct.currency) || 'TWD');
+    applyCoverageComparison(numeric, state.resultOverrides.projectedBenefitCurrency);
+  }
+  saveState();
+}
+
+function handlePolicyCashValueEdit(event) {
+  const numeric = parseEditableResultNumber(event.target.value);
+  ensureResultOverrides();
+  state.resultOverrides.policyCashValueAmount = numeric;
+  state.resultOverrides.policyCashValueCurrency = document.getElementById('resPolicyCashValueUnit').textContent.trim() || '';
+  saveState();
+}
+
 // === Storage ===
 function canUseStorage() {
   try {
@@ -1877,6 +2063,10 @@ function loadState() {
       ...state,
       ...parsed,
       productScenarioCache: parsed.productScenarioCache || {},
+      resultOverrides: {
+        ...createDefaultResultOverrides(),
+        ...(parsed.resultOverrides || {})
+      },
       exchangeRates: { ...DEFAULT_EXCHANGE_RATES, ...(parsed.exchangeRates || {}) },
       investmentModes: {
         bond: 'single',
@@ -3829,8 +4019,8 @@ function renderResults() {
   document.getElementById('resNetMonthly').textContent = '每月約 ' + fmt(net / 12) + ' TWD';
 
   if (!isPremiumResult) {
-    document.getElementById('resProjectedBenefit').textContent = '-';
-    document.getElementById('resPolicyCashValue').textContent = '-';
+    setEditableResultField('resProjectedBenefitInput', 'resProjectedBenefitUnit', null, '', true);
+    setEditableResultField('resPolicyCashValueInput', 'resPolicyCashValueUnit', null, '', true);
     document.getElementById('resCovBefore').textContent = '-';
     document.getElementById('resCovAfter').textContent = '-';
     saveState();
@@ -3842,38 +4032,43 @@ function renderResults() {
     ? normalizeProductFaceAmount(effectiveProductCode, document.getElementById('sumInsured').value || state.sumInsured)
     : state.sumInsured;
   if (latestFaceAmount > 0) state.sumInsured = latestFaceAmount;
-  const premiumTwd = isUsd ? state.premium * state.usdTwdRate : state.premium;
+  const overrideSignature = getResultOverrideSignature(effectiveProductCode, latestFaceAmount);
+  const resultOverrides = ensureResultOverrides(overrideSignature);
   const projectedBenefit = p ? getProjectedDeathBenefit(effectiveProductCode, state.premium, state.coverageYear, state.insuranceAge, latestFaceAmount, state.insuredGender) : null;
-  const projectedBenefitOriginal = projectedBenefit
-    ? projectedBenefit.amount
-    : (isUsd ? state.sumInsured : state.sumInsured);
-  const projectedBenefitTwd = projectedBenefit
-    ? projectedBenefit.amount * getCurrencyRate(projectedBenefit.currency)
-    : (isUsd ? state.sumInsured * state.usdTwdRate : state.sumInsured);
-  const projectedBenefitLabel = projectedBenefit
-    ? `${fmt(projectedBenefitOriginal)} ${projectedBenefit.currency}`
-    : `${fmt(projectedBenefitOriginal)}${currSuffix}`;
-  document.getElementById('resProjectedBenefit').textContent = projectedBenefitLabel;
   const projectedCashValue = p ? getProjectedPolicyCashValue(effectiveProductCode, state.premium, state.coverageYear, state.insuranceAge, latestFaceAmount, state.insuredGender) : null;
-  document.getElementById('resPolicyCashValue').textContent = projectedCashValue
-    ? `${fmt(projectedCashValue.amount)} ${projectedCashValue.currency}`
-    : '-';
+  const autoProjectedBenefitAmount = projectedBenefit
+    ? projectedBenefit.amount
+    : state.sumInsured;
+  const autoProjectedBenefitCurrency = projectedBenefit
+    ? projectedBenefit.currency
+    : (isUsd ? 'USD' : 'TWD');
+  const displayProjectedBenefitAmount = Number.isFinite(resultOverrides.projectedBenefitAmount)
+    ? resultOverrides.projectedBenefitAmount
+    : autoProjectedBenefitAmount;
+  const displayProjectedBenefitCurrency = resultOverrides.projectedBenefitCurrency || autoProjectedBenefitCurrency;
+  setEditableResultField(
+    'resProjectedBenefitInput',
+    'resProjectedBenefitUnit',
+    displayProjectedBenefitAmount,
+    displayProjectedBenefitCurrency,
+    false
+  );
 
-  const covBefore = premiumTwd > 0 ? (projectedBenefitTwd / premiumTwd) : 0;
+  const autoProjectedCashValueAmount = projectedCashValue ? projectedCashValue.amount : null;
+  const autoProjectedCashValueCurrency = projectedCashValue ? projectedCashValue.currency : '';
+  const displayProjectedCashValueAmount = Number.isFinite(resultOverrides.policyCashValueAmount)
+    ? resultOverrides.policyCashValueAmount
+    : autoProjectedCashValueAmount;
+  const displayProjectedCashValueCurrency = resultOverrides.policyCashValueCurrency || autoProjectedCashValueCurrency;
+  setEditableResultField(
+    'resPolicyCashValueInput',
+    'resPolicyCashValueUnit',
+    displayProjectedCashValueAmount,
+    displayProjectedCashValueCurrency,
+    !displayProjectedCashValueCurrency
+  );
 
-  let ownCapital;
-  if (state.financingType === 'premium') {
-    ownCapital = state.selfFundAmount > 0
-      ? (isUsd ? state.selfFundAmount * state.usdTwdRate : state.selfFundAmount)
-      : premiumTwd - state.financingAmount;
-    if (ownCapital <= 0) ownCapital = premiumTwd;
-  } else {
-    ownCapital = premiumTwd;
-  }
-  const covAfter = ownCapital > 0 ? (projectedBenefitTwd / ownCapital) : 0;
-
-  document.getElementById('resCovBefore').textContent = fmtDec(covBefore, 1);
-  document.getElementById('resCovAfter').textContent = fmtDec(covAfter, 1);
+  applyCoverageComparison(displayProjectedBenefitAmount, displayProjectedBenefitCurrency);
   saveState();
 }
 
@@ -3902,6 +4097,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     nextStep();
   });
+  const resProjectedBenefitInput = document.getElementById('resProjectedBenefitInput');
+  const resPolicyCashValueInput = document.getElementById('resPolicyCashValueInput');
+  [resProjectedBenefitInput, resPolicyCashValueInput].forEach(input => {
+    input.addEventListener('focus', handleEditableResultFocus);
+    input.addEventListener('blur', handleEditableResultBlur);
+  });
+  resProjectedBenefitInput.addEventListener('input', handleProjectedBenefitEdit);
+  resPolicyCashValueInput.addEventListener('input', handlePolicyCashValueEdit);
   goToStep(state.currentStep || 1);
   fetchRate();
   try {
