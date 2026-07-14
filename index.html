@@ -342,10 +342,15 @@
       display: block;
     }
     .slot-search-option {
+      width: 100%;
+      border: 0;
+      background: white;
       padding: 9px 10px;
       border-bottom: 1px solid #eef2f6;
       cursor: pointer;
       transition: background 0.15s;
+      font: inherit;
+      text-align: left;
     }
     .slot-search-option:last-child {
       border-bottom: none;
@@ -3358,7 +3363,7 @@ function applyStateToForm() {
   document.getElementById('audTwdRate').value = state.exchangeRates.AUD ?? DEFAULT_EXCHANGE_RATES.AUD;
   document.getElementById('eurTwdRate').value = state.exchangeRates.EUR ?? DEFAULT_EXCHANGE_RATES.EUR;
   document.getElementById('gbpTwdRate').value = state.exchangeRates.GBP ?? DEFAULT_EXCHANGE_RATES.GBP;
-  document.getElementById('premiumLoanRatio').value = state.selectedProduct ? (state.premiumLoanRatio ?? 0.85) : 0;
+  document.getElementById('premiumLoanRatio').value = hasActiveInsuranceFinancing() ? (state.premiumLoanRatio ?? 0.85) : 0;
   document.getElementById('crossCurrencyLoanRatio').value = state.crossCurrencyLoanRatio ?? 0.9;
   document.getElementById('ltvRatio').value = state.ltvRatio ?? 85;
   document.getElementById('usdDiscount').value = state.usdDiscount ?? 90;
@@ -3381,9 +3386,13 @@ function getMaxAccessibleStep() {
   if (!state.financingType) return 1;
   // 保單為選填：未設定商品時，仍可直接規劃自有資金的投資配置。
   if (!state.selectedProduct) return 4;
-  if (state.financingType === 'premium' && state.premium <= 0) return 2;
   if (state.financingType === 'policy' && state.policyValue <= 0) return 2;
   return 4;
+}
+
+function hasActiveInsuranceFinancing() {
+  return Boolean(state.selectedProduct)
+    && (state.financingType !== 'premium' || Number(state.premium) > 0);
 }
 
 // === Step Navigation ===
@@ -3434,7 +3443,6 @@ function nextStep() {
   }
   if (state.currentStep === 2) {
     recalcFinancing();
-    if (state.selectedProduct && state.financingType === 'premium' && (!state.premium || state.premium <= 0)) { alert('請輸入保費'); return; }
     if (state.selectedProduct && state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
   }
   goToStep(state.currentStep + 1);
@@ -3530,9 +3538,10 @@ function updateFinancingUI() {
   document.getElementById('policyValueGroup').classList.toggle('hidden', isPremium);
   document.getElementById('usdDiscountGroup').classList.toggle('hidden', isPremium);
   document.getElementById('premiumRatioSettingsRow').classList.toggle('hidden', !isPremium);
-  // 未選商品即為不做保單融資；比例固定顯示 0%，選到商品後才恢復可調整。
-  premiumLoanRatioInput.readOnly = isPremium && !state.selectedProduct;
-  premiumLoanRatioInput.value = state.selectedProduct ? (state.premiumLoanRatio ?? 0.85) : 0;
+  // 未選商品或未填保費即為不做保單融資；比例固定顯示 0%，條件成立後才可調整。
+  const hasActivePremiumFinancing = hasActiveInsuranceFinancing();
+  premiumLoanRatioInput.readOnly = isPremium && !hasActivePremiumFinancing;
+  premiumLoanRatioInput.value = hasActivePremiumFinancing ? (state.premiumLoanRatio ?? 0.85) : 0;
   document.getElementById('crossCurrencyLoanRatioGroup').classList.toggle('hidden', !(isPremium && state.selectedProduct && state.selectedProduct.currency === 'USD'));
   document.getElementById('multiCurrencyRateGrid').classList.add('hidden');
   document.getElementById('ltvRatioLabel').textContent = isPremium ? '融資成數（自動）' : '保價金成數';
@@ -3859,6 +3868,12 @@ function hideAllInlineFundSuggestions() {
   });
 }
 
+const inlineFundSelectionKeys = new Set();
+
+function getInlineFundSelectionKey(index, field) {
+  return `${index}:${field}`;
+}
+
 function syncFundProductSelection(index, product) {
   if (!product || !state.funds[index]) return;
   const next = {
@@ -3878,15 +3893,8 @@ function showInlineFundSuggestions(index, field, rawQuery = '') {
   const { options } = getInlineFundSuggestionElements(index, field);
   if (!options) return;
 
-  const query = String(rawQuery || '').trim().toLowerCase();
   const products = getFundProductOptions();
-  const matches = (query
-    ? products.filter(product =>
-        product.code.toLowerCase().includes(query)
-        || product.name.toLowerCase().includes(query)
-      )
-    : products
-  ).slice(0, 30);
+  const matches = searchFundProducts(rawQuery, 30);
 
   if (matches.length === 0) {
     options.classList.remove('show');
@@ -3895,31 +3903,41 @@ function showInlineFundSuggestions(index, field, rawQuery = '') {
   }
 
   options.innerHTML = matches.map(product => `
-    <div class="slot-search-option" data-inline-fund-code="${escapeHtml(product.code)}">
+    <button type="button" class="slot-search-option" data-inline-fund-code="${escapeHtml(product.code)}">
       <span class="code">${escapeHtml(product.code)}</span>
       <span class="name">${escapeHtml(product.name)}</span>
-    </div>
+    </button>
   `).join('');
   options.classList.add('show');
 
   options.querySelectorAll('.slot-search-option').forEach(option => {
-    option.addEventListener('mousedown', event => {
+    let selected = false;
+    const selectOption = event => {
+      if (selected) return;
+      selected = true;
       event.preventDefault();
+      event.stopPropagation();
       const product = products.find(item => item.code === option.dataset.inlineFundCode);
       if (!product) return;
+      inlineFundSelectionKeys.add(getInlineFundSelectionKey(index, field));
       syncFundProductSelection(index, product);
       hideAllInlineFundSuggestions();
-    });
+    };
+    option.addEventListener('pointerdown', selectOption);
+    option.addEventListener('click', selectOption);
   });
 }
 
 function handleInlineFundSearchBlur(index, field, rawValue) {
   window.setTimeout(() => {
+    const selectionKey = getInlineFundSelectionKey(index, field);
+    if (inlineFundSelectionKeys.delete(selectionKey)) return;
+
     const value = String(rawValue || '').trim();
     const products = getFundProductOptions();
     const exact = products.find(product =>
-      product.code.toLowerCase() === value.toLowerCase()
-      || product.name.toLowerCase() === value.toLowerCase()
+      normalizeFundSearchText(product.code) === normalizeFundSearchText(value)
+      || normalizeFundSearchText(product.name) === normalizeFundSearchText(value)
     );
 
     if (exact) {
@@ -4458,10 +4476,16 @@ function recalcFinancing(source = '') {
   const gbpRate = parseFloat(document.getElementById('gbpTwdRate').value) || DEFAULT_EXCHANGE_RATES.GBP;
   const inputLtv = parseFloat(document.getElementById('ltvRatio').value) || 85;
   const discount = parseFloat(document.getElementById('usdDiscount').value) || 90;
-  const requestedPremiumLoanRatio = sanitizeFinancingFactor(document.getElementById('premiumLoanRatio').value, 0.85);
+  const premiumLoanRatioInput = document.getElementById('premiumLoanRatio');
+  const wasPremiumLoanRatioLocked = premiumLoanRatioInput.readOnly;
+  const requestedPremiumLoanRatio = sanitizeFinancingFactor(premiumLoanRatioInput.value, 0.85);
   const crossCurrencyLoanRatio = sanitizeFinancingFactor(document.getElementById('crossCurrencyLoanRatio').value, 0.9);
-  const hasInsuranceProduct = Boolean(state.selectedProduct);
-  const premiumLoanRatio = hasInsuranceProduct ? requestedPremiumLoanRatio : 0;
+  const isPremium = state.financingType === 'premium';
+  const hasInsuranceProduct = Boolean(state.selectedProduct) && (!isPremium || premium > 0);
+  const configuredPremiumLoanRatio = sanitizeFinancingFactor(state.premiumLoanRatio, 0.85);
+  const premiumLoanRatio = hasInsuranceProduct
+    ? (wasPremiumLoanRatioLocked ? configuredPremiumLoanRatio : requestedPremiumLoanRatio)
+    : 0;
 
   state.policyValue = pv;
   state.insuranceAge = Math.max(0, Math.min(110, insuranceAge));
@@ -4481,7 +4505,8 @@ function recalcFinancing(source = '') {
     EUR: eurRate,
     GBP: gbpRate
   };
-  state.premiumLoanRatio = premiumLoanRatio;
+  // 未填保費時畫面與計算均為 0%，但保留商品原有設定，補填保費後可恢復使用。
+  if (hasInsuranceProduct) state.premiumLoanRatio = premiumLoanRatio;
   state.crossCurrencyLoanRatio = crossCurrencyLoanRatio;
   state.usdDiscount = discount;
 
@@ -4522,9 +4547,13 @@ function recalcFinancing(source = '') {
     }
   }
 
+  if (isPremium) {
+    premiumLoanRatioInput.readOnly = !hasInsuranceProduct;
+    premiumLoanRatioInput.value = hasInsuranceProduct ? state.premiumLoanRatio : 0;
+  }
+
   const isUsd = hasInsuranceProduct && state.selectedProduct.currency === 'USD';
   const originalCurrency = hasInsuranceProduct ? state.selectedProduct.currency : 'TWD';
-  const isPremium = state.financingType === 'premium';
   const projectedReferenceCashValue = isPremium && productCode
     ? getProjectedReferenceCashValue(productCode, state.premium, state.insuranceAge, state.sumInsured, state.insuredGender)
     : null;
@@ -5384,7 +5413,7 @@ function updateBondSummary() {
   const totalStructuredInvTwd = state.structuredProducts.reduce((s, p) => s + p.investmentAmountTwd, 0);
   const totalInvTwd = totalBondInvTwd + totalFundInvTwd + totalStructuredInvTwd;
   const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const mainFinCost = state.selectedProduct ? state.financingAmount * (state.financingRate / 100) : 0;
+  const mainFinCost = hasActiveInsuranceFinancing() ? state.financingAmount * (state.financingRate / 100) : 0;
   const isPledgedBond = state.investmentModes?.bond === 'pledged';
   const isPledgedFund = state.investmentModes?.fund === 'pledged';
   const totalPledgeCost = (isPledgedBond ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
@@ -5636,7 +5665,7 @@ function renderResults() {
   const isPremiumResult = state.financingType === 'premium';
 
   const summarySection = document.getElementById('insuranceSummarySection');
-  summarySection.classList.toggle('hidden', !p);
+  summarySection.classList.toggle('hidden', !hasActiveInsuranceFinancing());
   updateInsuranceSummaryToggle();
 
   document.querySelectorAll('.result-premium-only').forEach(el => {
@@ -5701,7 +5730,7 @@ function renderResults() {
     : '<tr><td colspan="5" class="result-empty">尚未配置 FCN / ELI，故無相關收益明細。</td></tr>';
 
   const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const mainFinCostRes = p ? state.financingAmount * (state.financingRate / 100) : 0;
+  const mainFinCostRes = hasActiveInsuranceFinancing() ? state.financingAmount * (state.financingRate / 100) : 0;
   const isPledgedBondRes = state.investmentModes?.bond === 'pledged';
   const isPledgedFundRes = state.investmentModes?.fund === 'pledged';
   const totalPledgeCostRes = (isPledgedBondRes ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
