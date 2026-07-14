@@ -1106,7 +1106,7 @@
       <div class="action-row hidden" id="fundPresetToolbar">
         <select class="form-input" id="fundPresetSelect" style="max-width:460px;"></select>
         <button class="inline-btn accent" type="button" onclick="applySelectedFundPreset()"><i class="fas fa-wand-magic-sparkles"></i> 帶入預設五檔基金</button>
-        <div class="fund-import-help">第 1 檔會使用目前剩餘可配置金額，後續 4 檔會依前一檔質借金額自動續算。配息率與質借成數會依所選預設基金帶入，之後可在卡片內再調整。</div>
+        <div class="fund-import-help">第 1 檔會使用目前剩餘可配置金額；若金額為 0，仍會建立五檔，填入第 1 檔投資金額後，後續 4 檔會依前一檔質借金額自動續算。配息率與質借成數會依所選預設基金帶入，之後可在卡片內再調整。</div>
       </div>
       <div id="fundSlots"></div>
       <button class="add-bond-btn" id="addFundBtn" onclick="openAddFundModal()">
@@ -5537,11 +5537,6 @@ function applySelectedFundPreset() {
     )
   );
 
-  if (remainingAmount <= 0) {
-    alert('目前沒有可用的剩餘配置金額，請先確認融資金額或其他投資配置');
-    return;
-  }
-
   if (state.funds.length > 0 && !confirm('是否清除目前基金配置，改為帶入預設五檔基金？')) {
     return;
   }
@@ -5562,7 +5557,9 @@ function applySelectedFundPreset() {
   renderFundSlots();
   updateBondSummary();
   saveState();
-  alert(`已帶入預設五檔基金：${preset.name}`);
+  alert(remainingAmount > 0
+    ? `已帶入預設五檔基金：${preset.name}`
+    : `已帶入預設五檔基金：${preset.name}\n第 1 檔投資金額目前為 0，填入後會自動續算後續檔次。`);
 }
 
 function openConfigManager() {
