@@ -1,5 +1,6 @@
 // fund_data.js - 基金資料檔案
 const externalFundProducts = [
+  { code: "0002B021", name: "富達基金-全球動能多元基金(B股C月配息美元)" },
   { code: "00010001", name: "摩根日本（日圓）基金" },
   { code: "00010009", name: "摩根太平洋證券基金" },
   { code: "00010019", name: "摩根亞洲小型企業基金" },

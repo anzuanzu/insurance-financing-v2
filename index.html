@@ -225,6 +225,11 @@
       font-size: 0.85rem; font-weight: 600;
     }
     .bond-slot-header .slot-num { color: var(--primary); }
+    .bond-slot-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
     .bond-slot-body { padding: 14px 16px; }
     .bond-info-row {
       display: flex; justify-content: space-between;
@@ -232,6 +237,150 @@
     }
     .bond-info-row .label { color: var(--text-light); }
     .bond-info-row .value { font-weight: 600; }
+    .bond-info-row.editable {
+      align-items: center;
+      gap: 10px;
+    }
+    .bond-info-row.editable .value {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      justify-content: flex-end;
+    }
+    .slot-inline-group {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .slot-inline-input,
+    .slot-inline-select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #d6dee7;
+      border-radius: 8px;
+      background: white;
+      color: var(--text);
+      font: inherit;
+      font-weight: 600;
+      font-size: 0.82rem;
+      padding: 6px 10px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .slot-inline-input:focus,
+    .slot-inline-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,58,92,0.08);
+    }
+    .slot-inline-input.text {
+      text-align: left;
+    }
+    .slot-inline-select {
+      appearance: none;
+      text-align: left;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237f8c8d' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 28px;
+    }
+    .slot-inline-group .slot-inline-input,
+    .slot-inline-group .slot-inline-select {
+      flex: 1;
+    }
+    .slot-inline-input.sm,
+    .slot-inline-select.sm {
+      max-width: 110px;
+    }
+    .slot-inline-input.md,
+    .slot-inline-select.md {
+      max-width: 150px;
+    }
+    .slot-inline-input.lg {
+      max-width: 220px;
+    }
+    .slot-input-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      justify-content: flex-end;
+    }
+    .slot-search-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .slot-search-wrap.sm {
+      max-width: 110px;
+    }
+    .slot-search-wrap.md {
+      max-width: 150px;
+    }
+    .slot-search-wrap.lg {
+      max-width: 220px;
+    }
+    .slot-search-options {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      display: none;
+      max-height: 220px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      z-index: 35;
+      text-align: left;
+    }
+    .slot-search-options.show {
+      display: block;
+    }
+    .slot-search-option {
+      padding: 9px 10px;
+      border-bottom: 1px solid #eef2f6;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .slot-search-option:last-child {
+      border-bottom: none;
+    }
+    .slot-search-option:hover {
+      background: #f5f9ff;
+    }
+    .slot-search-option .code {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .slot-search-option .name {
+      display: block;
+      margin-top: 2px;
+      font-size: 0.76rem;
+      color: var(--text-light);
+      line-height: 1.45;
+    }
+    .slot-input-unit {
+      color: var(--text-light);
+      font-size: 0.76rem;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .slot-inline-note {
+      font-size: 0.75rem;
+      padding: 4px 0 0;
+      text-align: right;
+      color: var(--text-light);
+    }
+    .slot-inline-note.warn {
+      color: var(--danger);
+    }
 
     .add-bond-btn {
       width: 100%; padding: 14px; border: 2px dashed var(--border);
@@ -266,6 +415,17 @@
       margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
       padding-bottom: 8px; border-bottom: 2px solid var(--accent);
     }
+    .result-section-title .summary-toggle {
+      margin-left: auto;
+      border: 0;
+      background: transparent;
+      color: var(--primary);
+      cursor: pointer;
+      padding: 4px 6px;
+      font: inherit;
+      font-size: 0.8rem;
+    }
+    .result-section-title .summary-toggle:hover { color: var(--accent); }
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .stat-card {
       background: var(--card); border-radius: var(--radius);
@@ -276,6 +436,13 @@
     .stat-card.positive .stat-value { color: var(--success); }
     .stat-card.negative .stat-value { color: var(--danger); }
     .stat-card.accent .stat-value { color: var(--accent); }
+    .stat-card .stat-subvalue {
+      margin-top: 6px;
+      font-size: 0.76rem;
+      color: var(--text-light);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.4;
+    }
     .stat-card.full { grid-column: 1 / -1; }
     .editable-stat-value {
       display: flex;
@@ -328,6 +495,13 @@
     }
     .coverage-box .label { font-size: 0.72rem; color: var(--text-light); margin-bottom: 4px; }
     .coverage-box .multiplier { font-size: 1.8rem; font-weight: 700; }
+    .coverage-box .multiplier.editable-stat-value { gap: 0; }
+    .coverage-box .multiplier .result-edit-input {
+      max-width: 120px;
+      font-size: inherit;
+      line-height: 1.2;
+      padding: 2px 4px;
+    }
     .coverage-box.before .multiplier { color: var(--text-light); }
     .coverage-box.after .multiplier { color: var(--success); }
     .coverage-arrow { font-size: 1.5rem; color: var(--accent); }
@@ -345,7 +519,6 @@
       font-variant-numeric: tabular-nums;
     }
     .result-bond-table .text-right { text-align: right; }
-
     /* Bottom Nav */
     .bottom-nav {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -418,6 +591,11 @@
       transition: all 0.2s; display: inline-flex; align-items: center; gap: 4px;
     }
     .inline-btn:hover { background: #f0f4f8; }
+    .inline-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: #f8fafc;
+    }
     .inline-btn.danger { color: var(--danger); border-color: #fecdd3; }
     .inline-btn.success { color: var(--success); border-color: #bbf7d0; }
     .inline-btn.accent { color: var(--accent); border-color: #f5deb3; }
@@ -520,6 +698,87 @@
     }
     .product-option:last-child { border-bottom: none; }
     .product-option:hover { background: #f0f8ff; }
+    .config-manager {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      background: linear-gradient(180deg, #fbfcff 0%, #f5f8fc 100%);
+    }
+    .config-toolbar {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .config-toolbar-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .config-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+      color: var(--text-light);
+    }
+    .config-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .config-item {
+      border: 1px solid #dbe4ee;
+      border-radius: 10px;
+      background: white;
+      padding: 12px;
+    }
+    .config-item-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .config-item-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      word-break: break-word;
+    }
+    .config-item-time {
+      font-size: 0.76rem;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+    .config-item-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .config-empty {
+      border: 1px dashed #ccd6e2;
+      border-radius: 10px;
+      padding: 14px;
+      background: rgba(255,255,255,0.7);
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-light);
+    }
+    .config-textarea {
+      min-height: 180px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      resize: vertical;
+    }
+    .config-help {
+      font-size: 0.76rem;
+      color: var(--text-light);
+      line-height: 1.6;
+      margin-top: 8px;
+    }
 
     .section-note {
       font-size: 0.75rem; color: var(--text-light); text-align: center;
@@ -541,6 +800,7 @@
       .form-row { grid-template-columns: 1fr 1fr; }
       .rate-grid { grid-template-columns: repeat(3, 1fr); }
       .stat-grid { grid-template-columns: repeat(3, 1fr); }
+      .config-toolbar { grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
       .main-content { padding: 24px; padding-bottom: 100px; }
       .modal-overlay { align-items: center; }
       .modal-sheet { border-radius: 16px; max-height: 80vh; }
@@ -590,6 +850,9 @@
           <p>以既有保單作為擔保品，向銀行融資借款，活化資金運用</p>
           <span class="badge">163 檔可承作商品</span>
         </div>
+      </div>
+      <div class="action-row" style="justify-content:center; margin-top:16px;">
+        <button class="inline-btn" type="button" onclick="openConfigManager()"><i class="fas fa-folder-open"></i> 載入 / 匯入既有配置</button>
       </div>
     </div>
     <p class="section-note">此工具僅供內部教育訓練參考，不保證獲利，不保證數字正確性。</p>
@@ -688,6 +951,16 @@
           </div>
         </div>
       </div>
+      <div class="form-row hidden" id="premiumRatioSettingsRow">
+        <div class="form-group" id="premiumLoanRatioGroup">
+          <label class="form-label">保費融資借款比例</label>
+          <input type="number" class="form-input" id="premiumLoanRatio" inputmode="decimal" value="0.85" step="0.01" min="0" oninput="recalcFinancing()">
+        </div>
+        <div class="form-group hidden" id="crossCurrencyLoanRatioGroup">
+          <label class="form-label">錯幣借款成數</label>
+          <input type="number" class="form-input" id="crossCurrencyLoanRatio" inputmode="decimal" value="0.90" step="0.01" min="0" oninput="recalcFinancing()">
+        </div>
+      </div>
       <div class="form-row" id="policyOnlyValueRow">
         <div class="form-group" id="policyValueGroup">
           <label class="form-label" id="policyValueLabel">保價金 <span class="hint" id="policyValueCurrLabel">(USD)</span></label>
@@ -709,7 +982,7 @@
         <div class="form-group" id="ltvRatioGroup">
           <label class="form-label" id="ltvRatioLabel">保價金成數</label>
           <div class="input-group">
-            <input type="number" class="form-input" id="ltvRatio" inputmode="decimal" value="85" step="1" oninput="recalcFinancing()">
+            <input type="number" class="form-input" id="ltvRatio" inputmode="decimal" value="85" step="0.01" oninput="recalcFinancing()">
             <span class="input-suffix">%</span>
           </div>
         </div>
@@ -770,6 +1043,10 @@
           <span class="label">年融資成本 (TWD)</span>
           <span class="value" id="dispAnnualCost">-</span>
         </div>
+        <div class="calc-row hidden" id="referenceCashValueRow">
+          <span class="label">保費融資參考現金價值</span>
+          <span class="value" id="dispReferenceCashValue">-</span>
+        </div>
       </div>
     </div>
   </section>
@@ -821,6 +1098,11 @@
           <span class="desc">保留後續質押借款延伸運用的設定方式。</span>
         </button>
       </div>
+      <div class="action-row hidden" id="fundPresetToolbar">
+        <select class="form-input" id="fundPresetSelect" style="max-width:460px;"></select>
+        <button class="inline-btn accent" type="button" onclick="applySelectedFundPreset()"><i class="fas fa-wand-magic-sparkles"></i> 帶入預設五檔基金</button>
+        <div class="fund-import-help">第 1 檔會使用目前剩餘可配置金額，後續 4 檔會依前一檔質借金額自動續算。配息率與質借成數會依所選預設基金帶入，之後可在卡片內再調整。</div>
+      </div>
       <div id="fundSlots"></div>
       <button class="add-bond-btn" id="addFundBtn" onclick="openAddFundModal()">
         <i class="fas fa-plus-circle"></i> 新增基金（最多 5 檔）
@@ -864,22 +1146,72 @@
         <span>投資配置金額超過可融資金額</span>
       </div>
     </div>
-    <p class="section-note">債券依到期時間由遠到近排序。配息收入與融資成本皆以台幣計算。</p>
+    <div class="card">
+      <div class="card-title"><i class="fas fa-floppy-disk"></i> 配置管理</div>
+      <div class="config-manager">
+        <div class="config-toolbar">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">配置名稱</label>
+            <div class="config-toolbar-actions" style="margin-top:6px;">
+              <input type="text" class="form-input" id="configNameInput" maxlength="120" placeholder="例如：王先生 20 年保費融資方案" style="flex:1 1 280px;">
+              <button class="inline-btn" type="button" onclick="applySuggestedConfigName(true)"><i class="fas fa-wand-magic-sparkles"></i> 自動帶入目前配置</button>
+            </div>
+          </div>
+          <div class="config-toolbar-actions">
+            <button class="inline-btn accent" type="button" onclick="saveCurrentConfigToLibrary()"><i class="fas fa-save"></i> 儲存目前配置</button>
+            <button class="inline-btn" type="button" onclick="exportCurrentConfigText()"><i class="fas fa-file-export"></i> 匯出目前配置</button>
+            <button class="inline-btn" type="button" onclick="exportCurrentConfigFile()"><i class="fas fa-download"></i> 匯出文字檔</button>
+          </div>
+        </div>
+        <div class="config-meta">
+          <span id="savedConfigCount">已保存 0 / 10 組配置</span>
+          <span>配置會保留在目前瀏覽器本機</span>
+        </div>
+        <div class="config-list" id="savedConfigList"></div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">配置純文字</label>
+          <input type="file" id="configFileInput" class="hidden" accept=".txt,.json,text/plain,application/json" onchange="handleConfigFileImport(event)">
+          <textarea class="form-input config-textarea" id="configExchangeText" placeholder="可貼上匯出的配置文字，或先按上方按鈕產生目前配置的純文字"></textarea>
+          <div class="config-toolbar-actions" style="margin-top:10px;">
+            <button class="inline-btn" type="button" onclick="triggerConfigFileImport()"><i class="fas fa-folder-open"></i> 讀取文字檔</button>
+            <button class="inline-btn" type="button" onclick="copyConfigText()"><i class="fas fa-copy"></i> 複製文字</button>
+            <button class="inline-btn success" type="button" onclick="importConfigFromText()"><i class="fas fa-file-import"></i> 匯入並套用</button>
+          </div>
+          <div class="config-help">匯出內容為可交流的純文字 JSON。匯入後會直接覆蓋目前頁面的完整設定與投資配置，但不會刪除已保存的其他配置。</div>
+        </div>
+      </div>
+    </div>
+    <p class="section-note">可於卡片右上角調整債券與基金標的順序。配息收入與融資成本皆以台幣計算。</p>
   </section>
 
   <!-- Step 4: Results Dashboard -->
   <section class="step-panel" id="step4">
-    <div class="result-section">
-      <div class="result-section-title" id="resultSummaryTitle"><i class="fas fa-shield-halved"></i> 保險融資摘要</div>
-      <div class="stat-grid">
+    <div class="result-section" id="insuranceSummarySection">
+      <div class="result-section-title" id="resultSummaryTitle">
+        <span id="resultSummaryTitleLabel"><i class="fas fa-shield-halved"></i> 保險融資摘要</span>
+        <button class="summary-toggle" id="insuranceSummaryToggle" type="button" onclick="toggleInsuranceSummary()" aria-expanded="true"><i class="fas fa-chevron-up"></i> 隱藏</button>
+      </div>
+      <div class="stat-grid" id="insuranceSummaryContent">
         <div class="stat-card"><div class="stat-label">融資類型</div><div class="stat-value text-sm" id="resType">-</div></div>
         <div class="stat-card"><div class="stat-label">保險商品</div><div class="stat-value text-sm" id="resProduct">-</div></div>
         <div class="stat-card result-premium-only"><div class="stat-label">保額</div><div class="stat-value" id="resSumInsured">-</div></div>
         <div class="stat-card result-premium-only"><div class="stat-label">保費</div><div class="stat-value" id="resPremium">-</div></div>
+        <div class="stat-card result-premium-only"><div class="stat-label">自備款</div><div class="stat-value" id="resSelfFund">-</div></div>
+        <div class="stat-card result-premium-only"><div class="stat-label">貸款金額</div><div class="stat-value" id="resLoanOriginal">-</div></div>
         <div class="stat-card result-policy-only hidden"><div class="stat-label">保單價值</div><div class="stat-value" id="resPolicyValue">-</div></div>
-        <div class="stat-card accent"><div class="stat-label">融資金額 (TWD)</div><div class="stat-value" id="resFinancing">-</div></div>
+        <div class="stat-card accent">
+          <div class="stat-label">融資金額 (TWD)</div>
+          <div class="stat-value" id="resFinancing">-</div>
+          <div class="stat-subvalue" id="resFinancingFx">參考匯率：-</div>
+        </div>
         <div class="stat-card"><div class="stat-label">融資利率</div><div class="stat-value" id="resRate">-</div></div>
-        <div class="stat-card result-premium-only"><div class="stat-label">保障倍數年度</div><div class="stat-value" id="resCoverageYear">-</div></div>
+        <div class="stat-card result-premium-only">
+          <div class="stat-label">保障倍數年度</div>
+          <div class="stat-value editable-stat-value">
+            <input type="text" class="result-edit-input" id="resCoverageYearInput" inputmode="numeric" placeholder="-" autocomplete="off">
+            <span class="result-edit-unit">年</span>
+          </div>
+        </div>
         <div class="stat-card result-premium-only">
           <div class="stat-label">該年度預估保障</div>
           <div class="stat-value editable-stat-value">
@@ -894,6 +1226,9 @@
             <span class="result-edit-unit" id="resPolicyCashValueUnit"></span>
           </div>
         </div>
+        <div class="stat-card result-premium-only"><div class="stat-label">增值金額</div><div class="stat-value" id="resGrowthAmount">-</div></div>
+        <div class="stat-card result-premium-only"><div class="stat-label">增值率</div><div class="stat-value" id="resGrowthRate">-</div></div>
+        <div class="stat-card result-premium-only"><div class="stat-label">單利</div><div class="stat-value" id="resSimpleRate">-</div></div>
       </div>
     </div>
 
@@ -969,13 +1304,17 @@
       <div class="coverage-compare">
         <div class="coverage-box before">
           <div class="label">未融資</div>
-          <div class="multiplier" id="resCovBefore">-</div>
+          <div class="multiplier editable-stat-value">
+            <input type="text" class="result-edit-input" id="resCovBeforeInput" inputmode="decimal" placeholder="-" autocomplete="off">
+          </div>
           <div class="text-sm text-muted">倍</div>
         </div>
         <div class="coverage-arrow"><i class="fas fa-arrow-right"></i></div>
         <div class="coverage-box after">
           <div class="label">融資後</div>
-          <div class="multiplier" id="resCovAfter">-</div>
+          <div class="multiplier editable-stat-value">
+            <input type="text" class="result-edit-input" id="resCovAfterInput" inputmode="decimal" placeholder="-" autocomplete="off">
+          </div>
           <div class="text-sm text-muted">倍</div>
         </div>
       </div>
@@ -1180,6 +1519,7 @@
 <script src="aba_coverage_data.js?v=20260522-3"></script>
 <script src="wus_coverage_data.js?v=20260522-3"></script>
 <script src="cash_value_data.js?v=20260522-2"></script>
+<script src="reference_cash_value_data.js?v=20260612-1"></script>
 <script>
 // === Product Data ===
 const PREMIUM_FINANCING_PRODUCTS = [
@@ -1337,10 +1677,13 @@ const POLICY_FINANCING_PRODUCTS = [
 ];
 
 const STORAGE_KEY = 'insuranceFinancingScenario';
+const SAVED_CONFIGS_KEY = 'insuranceFinancingSavedConfigs';
 const IMPORT_BONDS_KEY = 'selectedBonds';
 const IMPORT_FLAG_KEY = 'insuranceFinancingAutoImport';
 const IMPORT_RETURN_STEP_KEY = 'insuranceFinancingImportReturnStep';
 const PLEDGE_FUND_PRODUCTS_KEY = 'pledgeFundProducts';
+const CONFIG_TEXT_TYPE = 'insurance-financing-config';
+const MAX_SAVED_CONFIGS = 10;
 const fundProducts = typeof externalFundProducts !== 'undefined' ? externalFundProducts : [];
 let importedPledgeFundProducts = loadPledgeFundProducts();
 const DEFAULT_EXCHANGE_RATES = {
@@ -1355,6 +1698,27 @@ const HIGH_PREMIUM_DISCOUNT_TIERS = [
   { minTablePremium: 100000, discount: 0.005 },
   { minTablePremium: 200000, discount: 0.015 }
 ];
+const PLEDGED_FUND_PRESETS = [
+  {
+    id: 'blackrock-smart-data-income-b6-usd',
+    code: '0040B001',
+    name: '貝萊德全球智慧數據股票入息基金B6-美元-穩定月配息',
+    dividendRate: 7,
+    dividendFrequency: 12,
+    loanRatio: 0.7,
+    pledgeRate: 2.38
+  },
+  {
+    id: 'fidelity-global-multi-asset-income-b-usd',
+    code: '0002B021',
+    name: '富達基金-全球動能多元基金(B股C月配息美元)',
+    dividendRate: 9,
+    dividendFrequency: 12,
+    loanRatio: 0.7,
+    pledgeRate: 2.38
+  }
+];
+const FUND_DEFAULTS_BY_CODE = new Map(PLEDGED_FUND_PRESETS.map(preset => [preset.code, preset]));
 const PRODUCT_SUM_INSURED_ESTIMATORS = {
   ABA: {
     currency: 'USD',
@@ -1766,6 +2130,8 @@ let state = {
   coverageYear: 20,
   financingRate: 2.38,
   usdTwdRate: 32.00,
+  premiumLoanRatio: 0.85,
+  crossCurrencyLoanRatio: 0.9,
   ltvRatio: 85,
   usdDiscount: 90,
   financingAmount: 0,
@@ -1782,14 +2148,18 @@ let state = {
   editingBondIndex: -1,
   editingFundIndex: -1,
   editingStructuredIndex: -1,
+  insuranceSummaryExpanded: true,
   resultOverrides: {
     signature: '',
     projectedBenefitAmount: null,
     projectedBenefitCurrency: '',
     policyCashValueAmount: null,
-    policyCashValueCurrency: ''
+    policyCashValueCurrency: '',
+    coverageBeforeMultiplier: null,
+    coverageAfterMultiplier: null
   }
 };
+let savedConfigs = [];
 
 function createDefaultResultOverrides() {
   return {
@@ -1797,7 +2167,9 @@ function createDefaultResultOverrides() {
     projectedBenefitAmount: null,
     projectedBenefitCurrency: '',
     policyCashValueAmount: null,
-    policyCashValueCurrency: ''
+    policyCashValueCurrency: '',
+    coverageBeforeMultiplier: null,
+    coverageAfterMultiplier: null
   };
 }
 
@@ -1814,7 +2186,9 @@ function createDefaultProductScenario() {
     coverageYear: 20,
     financingRate: 2.38,
     usdTwdRate: 32.0,
-    ltvRatio: state.financingType === 'premium' ? 50 : 85,
+    premiumLoanRatio: 0.85,
+    crossCurrencyLoanRatio: 0.9,
+    ltvRatio: state.financingType === 'premium' ? 0 : 85,
     usdDiscount: 90,
     financingAmount: 0,
     financingOriginalAmount: 0,
@@ -1851,6 +2225,8 @@ function saveCurrentProductScenarioSnapshot() {
     coverageYear: state.coverageYear,
     financingRate: state.financingRate,
     usdTwdRate: state.usdTwdRate,
+    premiumLoanRatio: state.premiumLoanRatio,
+    crossCurrencyLoanRatio: state.crossCurrencyLoanRatio,
     ltvRatio: state.ltvRatio,
     usdDiscount: state.usdDiscount,
     financingAmount: state.financingAmount,
@@ -1860,7 +2236,11 @@ function saveCurrentProductScenarioSnapshot() {
     investmentModes: { ...(state.investmentModes || { bond: 'single', fund: 'single' }) },
     bonds: Array.isArray(state.bonds) ? JSON.parse(JSON.stringify(state.bonds)) : [],
     funds: Array.isArray(state.funds) ? JSON.parse(JSON.stringify(state.funds)) : [],
-    structuredProducts: Array.isArray(state.structuredProducts) ? JSON.parse(JSON.stringify(state.structuredProducts)) : []
+    structuredProducts: Array.isArray(state.structuredProducts) ? JSON.parse(JSON.stringify(state.structuredProducts)) : [],
+    resultOverrides: {
+      ...createDefaultResultOverrides(),
+      ...(state.resultOverrides || {})
+    }
   };
 }
 
@@ -1874,7 +2254,11 @@ function restoreProductScenarioSnapshot(product) {
     investmentModes: { bond: 'single', fund: 'single', ...(snapshot.investmentModes || {}) },
     bonds: Array.isArray(snapshot.bonds) ? snapshot.bonds : [],
     funds: Array.isArray(snapshot.funds) ? snapshot.funds : [],
-    structuredProducts: Array.isArray(snapshot.structuredProducts) ? snapshot.structuredProducts : []
+    structuredProducts: Array.isArray(snapshot.structuredProducts) ? snapshot.structuredProducts : [],
+    resultOverrides: {
+      ...createDefaultResultOverrides(),
+      ...(snapshot.resultOverrides || {})
+    }
   } : createDefaultProductScenario();
 
   state.insuranceAge = next.insuranceAge;
@@ -1888,6 +2272,8 @@ function restoreProductScenarioSnapshot(product) {
   state.coverageYear = next.coverageYear;
   state.financingRate = next.financingRate;
   state.usdTwdRate = next.usdTwdRate;
+  state.premiumLoanRatio = next.premiumLoanRatio ?? 0.85;
+  state.crossCurrencyLoanRatio = next.crossCurrencyLoanRatio ?? 0.9;
   state.ltvRatio = next.ltvRatio;
   state.usdDiscount = next.usdDiscount;
   state.financingAmount = next.financingAmount;
@@ -1898,6 +2284,10 @@ function restoreProductScenarioSnapshot(product) {
   state.bonds = JSON.parse(JSON.stringify(next.bonds));
   state.funds = JSON.parse(JSON.stringify(next.funds));
   state.structuredProducts = JSON.parse(JSON.stringify(next.structuredProducts));
+  state.resultOverrides = {
+    ...createDefaultResultOverrides(),
+    ...(next.resultOverrides || {})
+  };
 }
 
 // === Formatting ===
@@ -1918,6 +2308,547 @@ function escapeHtml(value) {
     '"': '&quot;',
     "'": '&#39;'
   }[char]));
+}
+
+function cloneJsonData(value, fallback) {
+  if (value === undefined) return fallback;
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function createSanitizedScenarioState(source = state) {
+  const exchangeRates = {
+    ...DEFAULT_EXCHANGE_RATES,
+    ...((source && source.exchangeRates) || {})
+  };
+  const readNumeric = (value, fallback) => {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : fallback;
+  };
+  return {
+    currentStep: Math.max(1, Math.min(4, parseInt(source?.currentStep, 10) || 1)),
+    financingType: source?.financingType === 'premium' || source?.financingType === 'policy' ? source.financingType : null,
+    selectedProduct: source?.selectedProduct ? cloneJsonData(source.selectedProduct, null) : null,
+    productScenarioCache: cloneJsonData(source?.productScenarioCache, {}) || {},
+    insuranceAge: Number.isFinite(Number(source?.insuranceAge)) ? Number(source.insuranceAge) : 19,
+    insuredGender: source?.insuredGender === 'female' ? 'female' : 'male',
+    xindeliPayPeriod: source?.xindeliPayPeriod || '2',
+    xumanxinPayPeriod: source?.xumanxinPayPeriod || '2',
+    sumInsured: Number(source?.sumInsured) || 0,
+    premium: Number(source?.premium) || 0,
+    policyValue: Number(source?.policyValue) || 0,
+    amountInputMode: source?.amountInputMode || 'premium',
+    coverageYear: Math.max(1, Math.min(100, parseInt(source?.coverageYear, 10) || 20)),
+    financingRate: readNumeric(source?.financingRate, 2.38),
+    usdTwdRate: readNumeric(exchangeRates.USD, DEFAULT_EXCHANGE_RATES.USD),
+    premiumLoanRatio: readNumeric(source?.premiumLoanRatio, 0.85),
+    crossCurrencyLoanRatio: readNumeric(source?.crossCurrencyLoanRatio, 0.9),
+    ltvRatio: readNumeric(source?.ltvRatio, 85),
+    usdDiscount: readNumeric(source?.usdDiscount, 90),
+    financingAmount: Number(source?.financingAmount) || 0,
+    financingOriginalAmount: Number(source?.financingOriginalAmount) || 0,
+    selfFundAmount: Number(source?.selfFundAmount) || 0,
+    exchangeRates,
+    investmentModes: {
+      bond: 'single',
+      fund: 'single',
+      ...((source && source.investmentModes) || {})
+    },
+    bonds: Array.isArray(source?.bonds) ? cloneJsonData(source.bonds, []) : [],
+    funds: Array.isArray(source?.funds) ? cloneJsonData(source.funds, []) : [],
+    structuredProducts: Array.isArray(source?.structuredProducts) ? cloneJsonData(source.structuredProducts, []) : [],
+    editingBondIndex: -1,
+    editingFundIndex: -1,
+    editingStructuredIndex: -1,
+    resultOverrides: {
+      ...createDefaultResultOverrides(),
+      ...((source && source.resultOverrides) || {})
+    }
+  };
+}
+
+function createScenarioExchangePayload(stateSource = state, label = '') {
+  return {
+    type: CONFIG_TEXT_TYPE,
+    version: 1,
+    label: String(label || '').trim(),
+    exportedAt: new Date().toISOString(),
+    state: createSanitizedScenarioState(stateSource)
+  };
+}
+
+function getGenderLabel(gender = state.insuredGender) {
+  return gender === 'female' ? '女' : '男';
+}
+
+function getConfigProductLabel() {
+  const product = state.selectedProduct;
+  if (!product) return '未選商品';
+  return product.shortName || product.name || product.code || '未選商品';
+}
+
+function getConfigFaceAmountLabel() {
+  const product = state.selectedProduct;
+  const currency = product?.currency || (state.financingType === 'premium' ? 'USD' : 'TWD');
+  const amount = Number(state.sumInsured) || 0;
+  return amount > 0 ? `保額${fmt(amount)}${currency}` : '保額未填';
+}
+
+function buildDefaultConfigLabel() {
+  const typeLabel = state.financingType === 'policy'
+    ? '保單融資'
+    : state.financingType === 'premium'
+      ? '保費融資'
+      : '未選融資';
+  const ageLabel = `年齡${Number.isFinite(Number(state.insuranceAge)) ? Number(state.insuranceAge) : '-'}歲`;
+  const genderLabel = `性別${getGenderLabel()}`;
+  const productLabel = getConfigProductLabel();
+  const faceAmountLabel = getConfigFaceAmountLabel();
+  return [typeLabel, ageLabel, genderLabel, productLabel, faceAmountLabel].join('_');
+}
+
+function applySuggestedConfigName(force = false) {
+  const input = document.getElementById('configNameInput');
+  if (!input) return '';
+  const suggested = buildDefaultConfigLabel();
+  input.placeholder = suggested;
+  if (force || !input.value.trim()) {
+    input.value = suggested;
+  }
+  return suggested;
+}
+
+function createConfigId() {
+  return `cfg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function formatConfigTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '未知時間';
+  return date.toLocaleString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+}
+
+function normalizeSavedConfigEntry(entry) {
+  if (!entry || typeof entry !== 'object') return null;
+  const sourceState = entry.state && typeof entry.state === 'object' ? entry.state : entry;
+  return {
+    id: String(entry.id || createConfigId()),
+    label: String(entry.label || '').trim() || '未命名配置',
+    savedAt: entry.savedAt || entry.exportedAt || new Date().toISOString(),
+    type: CONFIG_TEXT_TYPE,
+    version: 1,
+    state: createSanitizedScenarioState(sourceState)
+  };
+}
+
+function loadSavedConfigLibrary() {
+  if (!canUseStorage()) {
+    savedConfigs = [];
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(localStorage.getItem(SAVED_CONFIGS_KEY) || '[]');
+    savedConfigs = Array.isArray(parsed)
+      ? parsed.map(normalizeSavedConfigEntry).filter(Boolean).slice(0, MAX_SAVED_CONFIGS)
+      : [];
+  } catch (e) {
+    savedConfigs = [];
+  }
+  return savedConfigs;
+}
+
+function persistSavedConfigLibrary() {
+  if (!canUseStorage()) return false;
+  localStorage.setItem(SAVED_CONFIGS_KEY, JSON.stringify(savedConfigs.slice(0, MAX_SAVED_CONFIGS)));
+  return true;
+}
+
+function setConfigExchangeText(text = '') {
+  const textarea = document.getElementById('configExchangeText');
+  if (!textarea) return;
+  textarea.value = text;
+}
+
+function refreshSavedConfigUI() {
+  const countEl = document.getElementById('savedConfigCount');
+  const listEl = document.getElementById('savedConfigList');
+  if (!countEl || !listEl) return;
+
+  countEl.textContent = `已保存 ${savedConfigs.length} / ${MAX_SAVED_CONFIGS} 組配置`;
+
+  if (!canUseStorage()) {
+    listEl.innerHTML = '<div class="config-empty">目前瀏覽器無法使用本機儲存，暫時不能保存配置。</div>';
+    return;
+  }
+
+  if (savedConfigs.length === 0) {
+    listEl.innerHTML = '<div class="config-empty">尚未保存任何配置。輸入名稱後即可把目前整份試算保存到本機。</div>';
+    return;
+  }
+
+  listEl.innerHTML = savedConfigs.map(config => `
+    <div class="config-item">
+      <div class="config-item-head">
+        <div>
+          <div class="config-item-title">${escapeHtml(config.label)}</div>
+          <div class="config-item-time">保存時間：${escapeHtml(formatConfigTime(config.savedAt))}</div>
+        </div>
+      </div>
+      <div class="config-item-actions">
+        <button class="inline-btn" type="button" data-config-action="load" data-config-id="${escapeHtml(config.id)}"><i class="fas fa-folder-open"></i> 載入</button>
+        <button class="inline-btn" type="button" data-config-action="export" data-config-id="${escapeHtml(config.id)}"><i class="fas fa-file-export"></i> 匯出文字</button>
+        <button class="inline-btn" type="button" data-config-action="download" data-config-id="${escapeHtml(config.id)}"><i class="fas fa-download"></i> 匯出檔案</button>
+        <button class="inline-btn danger" type="button" data-config-action="delete" data-config-id="${escapeHtml(config.id)}"><i class="fas fa-trash"></i> 刪除</button>
+      </div>
+    </div>
+  `).join('');
+
+  listEl.querySelectorAll('[data-config-action]').forEach(button => {
+    button.addEventListener('click', function() {
+      const { configAction, configId } = this.dataset;
+      if (configAction === 'load') loadSavedConfigById(configId);
+      if (configAction === 'export') exportSavedConfigById(configId);
+      if (configAction === 'download') exportSavedConfigFileById(configId);
+      if (configAction === 'delete') deleteSavedConfigById(configId);
+    });
+  });
+}
+
+function applyScenarioState(nextState) {
+  state = createSanitizedScenarioState(nextState);
+  applyStateToForm();
+  updateInvestmentModeUI();
+  recalcPledgedChain();
+  recalcPledgedFundChain();
+  renderBondSlots();
+  renderFundSlots();
+  renderStructuredSlots();
+  updateBondSummary();
+  updateImportButtonState();
+  updatePledgeFundImportStatus();
+  goToStep(state.currentStep || 1, true);
+  refreshSavedConfigUI();
+  applySuggestedConfigName(false);
+  saveState();
+}
+
+function saveCurrentConfigToLibrary() {
+  if (!canUseStorage()) {
+    alert('目前瀏覽器無法使用本機儲存，暫時不能保存配置');
+    return;
+  }
+
+  const input = document.getElementById('configNameInput');
+  applySuggestedConfigName(false);
+  const requestedLabel = input ? input.value.trim() : '';
+  const label = requestedLabel || buildDefaultConfigLabel();
+  const existingIndex = savedConfigs.findIndex(item => item.label === label);
+
+  if (existingIndex === -1 && savedConfigs.length >= MAX_SAVED_CONFIGS) {
+    alert(`最多只能保存 ${MAX_SAVED_CONFIGS} 組配置，請先刪除舊配置後再新增`);
+    return;
+  }
+
+  if (existingIndex !== -1 && !confirm(`已存在同名配置「${label}」，是否覆蓋？`)) {
+    return;
+  }
+
+  const nextEntry = {
+    id: existingIndex !== -1 ? savedConfigs[existingIndex].id : createConfigId(),
+    label,
+    savedAt: new Date().toISOString(),
+    type: CONFIG_TEXT_TYPE,
+    version: 1,
+    state: createSanitizedScenarioState(state)
+  };
+
+  if (existingIndex !== -1) {
+    savedConfigs.splice(existingIndex, 1);
+  }
+  savedConfigs.unshift(nextEntry);
+  savedConfigs = savedConfigs.slice(0, MAX_SAVED_CONFIGS);
+  persistSavedConfigLibrary();
+  refreshSavedConfigUI();
+  if (input) input.value = label;
+  alert(`已保存配置「${label}」`);
+}
+
+function buildConfigText(configLike, fallbackLabel = '') {
+  const entry = normalizeSavedConfigEntry(configLike);
+  const payload = createScenarioExchangePayload(entry ? entry.state : state, entry?.label || fallbackLabel);
+  if (entry?.savedAt) payload.savedAt = entry.savedAt;
+  return JSON.stringify(payload, null, 2);
+}
+
+function buildConfigFileName(label = '') {
+  const base = String(label || buildDefaultConfigLabel()).trim() || 'insurance-financing-config';
+  const sanitized = base
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .replace(/\s+/g, '_')
+    .slice(0, 80);
+  return `${sanitized || 'insurance-financing-config'}.txt`;
+}
+
+function downloadTextFile(filename, text) {
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function exportCurrentConfigText() {
+  const input = document.getElementById('configNameInput');
+  applySuggestedConfigName(false);
+  const label = input && input.value.trim() ? input.value.trim() : buildDefaultConfigLabel();
+  const text = JSON.stringify(createScenarioExchangePayload(state, label), null, 2);
+  setConfigExchangeText(text);
+  const textarea = document.getElementById('configExchangeText');
+  if (textarea) {
+    textarea.focus();
+    textarea.select();
+  }
+}
+
+function exportCurrentConfigFile() {
+  const input = document.getElementById('configNameInput');
+  applySuggestedConfigName(false);
+  const label = input && input.value.trim() ? input.value.trim() : buildDefaultConfigLabel();
+  const text = JSON.stringify(createScenarioExchangePayload(state, label), null, 2);
+  downloadTextFile(buildConfigFileName(label), text);
+}
+
+function exportSavedConfigById(configId) {
+  const target = savedConfigs.find(item => item.id === configId);
+  if (!target) return;
+  setConfigExchangeText(buildConfigText(target, target.label));
+  const input = document.getElementById('configNameInput');
+  if (input) input.value = target.label;
+  const textarea = document.getElementById('configExchangeText');
+  if (textarea) {
+    textarea.focus();
+    textarea.select();
+  }
+}
+
+function exportSavedConfigFileById(configId) {
+  const target = savedConfigs.find(item => item.id === configId);
+  if (!target) return;
+  downloadTextFile(buildConfigFileName(target.label), buildConfigText(target, target.label));
+}
+
+function triggerConfigFileImport() {
+  const input = document.getElementById('configFileInput');
+  if (!input) return;
+  input.value = '';
+  input.click();
+}
+
+async function copyConfigText() {
+  const textarea = document.getElementById('configExchangeText');
+  if (!textarea || !textarea.value.trim()) {
+    alert('目前沒有可複製的配置文字');
+    return;
+  }
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(textarea.value);
+    } else {
+      textarea.focus();
+      textarea.select();
+      document.execCommand('copy');
+    }
+    alert('已複製配置文字');
+  } catch (e) {
+    textarea.focus();
+    textarea.select();
+    alert('無法自動複製，已幫你選取文字，請手動複製');
+  }
+}
+
+function parseImportedConfigText(text) {
+  const parsed = JSON.parse(text);
+  if (parsed && parsed.type === CONFIG_TEXT_TYPE && parsed.state && typeof parsed.state === 'object') {
+    return {
+      label: String(parsed.label || '').trim(),
+      state: createSanitizedScenarioState(parsed.state)
+    };
+  }
+  if (parsed && parsed.state && typeof parsed.state === 'object') {
+    return {
+      label: String(parsed.label || '').trim(),
+      state: createSanitizedScenarioState(parsed.state)
+    };
+  }
+  if (parsed && typeof parsed === 'object') {
+    return {
+      label: String(parsed.label || '').trim(),
+      state: createSanitizedScenarioState(parsed)
+    };
+  }
+  throw new Error('配置格式不正確');
+}
+
+function importConfigFromRawText(rawText, options = {}) {
+  const { skipTextareaUpdate = false } = options;
+  if (!rawText) {
+    alert('請先貼上配置純文字');
+    return;
+  }
+
+  let imported;
+  try {
+    imported = parseImportedConfigText(rawText);
+  } catch (e) {
+    alert('匯入失敗，請確認貼上的內容是有效的配置純文字 JSON');
+    return;
+  }
+
+  if (!skipTextareaUpdate) {
+    setConfigExchangeText(rawText);
+  }
+
+  const labelMessage = imported.label ? `\n配置名稱：${imported.label}` : '';
+  if (!confirm(`確定要用匯入配置覆蓋目前頁面內容嗎？${labelMessage}`)) {
+    return;
+  }
+
+  applyScenarioState(imported.state);
+  const input = document.getElementById('configNameInput');
+  if (input && imported.label) input.value = imported.label;
+  alert(imported.label ? `已匯入配置「${imported.label}」` : '已匯入配置');
+}
+
+function importConfigFromText() {
+  const textarea = document.getElementById('configExchangeText');
+  const rawText = textarea ? textarea.value.trim() : '';
+  importConfigFromRawText(rawText, { skipTextareaUpdate: true });
+}
+
+function handleConfigFileImport(event) {
+  const file = event?.target?.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = loadEvent => {
+    const rawText = String(loadEvent?.target?.result || '').trim();
+    if (!rawText) {
+      alert('讀取失敗，檔案內容為空白');
+      return;
+    }
+    setConfigExchangeText(rawText);
+    importConfigFromRawText(rawText, { skipTextareaUpdate: true });
+  };
+  reader.onerror = () => {
+    alert('讀取文字檔失敗，請重新選擇檔案');
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function loadSavedConfigById(configId) {
+  const target = savedConfigs.find(item => item.id === configId);
+  if (!target) return;
+  if (!confirm(`要載入配置「${target.label}」嗎？目前頁面的未保存變更會被覆蓋。`)) {
+    return;
+  }
+  applyScenarioState(target.state);
+  const input = document.getElementById('configNameInput');
+  if (input) input.value = target.label;
+}
+
+function deleteSavedConfigById(configId) {
+  const target = savedConfigs.find(item => item.id === configId);
+  if (!target) return;
+  if (!confirm(`確定要刪除配置「${target.label}」嗎？`)) {
+    return;
+  }
+  savedConfigs = savedConfigs.filter(item => item.id !== configId);
+  persistSavedConfigLibrary();
+  refreshSavedConfigUI();
+}
+
+function formatInlineNumberValue(value, decimals = null) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return '';
+  return decimals == null ? String(numeric) : numeric.toFixed(decimals);
+}
+
+function renderInlineTextInput(value, onChange, sizeClass = 'lg') {
+  return `<input type="text" class="slot-inline-input text ${sizeClass}" value="${escapeHtml(value)}" onchange="${onChange}">`;
+}
+
+function renderInlineFundSearchInput(index, field, value, sizeClass = 'lg') {
+  const inputId = `inlineFundSearchInput-${field}-${index}`;
+  const optionsId = `inlineFundSearchOptions-${field}-${index}`;
+  return `
+    <div class="slot-search-wrap ${sizeClass}">
+      <input
+        type="text"
+        id="${inputId}"
+        class="slot-inline-input text ${sizeClass}"
+        value="${escapeHtml(value)}"
+        autocomplete="off"
+        onfocus="showInlineFundSuggestions(${index}, '${field}', this.value)"
+        oninput="showInlineFundSuggestions(${index}, '${field}', this.value)"
+        onblur="handleInlineFundSearchBlur(${index}, '${field}', this.value)"
+      >
+      <div class="slot-search-options" id="${optionsId}"></div>
+    </div>
+  `;
+}
+
+function renderInlineNumberInput(value, onChange, {
+  sizeClass = 'md',
+  step = '1',
+  min = null,
+  max = null,
+  unit = '',
+  decimals = null,
+  inputmode = 'decimal'
+} = {}) {
+  const minAttr = min == null ? '' : ` min="${min}"`;
+  const maxAttr = max == null ? '' : ` max="${max}"`;
+  const unitHtml = unit ? `<span class="slot-input-unit">${escapeHtml(unit)}</span>` : '';
+  return `
+    <span class="slot-input-wrap">
+      <input
+        type="number"
+        class="slot-inline-input ${sizeClass}"
+        value="${escapeHtml(formatInlineNumberValue(value, decimals))}"
+        step="${step}"
+        inputmode="${inputmode}"
+        ${minAttr}${maxAttr}
+        onchange="${onChange}"
+      >
+      ${unitHtml}
+    </span>
+  `;
+}
+
+function renderInlineSelect(value, onChange, options, sizeClass = 'md') {
+  return `
+    <select class="slot-inline-select ${sizeClass}" onchange="${onChange}">
+      ${options.map(option => `
+        <option value="${escapeHtml(option.value)}" ${String(option.value) === String(value) ? 'selected' : ''}>
+          ${escapeHtml(option.label)}
+        </option>
+      `).join('')}
+    </select>
+  `;
 }
 
 function parseEditableResultNumber(value) {
@@ -1970,26 +2901,119 @@ function setEditableResultField(inputId, unitId, amount, currency, disabled = fa
   unit.textContent = disabled ? '' : (currency || '');
 }
 
-function applyCoverageComparison(projectedBenefitAmount, projectedBenefitCurrency) {
+function formatEditableMultiplier(value) {
+  return value === null || value === undefined || value === '' || Number.isNaN(Number(value))
+    ? ''
+    : fmtDec(value, 1);
+}
+
+function formatRatePercent(value, digits = 2) {
+  return Number.isFinite(value) ? `${fmtDec(value * 100, digits)}%` : '-';
+}
+
+function getFinancingAmountInPolicyCurrency(currency) {
+  if (!Number.isFinite(state.financingAmount)) return 0;
+  if (currency === 'USD') {
+    const usdRate = Number(state.usdTwdRate) || 0;
+    return usdRate > 0 ? (state.financingAmount / usdRate) : 0;
+  }
+  return Number(state.financingAmount) || 0;
+}
+
+function computePremiumGrowthMetrics(policyCashValueAmount, currency, coverageYear = state.coverageYear) {
+  const numericPolicyCashValue = Number(policyCashValueAmount);
+  const numericCoverageYear = Number(coverageYear);
+  if (!Number.isFinite(numericPolicyCashValue) || !currency || !Number.isFinite(numericCoverageYear) || numericCoverageYear <= 0) {
+    return null;
+  }
+  const selfFundAmount = Number(state.selfFundAmount) || 0;
+  const financingAmountInPolicyCurrency = getFinancingAmountInPolicyCurrency(currency);
+  const financingRate = (Number(state.financingRate) || 0) / 100;
+  const financingInterest = numericCoverageYear * financingAmountInPolicyCurrency * financingRate;
+  const growthAmount = numericPolicyCashValue - selfFundAmount - financingInterest - financingAmountInPolicyCurrency;
+  const growthRate = selfFundAmount > 0 ? (growthAmount / selfFundAmount) : null;
+  const simpleRate = Number.isFinite(growthRate) && numericCoverageYear > 0 ? (growthRate / numericCoverageYear) : null;
+  return {
+    amount: growthAmount,
+    rate: growthRate,
+    simpleRate,
+    currency
+  };
+}
+
+function renderPremiumGrowthMetrics(policyCashValueAmount, currency, disabled = false) {
+  const amountEl = document.getElementById('resGrowthAmount');
+  const rateEl = document.getElementById('resGrowthRate');
+  const simpleEl = document.getElementById('resSimpleRate');
+  if (!amountEl || !rateEl || !simpleEl) return;
+  if (disabled) {
+    amountEl.textContent = '-';
+    rateEl.textContent = '-';
+    simpleEl.textContent = '-';
+    return;
+  }
+  const metrics = computePremiumGrowthMetrics(policyCashValueAmount, currency);
+  if (!metrics) {
+    amountEl.textContent = '-';
+    rateEl.textContent = '-';
+    simpleEl.textContent = '-';
+    return;
+  }
+  amountEl.textContent = `${fmt(metrics.amount)} ${metrics.currency}`;
+  rateEl.textContent = formatRatePercent(metrics.rate);
+  simpleEl.textContent = formatRatePercent(metrics.simpleRate);
+}
+
+function setEditableMultiplierField(inputId, value, disabled = false) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  input.disabled = disabled;
+  input.value = disabled ? '' : formatEditableMultiplier(value);
+  input.placeholder = disabled ? '-' : '';
+}
+
+function setEditableCoverageYearField(value, disabled = false) {
+  const input = document.getElementById('resCoverageYearInput');
+  if (!input) return;
+  input.disabled = disabled;
+  input.value = disabled ? '' : String(Math.max(1, Math.min(100, parseInt(value, 10) || 20)));
+  input.placeholder = disabled ? '-' : '';
+}
+
+function computeCoverageComparison(projectedBenefitAmount, projectedBenefitCurrency) {
   const premiumTwd = state.selectedProduct && state.selectedProduct.currency === 'USD'
     ? state.premium * state.usdTwdRate
     : state.premium;
   const projectedBenefitTwd = Number(projectedBenefitAmount || 0) * getCurrencyRate(projectedBenefitCurrency || (state.selectedProduct && state.selectedProduct.currency) || 'TWD');
   const covBefore = premiumTwd > 0 ? (projectedBenefitTwd / premiumTwd) : 0;
+  const coverageYear = Number(state.coverageYear) || 0;
+  const loanAmountTwd = Number(state.financingAmount) || 0;
+  const ownCapitalTwd = state.selectedProduct && state.selectedProduct.currency === 'USD'
+    ? (Number(state.selfFundAmount) || 0) * (Number(state.usdTwdRate) || 0)
+    : (Number(state.selfFundAmount) || 0);
+  const annualLoanRate = 0.0238;
+  const netBenefitAfterFinancing = projectedBenefitTwd - (coverageYear * loanAmountTwd * annualLoanRate) - loanAmountTwd;
+  const covAfter = ownCapitalTwd > 0 ? (netBenefitAfterFinancing / ownCapitalTwd) : 0;
 
-  let ownCapital;
-  if (state.financingType === 'premium') {
-    ownCapital = state.selfFundAmount > 0
-      ? ((state.selectedProduct && state.selectedProduct.currency === 'USD') ? state.selfFundAmount * state.usdTwdRate : state.selfFundAmount)
-      : premiumTwd - state.financingAmount;
-    if (ownCapital <= 0) ownCapital = premiumTwd;
-  } else {
-    ownCapital = premiumTwd;
+  return { covBefore, covAfter };
+}
+
+function applyCoverageComparison(projectedBenefitAmount, projectedBenefitCurrency, disabled = false) {
+  if (disabled) {
+    setEditableMultiplierField('resCovBeforeInput', null, true);
+    setEditableMultiplierField('resCovAfterInput', null, true);
+    return;
   }
-  const covAfter = ownCapital > 0 ? (projectedBenefitTwd / ownCapital) : 0;
-
-  document.getElementById('resCovBefore').textContent = fmtDec(covBefore, 1);
-  document.getElementById('resCovAfter').textContent = fmtDec(covAfter, 1);
+  const autoCoverage = computeCoverageComparison(projectedBenefitAmount, projectedBenefitCurrency);
+  const resultOverrides = ensureResultOverrides();
+  const displayCovBefore = Number.isFinite(resultOverrides.coverageBeforeMultiplier)
+    ? resultOverrides.coverageBeforeMultiplier
+    : autoCoverage.covBefore;
+  const displayCovAfter = Number.isFinite(resultOverrides.coverageAfterMultiplier)
+    ? resultOverrides.coverageAfterMultiplier
+    : autoCoverage.covAfter;
+  setEditableMultiplierField('resCovBeforeInput', displayCovBefore, false);
+  setEditableMultiplierField('resCovAfterInput', displayCovAfter, false);
 }
 
 function handleEditableResultFocus(event) {
@@ -2002,6 +3026,49 @@ function handleEditableResultFocus(event) {
 function handleEditableResultBlur(event) {
   const numeric = parseEditableResultNumber(event.target.value);
   event.target.value = numeric === null ? '' : formatEditableResultNumber(numeric);
+}
+
+function handleEditableMultiplierFocus(event) {
+  const numeric = parseEditableResultNumber(event.target.value);
+  if (numeric !== null) {
+    event.target.value = String(numeric);
+  }
+}
+
+function handleEditableMultiplierBlur(event) {
+  const numeric = parseEditableResultNumber(event.target.value);
+  if (numeric === null) {
+    const displayedProjectedBenefit = getDisplayedProjectedBenefitForCoverage();
+    applyCoverageComparison(displayedProjectedBenefit.amount, displayedProjectedBenefit.currency);
+    return;
+  }
+  event.target.value = formatEditableMultiplier(numeric);
+}
+
+function commitCoverageYearFromResultInput() {
+  const input = document.getElementById('resCoverageYearInput');
+  if (!input) return;
+  const numeric = parseEditableResultNumber(input.value);
+  const nextCoverageYear = Math.max(1, Math.min(100, parseInt(numeric, 10) || state.coverageYear || 20));
+  state.coverageYear = nextCoverageYear;
+  const sourceInput = document.getElementById('coverageYear');
+  if (sourceInput) sourceInput.value = nextCoverageYear;
+  input.value = String(nextCoverageYear);
+  renderResults();
+  saveState();
+}
+
+function handleCoverageYearResultFocus(event) {
+  const currentValue = parseInt(event.target.value, 10);
+  event.target.value = String(Number.isFinite(currentValue) && currentValue > 0 ? currentValue : (state.coverageYear || 20));
+}
+
+function handleCoverageYearResultBlur() {
+  commitCoverageYearFromResultInput();
+}
+
+function handleCoverageYearResultChange() {
+  commitCoverageYearFromResultInput();
 }
 
 function handleProjectedBenefitEdit(event) {
@@ -2033,6 +3100,44 @@ function handlePolicyCashValueEdit(event) {
   ensureResultOverrides();
   state.resultOverrides.policyCashValueAmount = numeric;
   state.resultOverrides.policyCashValueCurrency = document.getElementById('resPolicyCashValueUnit').textContent.trim() || '';
+  if (numeric === null) {
+    const productCode = getEffectiveProductCode(state.selectedProduct);
+    const latestFaceAmount = state.selectedProduct
+      ? normalizeProductFaceAmount(productCode, document.getElementById('sumInsured').value || state.sumInsured)
+      : state.sumInsured;
+    const projectedCashValue = state.selectedProduct
+      ? getProjectedPolicyCashValue(productCode, state.premium, state.coverageYear, state.insuranceAge, latestFaceAmount, state.insuredGender)
+      : null;
+    renderPremiumGrowthMetrics(projectedCashValue ? projectedCashValue.amount : null, projectedCashValue ? projectedCashValue.currency : '', !projectedCashValue);
+  } else {
+    renderPremiumGrowthMetrics(numeric, state.resultOverrides.policyCashValueCurrency, false);
+  }
+  saveState();
+}
+
+function getDisplayedProjectedBenefitForCoverage() {
+  const productCode = getEffectiveProductCode(state.selectedProduct);
+  const latestFaceAmount = state.selectedProduct
+    ? normalizeProductFaceAmount(productCode, document.getElementById('sumInsured').value || state.sumInsured)
+    : state.sumInsured;
+  const projectedBenefit = state.selectedProduct
+    ? getProjectedDeathBenefit(productCode, state.premium, state.coverageYear, state.insuranceAge, latestFaceAmount, state.insuredGender)
+    : null;
+  const resultOverrides = ensureResultOverrides();
+  return {
+    amount: Number.isFinite(resultOverrides.projectedBenefitAmount)
+      ? resultOverrides.projectedBenefitAmount
+      : (projectedBenefit ? projectedBenefit.amount : state.sumInsured),
+    currency: resultOverrides.projectedBenefitCurrency
+      || (projectedBenefit ? projectedBenefit.currency : ((state.selectedProduct && state.selectedProduct.currency) || 'TWD'))
+  };
+}
+
+function handleCoverageMultiplierEdit(event) {
+  const numeric = parseEditableResultNumber(event.target.value);
+  const field = event.target.id === 'resCovBeforeInput' ? 'coverageBeforeMultiplier' : 'coverageAfterMultiplier';
+  ensureResultOverrides();
+  state.resultOverrides[field] = numeric;
   saveState();
 }
 
@@ -2116,7 +3221,7 @@ function savePledgeFundProducts(products) {
 function getFundProductOptions() {
   const merged = [];
   const seen = new Set();
-  [...importedPledgeFundProducts, ...fundProducts].forEach(product => {
+  [...PLEDGED_FUND_PRESETS, ...importedPledgeFundProducts, ...fundProducts].forEach(product => {
     const code = String(product.code || '').trim().toUpperCase();
     const name = String(product.name || '').trim();
     if (!code || !name || seen.has(code)) return;
@@ -2124,6 +3229,23 @@ function getFundProductOptions() {
     merged.push({ code, name });
   });
   return merged;
+}
+
+function normalizeFundSearchText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[\s\-_.()（）/]/g, '');
+}
+
+function searchFundProducts(query, limit = 50) {
+  const normalizedQuery = normalizeFundSearchText(query);
+  const products = getFundProductOptions();
+  if (!normalizedQuery) return products.slice(0, limit);
+  return products.filter(product => {
+    const code = normalizeFundSearchText(product.code);
+    const name = normalizeFundSearchText(product.name);
+    return code.includes(normalizedQuery) || name.includes(normalizedQuery);
+  }).slice(0, limit);
 }
 
 function updatePledgeFundImportStatus() {
@@ -2236,6 +3358,8 @@ function applyStateToForm() {
   document.getElementById('audTwdRate').value = state.exchangeRates.AUD ?? DEFAULT_EXCHANGE_RATES.AUD;
   document.getElementById('eurTwdRate').value = state.exchangeRates.EUR ?? DEFAULT_EXCHANGE_RATES.EUR;
   document.getElementById('gbpTwdRate').value = state.exchangeRates.GBP ?? DEFAULT_EXCHANGE_RATES.GBP;
+  document.getElementById('premiumLoanRatio').value = state.premiumLoanRatio ?? 0.85;
+  document.getElementById('crossCurrencyLoanRatio').value = state.crossCurrencyLoanRatio ?? 0.9;
   document.getElementById('ltvRatio').value = state.ltvRatio ?? 85;
   document.getElementById('usdDiscount').value = state.usdDiscount ?? 90;
 
@@ -2255,7 +3379,8 @@ function updateStepAvailability() {
 
 function getMaxAccessibleStep() {
   if (!state.financingType) return 1;
-  if (!state.selectedProduct) return 2;
+  // 保單為選填：未設定商品時，仍可直接規劃自有資金的投資配置。
+  if (!state.selectedProduct) return 4;
   if (state.financingType === 'premium' && state.premium <= 0) return 2;
   if (state.financingType === 'policy' && state.policyValue <= 0) return 2;
   return 4;
@@ -2309,9 +3434,8 @@ function nextStep() {
   }
   if (state.currentStep === 2) {
     recalcFinancing();
-    if (!state.selectedProduct) { alert('請選擇保險商品'); return; }
-    if (state.financingType === 'premium' && (!state.premium || state.premium <= 0)) { alert('請輸入保費'); return; }
-    if (state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
+    if (state.selectedProduct && state.financingType === 'premium' && (!state.premium || state.premium <= 0)) { alert('請輸入保費'); return; }
+    if (state.selectedProduct && state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
   }
   goToStep(state.currentStep + 1);
 }
@@ -2327,8 +3451,8 @@ function selectType(type, options = {}) {
   }
   state.financingType = type;
   state.ltvRatio = preserveInputs
-    ? (state.ltvRatio ?? (type === 'premium' ? 50 : 85))
-    : (type === 'premium' ? 50 : 85);
+    ? (state.ltvRatio ?? (type === 'premium' ? 0 : 85))
+    : (type === 'premium' ? 0 : 85);
   document.getElementById('ltvRatio').value = state.ltvRatio;
   document.getElementById('typeCardPremium').classList.toggle('selected', type === 'premium');
   document.getElementById('typeCardPolicy').classList.toggle('selected', type === 'policy');
@@ -2381,12 +3505,16 @@ function updateFinancingUI() {
     document.getElementById('policyOnlyValueRow').classList.remove('hidden');
     document.getElementById('policyValueGroup').classList.remove('hidden');
     document.getElementById('usdDiscountGroup').classList.remove('hidden');
+    document.getElementById('premiumRatioSettingsRow').classList.add('hidden');
+    document.getElementById('crossCurrencyLoanRatioGroup').classList.add('hidden');
     document.getElementById('multiCurrencyRateGrid').classList.add('hidden');
     document.getElementById('ltvRatioLabel').textContent = '保價金成數';
+    document.getElementById('ltvRatio').readOnly = false;
     document.getElementById('dispBaseLabel').textContent = '保價金';
     document.getElementById('dispRatioLabel').textContent = '× 保價金成數';
     document.getElementById('dispSelfFundRow').classList.add('hidden');
     document.getElementById('dispLoanOriginalRow').classList.add('hidden');
+    document.getElementById('referenceCashValueRow').classList.add('hidden');
     return;
   }
   const isPremium = state.financingType === 'premium';
@@ -2400,13 +3528,17 @@ function updateFinancingUI() {
   document.getElementById('policyOnlyValueRow').classList.toggle('hidden', isPremium);
   document.getElementById('policyValueGroup').classList.toggle('hidden', isPremium);
   document.getElementById('usdDiscountGroup').classList.toggle('hidden', isPremium);
+  document.getElementById('premiumRatioSettingsRow').classList.toggle('hidden', !isPremium);
+  document.getElementById('crossCurrencyLoanRatioGroup').classList.toggle('hidden', !(isPremium && state.selectedProduct && state.selectedProduct.currency === 'USD'));
   document.getElementById('multiCurrencyRateGrid').classList.add('hidden');
-  document.getElementById('ltvRatioLabel').textContent = isPremium ? '融資成數' : '保價金成數';
+  document.getElementById('ltvRatioLabel').textContent = isPremium ? '融資成數（自動）' : '保價金成數';
+  document.getElementById('ltvRatio').readOnly = isPremium;
   document.getElementById('dispBaseLabel').textContent = isPremium ? '保費' : '保價金';
   document.getElementById('dispRatioLabel').textContent = isPremium ? '× 融資成數' : '× 保價金成數';
   document.getElementById('dispDiscountRow').classList.toggle('hidden', isPremium || !(state.selectedProduct && state.selectedProduct.currency === 'USD'));
   document.getElementById('dispSelfFundRow').classList.toggle('hidden', !isPremium);
   document.getElementById('dispLoanOriginalRow').classList.toggle('hidden', !isPremium);
+  document.getElementById('referenceCashValueRow').classList.toggle('hidden', !isPremium);
 }
 
 // === Step 2: Product Search ===
@@ -2557,6 +3689,9 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('.search-container')) {
     document.getElementById('productDropdown').classList.remove('show');
   }
+  if (!e.target.closest('.slot-search-wrap')) {
+    hideAllInlineFundSuggestions();
+  }
 });
 
 function selectProduct(product, options = {}) {
@@ -2627,50 +3762,68 @@ function setupFundSelectors() {
   const codeOptions = document.getElementById('fundCodeOptions');
   const nameOptions = document.getElementById('fundNameOptions');
 
-  function renderCodeOptions(matches) {
-    codeOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${escapeHtml(product.code)}">${escapeHtml(product.code)} - ${escapeHtml(product.name)}</div>`).join('');
-    codeOptions.style.display = matches.length ? 'block' : 'none';
-    codeOptions.querySelectorAll('.product-option').forEach(option => {
-      option.addEventListener('click', () => {
-        const product = getFundProductOptions().find(p => p.code === option.dataset.code);
-        if (!product) return;
-        codeInput.value = product.code;
-        nameInput.value = product.name;
-        codeOptions.style.display = 'none';
-      });
-    });
+  function applyModalFundProduct(product) {
+    if (!product) return;
+    codeInput.value = product.code;
+    nameInput.value = product.name;
+    const defaults = FUND_DEFAULTS_BY_CODE.get(product.code);
+    if (defaults) {
+      document.getElementById('fundDividendRate').value = defaults.dividendRate;
+      document.getElementById('fundDividendFrequency').value = defaults.dividendFrequency;
+      document.getElementById('fundLoanRatio').value = Math.round(defaults.loanRatio * 100);
+      document.getElementById('fundPledgeRate').value = defaults.pledgeRate;
+    }
   }
 
-  function renderNameOptions(matches) {
-    nameOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${escapeHtml(product.code)}">${escapeHtml(product.name)} (${escapeHtml(product.code)})</div>`).join('');
-    nameOptions.style.display = matches.length ? 'block' : 'none';
-    nameOptions.querySelectorAll('.product-option').forEach(option => {
-      option.addEventListener('click', () => {
-        const product = getFundProductOptions().find(p => p.code === option.dataset.code);
-        if (!product) return;
-        codeInput.value = product.code;
-        nameInput.value = product.name;
+  function bindOptionSelection(options, products) {
+    options.querySelectorAll('.product-option').forEach(option => {
+      option.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        applyModalFundProduct(products.find(p => p.code === option.dataset.code));
+        codeOptions.style.display = 'none';
         nameOptions.style.display = 'none';
       });
     });
   }
 
-  codeInput.addEventListener('focus', () => renderCodeOptions(getFundProductOptions().slice(0, 50)));
+  function renderCodeOptions(matches) {
+    codeOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${escapeHtml(product.code)}">${escapeHtml(product.code)} - ${escapeHtml(product.name)}</div>`).join('');
+    codeOptions.style.display = matches.length ? 'block' : 'none';
+    bindOptionSelection(codeOptions, matches);
+  }
+
+  function renderNameOptions(matches) {
+    nameOptions.innerHTML = matches.map(product => `<div class="product-option" data-code="${escapeHtml(product.code)}">${escapeHtml(product.name)} (${escapeHtml(product.code)})</div>`).join('');
+    nameOptions.style.display = matches.length ? 'block' : 'none';
+    bindOptionSelection(nameOptions, matches);
+  }
+
+  codeInput.addEventListener('focus', () => renderCodeOptions(searchFundProducts(codeInput.value)));
   codeInput.addEventListener('input', () => {
-    const q = codeInput.value.trim().toLowerCase();
+    const q = codeInput.value.trim();
     const products = getFundProductOptions();
-    const exact = products.find(p => p.code.toLowerCase() === q);
-    if (exact) nameInput.value = exact.name;
-    renderCodeOptions(products.filter(p => p.code.toLowerCase().includes(q)).slice(0, 50));
+    const exact = products.find(p => normalizeFundSearchText(p.code) === normalizeFundSearchText(q));
+    if (exact) applyModalFundProduct(exact);
+    renderCodeOptions(searchFundProducts(q));
   });
-  nameInput.addEventListener('focus', () => renderNameOptions(getFundProductOptions().slice(0, 50)));
+  nameInput.addEventListener('focus', () => renderNameOptions(searchFundProducts(nameInput.value)));
   nameInput.addEventListener('input', () => {
-    const q = nameInput.value.trim().toLowerCase();
+    const q = nameInput.value.trim();
     const products = getFundProductOptions();
-    const exact = products.find(p => p.name.toLowerCase() === q);
-    if (exact) codeInput.value = exact.code;
-    renderNameOptions(products.filter(p => p.name.toLowerCase().includes(q)).slice(0, 50));
+    const exact = products.find(p => normalizeFundSearchText(p.name) === normalizeFundSearchText(q));
+    if (exact) applyModalFundProduct(exact);
+    renderNameOptions(searchFundProducts(q));
   });
+
+  [codeInput, nameInput].forEach(input => input.addEventListener('keydown', event => {
+    if (event.key !== 'Enter') return;
+    const match = searchFundProducts(input.value, 1)[0];
+    if (!match) return;
+    event.preventDefault();
+    applyModalFundProduct(match);
+    codeOptions.style.display = 'none';
+    nameOptions.style.display = 'none';
+  }));
 
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.product-search-wrap')) {
@@ -2678,6 +3831,101 @@ function setupFundSelectors() {
       nameOptions.style.display = 'none';
     }
   });
+}
+
+function initPledgedFundPresetOptions() {
+  const select = document.getElementById('fundPresetSelect');
+  if (!select) return;
+  select.innerHTML = PLEDGED_FUND_PRESETS.map(preset => `
+    <option value="${escapeHtml(preset.id)}">${escapeHtml(preset.name)}</option>
+  `).join('');
+}
+
+function getInlineFundSuggestionElements(index, field) {
+  return {
+    input: document.getElementById(`inlineFundSearchInput-${field}-${index}`),
+    options: document.getElementById(`inlineFundSearchOptions-${field}-${index}`)
+  };
+}
+
+function hideAllInlineFundSuggestions() {
+  document.querySelectorAll('.slot-search-options.show').forEach(el => {
+    el.classList.remove('show');
+    el.innerHTML = '';
+  });
+}
+
+function syncFundProductSelection(index, product) {
+  if (!product || !state.funds[index]) return;
+  const next = {
+    ...state.funds[index],
+    code: product.code,
+    name: product.name,
+    currency: inferFundCurrency(product.name)
+  };
+  state.funds[index] = calculateFundAmounts(next);
+  recalcPledgedFundChain();
+  renderFundSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function showInlineFundSuggestions(index, field, rawQuery = '') {
+  const { options } = getInlineFundSuggestionElements(index, field);
+  if (!options) return;
+
+  const query = String(rawQuery || '').trim().toLowerCase();
+  const products = getFundProductOptions();
+  const matches = (query
+    ? products.filter(product =>
+        product.code.toLowerCase().includes(query)
+        || product.name.toLowerCase().includes(query)
+      )
+    : products
+  ).slice(0, 30);
+
+  if (matches.length === 0) {
+    options.classList.remove('show');
+    options.innerHTML = '';
+    return;
+  }
+
+  options.innerHTML = matches.map(product => `
+    <div class="slot-search-option" data-inline-fund-code="${escapeHtml(product.code)}">
+      <span class="code">${escapeHtml(product.code)}</span>
+      <span class="name">${escapeHtml(product.name)}</span>
+    </div>
+  `).join('');
+  options.classList.add('show');
+
+  options.querySelectorAll('.slot-search-option').forEach(option => {
+    option.addEventListener('mousedown', event => {
+      event.preventDefault();
+      const product = products.find(item => item.code === option.dataset.inlineFundCode);
+      if (!product) return;
+      syncFundProductSelection(index, product);
+      hideAllInlineFundSuggestions();
+    });
+  });
+}
+
+function handleInlineFundSearchBlur(index, field, rawValue) {
+  window.setTimeout(() => {
+    const value = String(rawValue || '').trim();
+    const products = getFundProductOptions();
+    const exact = products.find(product =>
+      product.code.toLowerCase() === value.toLowerCase()
+      || product.name.toLowerCase() === value.toLowerCase()
+    );
+
+    if (exact) {
+      syncFundProductSelection(index, exact);
+    } else {
+      updateFundInlineField(index, field, value);
+    }
+
+    hideAllInlineFundSuggestions();
+  }, 120);
 }
 
 // === Step 2: Financing Calculation ===
@@ -3061,6 +4309,126 @@ function getProjectedPolicyCashValue(productCode, premiumAmount, year, insurance
   };
 }
 
+const REFERENCE_CASH_VALUE_BASE_OVERRIDES = {
+  // WJA recommendation uses the adjusted first-day surrender value from 大表 (2)!B39,
+  // not the raw base value from 利益分析表_基本!E120.
+  WJA: {
+    male: [
+      23331.176470588234, 24052.52619324796, 24832.34762979684, 25612.647702406997, 26423.923647932133, 27265.65708418891,
+      28165.373134328358, 29065.573770491803, 29968.73949579832, 30958.37104072398, 31948.5, 32970.076465590486,
+      34020.14827018122, 35073.1843575419, 36183.20433436533, 37323.1981981982, 38464.67589220684, 39666.101694915254,
+      40896.02467443454, 42157.40026595745, 43448.74838709678, 44770.55068836045, 46181.79611650485, 47593.52560329606,
+      49063.72358652199, 50594.87534626039, 52156.47501343364, 53778.025013027625, 55429.550050556114, 57141.02501226091,
+      58910.97572584483, 60685.346260387814, 62517.204301075275, 64438.5, 66418.27775432671, 68400.0, 70441.67130919218,
+      72572.80525502318, 74705.87617260788, 76925.92781625957, 79148.92667375132, 81431.8760757315, 83803.2786885246,
+      86205.12195121951, 88666.45161290321, 91188.19188191881, 93769.428656895, 96381.09429569264, 99052.71028037382,
+      101843.79167814826, 104545.38523489932, 107312.82989286649, 110196.21979140166, 113197.57245479316, 116230.37876960193,
+      119322.11985898943, 122503.33409663384, 125746.42873076064, 129076.5, 132439.5, 135771.04588673005, 139166.97641604513,
+      142739.8113207547, 146343.07073030475, 150032.86195286195, 153754.54545454547, 157536.17961511048, 161407.3225469729,
+      165308.86850152904, 169180.43499916987, 172929.1257718557, 176476.4348241286, 180108.17217716778, 183829.43603851445,
+      187759.47911989223, 191541.10344827586, 195469.66052934405, 199279.40155257587, 203686.53771760158, 207913.42768147346,
+      212650.36168521462, 217205.9182349124, 222031.62347560973, 227245.35652173913, 233271.01343988377, 243073.52407536638
+    ],
+    female: [
+      19008.0265095729, 19608.0, 20237.950138504155, 20897.879194630874, 21559.271781534455, 22221.158690176322, 22971.0,
+      23720.851063829792, 24442.680412371137, 25253.946784922395, 26064.232008592913, 26905.47346514048, 27775.70564516129,
+      28676.894531249996, 29607.076631977292, 30566.752293577978, 31528.373333333337, 32519.97416020672, 33570.05008347245,
+      34621.601941747576, 35733.10344827586, 36873.10030395137, 38044.55081001473, 39274.475374732334, 40507.344398340254,
+      41797.70107238606, 43119.0253411306, 44500.295969773295, 45910.54945054944, 47381.75147928994, 48854.89678899082,
+      50386.52584769316, 51976.62533692722, 53599.6551724138, 55281.15501519757, 57022.60314341847, 58822.52501191043,
+      60655.37182448037, 62545.69892473119, 64498.449174630754, 66480.17699115044, 68551.34914145544, 70652.9750099167,
+      72816.02539438246, 75037.5504107543, 77349.0, 79690.42560675343, 82121.77876408331, 84585.04970178926, 87166.27854615632,
+      89719.47516401124, 92392.57506824385, 95155.60070671378, 98007.07463540178, 100919.97500694252, 103892.8243862962,
+      106926.1006289308, 110077.32620320856, 113290.45027214251, 116563.52488578987, 119893.59681945742, 123259.54979536153,
+      126772.42538138403, 130373.75483870969, 133947.0489744663, 137639.77999592584, 141391.45180483937, 145204.5480880649,
+      149136.07109272145, 153099.0472700623, 157060.54662379422, 160935.0705943873, 164987.97653460296, 169069.38423236515,
+      173181.20563928052, 177413.9772187945, 181764.13345690456, 186203.804495399, 190585.41420990566, 194787.14842059716,
+      199883.81769587848, 204592.61754193017, 209450.9431680774, 214727.89142407553, 220424.9309815951, 226928.87176938372
+    ]
+  }
+};
+
+function getAgeGenderModeledReferenceCashValue(productCode, insuranceAge, insuredGender) {
+  const referenceData = window.POLICY_REFERENCE_CASH_VALUE_BY_PRODUCT && window.POLICY_REFERENCE_CASH_VALUE_BY_PRODUCT[productCode];
+  if (!referenceData) return null;
+  const genderKey = insuredGender === 'female' ? 'female' : 'male';
+  const overrideTable = REFERENCE_CASH_VALUE_BASE_OVERRIDES[productCode] && REFERENCE_CASH_VALUE_BASE_OVERRIDES[productCode][genderKey];
+  const genderTable = referenceData[genderKey] || {};
+  const sourceTable = Array.isArray(overrideTable) && overrideTable.length ? overrideTable : genderTable;
+  const ages = Array.isArray(sourceTable)
+    ? sourceTable.map((_, index) => index)
+    : Object.keys(sourceTable).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!ages.length) return null;
+  const rawAge = parseInt(insuranceAge, 10);
+  const boundedAge = Math.max(ages[0], Math.min(ages[ages.length - 1], Number.isFinite(rawAge) ? rawAge : ages[0]));
+  const numericAmount = Array.isArray(sourceTable)
+    ? Number(sourceTable[boundedAge])
+    : Number(sourceTable[String(boundedAge)]);
+  if (!Number.isFinite(numericAmount)) return null;
+  return {
+    age: boundedAge,
+    amount: numericAmount,
+    baseFaceAmount: referenceData.baseFaceAmount || null,
+    currency: referenceData.currency || (PRODUCT_COVERAGE_MODELS[productCode] && PRODUCT_COVERAGE_MODELS[productCode].currency) || state.currency,
+    scheduledRate: Number(referenceData.scheduledRate) || 0,
+    mode: referenceData.mode || ''
+  };
+}
+
+function getProjectedReferenceCashValue(productCode, premiumAmount, insuranceAge, sumInsuredAmount, insuredGender = 'male') {
+  const modeled = getAgeGenderModeledReferenceCashValue(productCode, insuranceAge, insuredGender);
+  if (!modeled || !modeled.baseFaceAmount) return null;
+  const explicitFaceAmount = normalizeProductFaceAmount(productCode, sumInsuredAmount);
+  let faceAmountUsed = explicitFaceAmount;
+  let scale = 0;
+  let faceAmountSource = 'input';
+  if (explicitFaceAmount > 0) {
+    scale = explicitFaceAmount / modeled.baseFaceAmount;
+  } else {
+    const estimate = estimateSumInsuredFromPaidPremium(productCode, premiumAmount, insuranceAge, insuredGender);
+    if (estimate && estimate.faceAmount > 0) {
+      faceAmountUsed = estimate.faceAmount;
+      scale = estimate.faceAmount / modeled.baseFaceAmount;
+      faceAmountSource = 'estimated';
+    }
+  }
+  if (!scale || scale <= 0) return null;
+  return {
+    currency: modeled.currency,
+    amount: modeled.amount * scale,
+    baseAmount: modeled.amount,
+    baseFaceAmount: modeled.baseFaceAmount,
+    faceAmountUsed,
+    faceAmountSource,
+    scale,
+    age: modeled.age,
+    scheduledRate: modeled.scheduledRate,
+    mode: modeled.mode
+  };
+}
+
+function sanitizeFinancingFactor(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric >= 0 ? numeric : fallback;
+}
+
+function getAutoPremiumFinancingMetrics(referenceCashValueAmount, premiumAmount, currency, premiumLoanRatio, crossCurrencyLoanRatio) {
+  const safeReferenceCashValue = Number(referenceCashValueAmount) || 0;
+  const safePremiumAmount = Number(premiumAmount) || 0;
+  const safePremiumLoanRatio = sanitizeFinancingFactor(premiumLoanRatio, 0.85);
+  const safeCrossCurrencyLoanRatio = sanitizeFinancingFactor(crossCurrencyLoanRatio, 0.9);
+  const currencyFactor = currency === 'USD' ? safeCrossCurrencyLoanRatio : 1;
+  const financingOriginalAmount = safeReferenceCashValue * safePremiumLoanRatio * currencyFactor;
+  const ltvRatio = safePremiumAmount > 0 ? (financingOriginalAmount / safePremiumAmount) * 100 : 0;
+  return {
+    financingOriginalAmount,
+    ltvRatio,
+    currencyFactor,
+    premiumLoanRatio: safePremiumLoanRatio,
+    crossCurrencyLoanRatio: safeCrossCurrencyLoanRatio
+  };
+}
+
 function recalcFinancing(source = '') {
   if (source === 'premium' || source === 'sumInsured' || source === 'sumInsuredFinal') {
     state.amountInputMode = source;
@@ -3084,8 +4452,10 @@ function recalcFinancing(source = '') {
   const audRate = parseFloat(document.getElementById('audTwdRate').value) || DEFAULT_EXCHANGE_RATES.AUD;
   const eurRate = parseFloat(document.getElementById('eurTwdRate').value) || DEFAULT_EXCHANGE_RATES.EUR;
   const gbpRate = parseFloat(document.getElementById('gbpTwdRate').value) || DEFAULT_EXCHANGE_RATES.GBP;
-  const ltv = parseFloat(document.getElementById('ltvRatio').value) || 85;
+  const inputLtv = parseFloat(document.getElementById('ltvRatio').value) || 85;
   const discount = parseFloat(document.getElementById('usdDiscount').value) || 90;
+  const premiumLoanRatio = sanitizeFinancingFactor(document.getElementById('premiumLoanRatio').value, 0.85);
+  const crossCurrencyLoanRatio = sanitizeFinancingFactor(document.getElementById('crossCurrencyLoanRatio').value, 0.9);
 
   state.policyValue = pv;
   state.insuranceAge = Math.max(0, Math.min(110, insuranceAge));
@@ -3105,7 +4475,8 @@ function recalcFinancing(source = '') {
     EUR: eurRate,
     GBP: gbpRate
   };
-  state.ltvRatio = ltv;
+  state.premiumLoanRatio = premiumLoanRatio;
+  state.crossCurrencyLoanRatio = crossCurrencyLoanRatio;
   state.usdDiscount = discount;
 
   const productCode = getEffectiveProductCode();
@@ -3145,43 +4516,67 @@ function recalcFinancing(source = '') {
     }
   }
 
-  const isUsd = state.selectedProduct && state.selectedProduct.currency === 'USD';
-  const originalCurrency = state.selectedProduct ? state.selectedProduct.currency : (isUsd ? 'USD' : 'TWD');
+  const hasInsuranceProduct = Boolean(state.selectedProduct);
+  const isUsd = hasInsuranceProduct && state.selectedProduct.currency === 'USD';
+  const originalCurrency = hasInsuranceProduct ? state.selectedProduct.currency : 'TWD';
   const isPremium = state.financingType === 'premium';
+  const projectedReferenceCashValue = isPremium && productCode
+    ? getProjectedReferenceCashValue(productCode, state.premium, state.insuranceAge, state.sumInsured, state.insuredGender)
+    : null;
   let finAmount = 0;
   let financingOriginalAmount = 0;
   let selfFundAmount = 0;
   const effectivePremium = state.premium;
-  if (isPremium) {
-    financingOriginalAmount = effectivePremium * (ltv / 100);
+  let ltv = inputLtv;
+  if (!hasInsuranceProduct) {
+    // 未設定保單時不產生任何保單／保費融資金額與成本。
+    ltv = 0;
+  } else if (isPremium) {
+    const premiumFinancingMetrics = getAutoPremiumFinancingMetrics(
+      projectedReferenceCashValue ? projectedReferenceCashValue.amount : 0,
+      effectivePremium,
+      originalCurrency,
+      premiumLoanRatio,
+      crossCurrencyLoanRatio
+    );
+    financingOriginalAmount = premiumFinancingMetrics.financingOriginalAmount;
+    ltv = premiumFinancingMetrics.ltvRatio;
     selfFundAmount = Math.max(effectivePremium - financingOriginalAmount, 0);
     finAmount = isUsd ? financingOriginalAmount * usdRate : financingOriginalAmount;
   } else {
     financingOriginalAmount = isUsd
-      ? pv * (ltv / 100) * (discount / 100)
-      : pv * (ltv / 100);
+      ? pv * (inputLtv / 100) * (discount / 100)
+      : pv * (inputLtv / 100);
     selfFundAmount = Math.max(pv - financingOriginalAmount, 0);
     finAmount = isUsd ? financingOriginalAmount * usdRate : financingOriginalAmount;
   }
+  state.ltvRatio = ltv;
   state.financingAmount = finAmount;
   state.financingOriginalAmount = financingOriginalAmount;
   state.selfFundAmount = selfFundAmount;
 
-  const annualCost = finAmount * (rate / 100);
+  const annualCost = hasInsuranceProduct ? finAmount * (rate / 100) : 0;
+  const ltvInput = document.getElementById('ltvRatio');
+  if (ltvInput && isPremium) {
+    ltvInput.value = ltv > 0 ? ltv.toFixed(2) : '0.00';
+  }
 
   document.getElementById('dispPolicyValue').textContent = fmt(isPremium ? effectivePremium : pv) + ' ' + originalCurrency;
   document.getElementById('dispExchangeRate').textContent = fmtDec(usdRate, 2);
-  document.getElementById('dispLtv').textContent = ltv + '%';
+  document.getElementById('dispLtv').textContent = `${fmtDec(ltv, isPremium ? 2 : 0)}%`;
   document.getElementById('dispDiscount').textContent = discount + '%';
   document.getElementById('dispSelfFundAmount').textContent = fmt(selfFundAmount) + ' ' + originalCurrency;
   document.getElementById('dispLoanOriginalAmount').textContent = fmt(financingOriginalAmount) + ' ' + originalCurrency;
   document.getElementById('dispFinancingAmount').textContent = fmt(finAmount) + ' 元';
   document.getElementById('dispAnnualCost').textContent = fmt(annualCost) + ' 元';
-  if (state.bonds.length > 0) {
-    state.bonds = state.bonds.map(calculateBondAmounts);
-    renderBondSlots();
-    updateBondSummary();
-  }
+  document.getElementById('dispReferenceCashValue').textContent = projectedReferenceCashValue
+    ? `${fmt(Math.round(projectedReferenceCashValue.amount))} ${projectedReferenceCashValue.currency}`
+    : '-';
+  if (state.bonds.length > 0) recalcPledgedChain();
+  if (state.funds.length > 0) recalcPledgedFundChain();
+  if (state.bonds.length > 0) renderBondSlots();
+  if (state.funds.length > 0) renderFundSlots();
+  if (state.bonds.length > 0 || state.funds.length > 0 || state.structuredProducts.length > 0) updateBondSummary();
   updateStepAvailability();
   if ((state.currentStep || 1) === 4) {
     renderResults();
@@ -3260,13 +4655,15 @@ function calculateFundAmounts(rawFund) {
   const loanAmountTwd = Math.round(investmentAmountTwd * loanRatio);
   const pledgeRate = rawFund.pledgeRate != null ? parseFloat(rawFund.pledgeRate) : 2.38;
   const pledgeCostTwd = Math.round(loanAmountTwd * (pledgeRate / 100));
+  const parsedDividendFrequency = parseInt(rawFund.dividendFrequency, 10);
+  const dividendFrequency = Number.isFinite(parsedDividendFrequency) ? parsedDividendFrequency : 12;
 
   return {
     ...rawFund,
     currency: rawFund.currency || inferFundCurrency(rawFund.name),
     investmentAmountTwd,
     dividendRate,
-    dividendFrequency: parseInt(rawFund.dividendFrequency, 10) || 12,
+    dividendFrequency,
     annualDividendTwd,
     loanRatio,
     loanAmountTwd,
@@ -3390,29 +4787,168 @@ function openAddStructuredModal() {
 function closeStructuredModal() { document.getElementById('structuredModal').classList.remove('show'); }
 
 function recalcPledgedFundChain() {
-  if (state.investmentModes?.fund !== 'pledged' || state.funds.length < 2) return;
-  for (let i = 1; i < state.funds.length; i++) {
-    const prev = state.funds[i - 1];
-    const cur = state.funds[i];
-    if (!prev.loanAmountTwd) continue;
-    state.funds[i] = calculateFundAmounts({ ...cur, investmentAmountTwd: prev.loanAmountTwd });
-    state.funds[i]._autoCalc = true;
+  if (!Array.isArray(state.funds) || state.funds.length === 0) return;
+  const isPledged = state.investmentModes?.fund === 'pledged';
+  const nextFunds = [];
+
+  for (let i = 0; i < state.funds.length; i++) {
+    const prev = nextFunds[i - 1];
+    const cur = { ...state.funds[i] };
+
+    if (isPledged && i > 0 && !cur._manualInvestmentAmount && prev?.loanAmountTwd) {
+      cur.investmentAmountTwd = prev.loanAmountTwd;
+      cur._autoCalc = true;
+    } else {
+      cur._autoCalc = false;
+    }
+
+    nextFunds.push(calculateFundAmounts(cur));
   }
+
+  state.funds = nextFunds;
 }
 
 function recalcPledgedChain() {
-  if (state.investmentModes?.bond !== 'pledged' || state.bonds.length < 2) return;
-  for (let i = 1; i < state.bonds.length; i++) {
-    const prev = state.bonds[i - 1];
-    const cur = state.bonds[i];
-    if (!prev.loanAmount || !cur.buyPrice) continue;
-    const rawFaceValue = prev.loanAmount / (cur.buyPrice / 100);
-    const floored = Math.floor(rawFaceValue / 10000) * 10000;
-    const newFaceValue = floored < 200000 ? 200000 : floored;
-    state.bonds[i] = calculateBondAmounts({ ...cur, faceValue: newFaceValue });
-    state.bonds[i]._autoCalc = true;
-    state.bonds[i]._underMin = floored < 200000;
+  if (!Array.isArray(state.bonds) || state.bonds.length === 0) return;
+  const isPledged = state.investmentModes?.bond === 'pledged';
+  const nextBonds = [];
+
+  for (let i = 0; i < state.bonds.length; i++) {
+    const prev = nextBonds[i - 1];
+    const cur = { ...state.bonds[i] };
+
+    if (isPledged && i > 0 && !cur._manualFaceValue && prev?.loanAmount && cur.buyPrice) {
+      const rawFaceValue = prev.loanAmount / (cur.buyPrice / 100);
+      const floored = Math.floor(rawFaceValue / 10000) * 10000;
+      cur.faceValue = floored < 200000 ? 200000 : floored;
+      cur._autoCalc = true;
+      cur._underMin = floored < 200000;
+    } else {
+      cur._autoCalc = false;
+      cur._underMin = false;
+    }
+
+    nextBonds.push(calculateBondAmounts(cur));
   }
+
+  state.bonds = nextBonds;
+}
+
+function updateBondInlineField(index, field, value) {
+  const current = state.bonds[index];
+  if (!current) return;
+
+  const next = { ...current };
+  switch (field) {
+    case 'code':
+      next.code = String(value || '').trim();
+      break;
+    case 'name':
+      next.name = String(value || '').trim();
+      break;
+    case 'currency':
+      next.currency = String(value || 'USD').toUpperCase();
+      break;
+    case 'rating':
+      next.rating = String(value || '').trim();
+      break;
+    case 'faceValue':
+      next.faceValue = Math.max(0, parseFloat(value) || 0);
+      next._manualFaceValue = true;
+      break;
+    case 'investmentAmount': {
+      const investmentAmount = Math.max(0, parseFloat(value) || 0);
+      const buyPrice = parseFloat(next.buyPrice) || 100;
+      if (buyPrice > 0) {
+        next.faceValue = Math.max(0, Math.round((investmentAmount * 100) / buyPrice));
+        next._manualFaceValue = true;
+      }
+      break;
+    }
+    case 'buyPrice':
+      next.buyPrice = Math.max(0, parseFloat(value) || 0);
+      break;
+    case 'couponRate':
+      next.couponRate = Math.max(0, parseFloat(value) || 0);
+      break;
+    case 'maturityYears':
+      next.maturityYears = Math.max(0, parseFloat(value) || 0);
+      break;
+    case 'divFreq':
+      next.divFreq = parseInt(value, 10) || 2;
+      break;
+    case 'loanRatioPct':
+      next.loanRatio = Math.max(0, parseFloat(value) || 0) / 100;
+      break;
+    case 'loanAmount': {
+      const calculated = calculateBondAmounts(next);
+      const targetLoanAmount = Math.max(0, parseFloat(value) || 0);
+      next.loanRatio = calculated.investmentAmount > 0 ? targetLoanAmount / calculated.investmentAmount : 0;
+      break;
+    }
+    case 'pledgeRate':
+      next.pledgeRate = Math.max(0, parseFloat(value) || 0);
+      break;
+    default:
+      return;
+  }
+
+  state.bonds[index] = calculateBondAmounts(next);
+  recalcPledgedChain();
+  renderBondSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function updateFundInlineField(index, field, value) {
+  const current = state.funds[index];
+  if (!current) return;
+
+  const next = { ...current };
+  switch (field) {
+    case 'code':
+      next.code = String(value || '').trim();
+      break;
+    case 'name':
+      next.name = String(value || '').trim();
+      if (!next.currency) next.currency = inferFundCurrency(next.name);
+      break;
+    case 'currency':
+      next.currency = String(value || 'TWD').toUpperCase();
+      break;
+    case 'investmentAmountTwd':
+      next.investmentAmountTwd = Math.max(0, parseFloat(value) || 0);
+      next._manualInvestmentAmount = true;
+      break;
+    case 'dividendRate':
+      next.dividendRate = Math.max(0, parseFloat(value) || 0);
+      break;
+    case 'dividendFrequency': {
+      const parsedFrequency = parseInt(value, 10);
+      next.dividendFrequency = Number.isFinite(parsedFrequency) ? parsedFrequency : 12;
+      break;
+    }
+    case 'loanRatioPct':
+      next.loanRatio = Math.max(0, parseFloat(value) || 0) / 100;
+      break;
+    case 'loanAmountTwd': {
+      const calculated = calculateFundAmounts(next);
+      const targetLoanAmount = Math.max(0, parseFloat(value) || 0);
+      next.loanRatio = calculated.investmentAmountTwd > 0 ? targetLoanAmount / calculated.investmentAmountTwd : 0;
+      break;
+    }
+    case 'pledgeRate':
+      next.pledgeRate = Math.max(0, parseFloat(value) || 0);
+      break;
+    default:
+      return;
+  }
+
+  state.funds[index] = calculateFundAmounts(next);
+  recalcPledgedFundChain();
+  renderFundSlots();
+  updateBondSummary();
+  saveState();
 }
 
 function saveBond() {
@@ -3442,7 +4978,6 @@ function saveBond() {
     state.bonds.push(bond);
   }
 
-  state.bonds.sort((a, b) => b.maturityYears - a.maturityYears);
   recalcPledgedChain();
   closeBondModal();
   renderBondSlots();
@@ -3455,7 +4990,8 @@ function saveFund() {
   const name = document.getElementById('fundName').value.trim();
   const investmentAmountTwd = parseFloat(document.getElementById('fundInvestmentAmount').value) || 0;
   const dividendRate = parseFloat(document.getElementById('fundDividendRate').value) || 0;
-  const dividendFrequency = parseInt(document.getElementById('fundDividendFrequency').value, 10) || 12;
+  const parsedDividendFrequency = parseInt(document.getElementById('fundDividendFrequency').value, 10);
+  const dividendFrequency = Number.isFinite(parsedDividendFrequency) ? parsedDividendFrequency : 12;
 
   if (!code || !name || investmentAmountTwd <= 0) {
     alert('請填寫基金代碼、名稱與投資金額');
@@ -3550,6 +5086,7 @@ function editFund(index) {
 
 function deleteBond(index) {
   state.bonds.splice(index, 1);
+  recalcPledgedChain();
   renderBondSlots();
   updateBondSummary();
   saveState();
@@ -3557,6 +5094,27 @@ function deleteBond(index) {
 
 function deleteFund(index) {
   state.funds.splice(index, 1);
+  recalcPledgedFundChain();
+  renderFundSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function moveBond(index, direction) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= state.bonds.length) return;
+  [state.bonds[index], state.bonds[targetIndex]] = [state.bonds[targetIndex], state.bonds[index]];
+  recalcPledgedChain();
+  renderBondSlots();
+  updateBondSummary();
+  saveState();
+}
+
+function moveFund(index, direction) {
+  const targetIndex = index + direction;
+  if (targetIndex < 0 || targetIndex >= state.funds.length) return;
+  [state.funds[index], state.funds[targetIndex]] = [state.funds[targetIndex], state.funds[index]];
+  recalcPledgedFundChain();
   renderFundSlots();
   updateBondSummary();
   saveState();
@@ -3601,43 +5159,67 @@ function renderBondSlots() {
   }
 
   const isPledgedBond = state.investmentModes?.bond === 'pledged';
+  const currencyOptions = [
+    { value: 'USD', label: 'USD' },
+    { value: 'TWD', label: 'TWD' },
+    { value: 'AUD', label: 'AUD' },
+    { value: 'EUR', label: 'EUR' },
+    { value: 'GBP', label: 'GBP' }
+  ];
+  const divFreqOptions = [
+    { value: '2', label: '半年配' },
+    { value: '4', label: '季配' },
+    { value: '12', label: '月配' },
+    { value: '1', label: '年配' }
+  ];
   container.innerHTML = state.bonds.map((b, i) => `
     <div class="bond-slot">
       <div class="bond-slot-header">
         <span class="slot-num">第 ${i + 1} 檔</span>
-        <span>
-          <button class="inline-btn" onclick="editBond(${i})" style="margin-right:4px;"><i class="fas fa-edit"></i></button>
+        <span class="bond-slot-actions">
+          <button class="inline-btn" onclick="moveBond(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="上移"><i class="fas fa-arrow-up"></i></button>
+          <button class="inline-btn" onclick="moveBond(${i}, 1)" ${i === state.bonds.length - 1 ? 'disabled' : ''} title="下移"><i class="fas fa-arrow-down"></i></button>
+          <button class="inline-btn" onclick="editBond(${i})" title="編輯"><i class="fas fa-edit"></i></button>
           <button class="inline-btn danger" onclick="deleteBond(${i})"><i class="fas fa-trash"></i></button>
         </span>
       </div>
       <div class="bond-slot-body">
-        <div class="bond-info-row"><span class="label">代碼</span><span class="value">${b.code}</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">代碼</span><span class="value">${isPledgedBond ? renderInlineTextInput(b.code, `updateBondInlineField(${i}, 'code', this.value)`, 'md') : b.code}</span></div>
         <div class="bond-info-row"><span class="label">投資方式</span><span class="value">${bondModeLabel}</span></div>
-        <div class="bond-info-row"><span class="label">名稱</span><span class="value">${b.name}</span></div>
-        <div class="bond-info-row"><span class="label">幣別 / 評等</span><span class="value">${b.currency} / ${b.rating || '-'}</span></div>
-        <div class="bond-info-row"><span class="label">面額</span><span class="value">${fmt(b.faceValue)} ${b.currency}</span></div>
-        <div class="bond-info-row"><span class="label">買入價 / 投資額</span><span class="value">${fmtDec(b.buyPrice)} / ${fmt(b.investmentAmount)} ${b.currency}</span></div>
-        <div class="bond-info-row"><span class="label">票息率</span><span class="value">${fmtDec(b.couponRate, 3)}%</span></div>
-        <div class="bond-info-row"><span class="label">剩餘到期年</span><span class="value">${fmtDec(b.maturityYears)} 年</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">名稱</span><span class="value">${isPledgedBond ? renderInlineTextInput(b.name, `updateBondInlineField(${i}, 'name', this.value)`) : b.name}</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">幣別 / 評等</span><span class="value">${isPledgedBond
+          ? `<span class="slot-inline-group">
+              ${renderInlineSelect(b.currency, `updateBondInlineField(${i}, 'currency', this.value)`, currencyOptions, 'sm')}
+              ${renderInlineTextInput(b.rating || '', `updateBondInlineField(${i}, 'rating', this.value)`, 'sm')}
+            </span>`
+          : `${b.currency} / ${b.rating || '-'}`}</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">面額</span><span class="value">${isPledgedBond ? renderInlineNumberInput(b.faceValue, `updateBondInlineField(${i}, 'faceValue', this.value)`, { step: '10000', min: 0, unit: b.currency, inputmode: 'numeric' }) : `${fmt(b.faceValue)} ${b.currency}`}</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">買入價</span><span class="value">${isPledgedBond ? renderInlineNumberInput(b.buyPrice, `updateBondInlineField(${i}, 'buyPrice', this.value)`, { step: '0.01', min: 0, decimals: 2 }) : fmtDec(b.buyPrice)}</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">投資額</span><span class="value">${isPledgedBond ? renderInlineNumberInput(b.investmentAmount, `updateBondInlineField(${i}, 'investmentAmount', this.value)`, { step: '1000', min: 0, unit: b.currency, inputmode: 'numeric' }) : `${fmt(b.investmentAmount)} ${b.currency}`}</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">票息率</span><span class="value">${isPledgedBond ? renderInlineNumberInput(b.couponRate, `updateBondInlineField(${i}, 'couponRate', this.value)`, { step: '0.001', min: 0, unit: '%', decimals: 3 }) : `${fmtDec(b.couponRate, 3)}%`}</span></div>
+        <div class="bond-info-row ${isPledgedBond ? 'editable' : ''}"><span class="label">剩餘到期年</span><span class="value">${isPledgedBond ? renderInlineNumberInput(b.maturityYears, `updateBondInlineField(${i}, 'maturityYears', this.value)`, { step: '0.01', min: 0, unit: '年', decimals: 2 }) : `${fmtDec(b.maturityYears)} 年`}</span></div>
+        ${isPledgedBond ? `<div class="bond-info-row editable"><span class="label">配息頻率</span><span class="value">${renderInlineSelect(String(b.divFreq || 2), `updateBondInlineField(${i}, 'divFreq', this.value)`, divFreqOptions)}</span></div>` : ''}
         ${isPledgedBond ? `
-        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:4px -16px 0;">
+        <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:4px -16px 0;">
           <span class="label">質借成數</span>
-          <span class="value">${Math.round((b.loanRatio ?? 0.72) * 100)}%</span>
+          <span class="value">${renderInlineNumberInput(Math.round((b.loanRatio ?? 0.72) * 10000) / 100, `updateBondInlineField(${i}, 'loanRatioPct', this.value)`, { step: '0.01', min: 0, max: 100, unit: '%', decimals: 2 })}</span>
         </div>
-        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+        <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
           <span class="label"><strong>質借金額</strong></span>
-          <span class="value" style="color:var(--warning); font-weight:600;">${fmt(b.loanAmount)} ${b.currency}</span>
+          <span class="value" style="color:var(--warning); font-weight:600;">${renderInlineNumberInput(b.loanAmount, `updateBondInlineField(${i}, 'loanAmount', this.value)`, { step: '1000', min: 0, unit: b.currency, inputmode: 'numeric' })}</span>
         </div>
-        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+        <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
           <span class="label">質押利率</span>
-          <span class="value">${fmtDec(b.pledgeRate ?? 2.38, 2)}%</span>
+          <span class="value">${renderInlineNumberInput(b.pledgeRate ?? 2.38, `updateBondInlineField(${i}, 'pledgeRate', this.value)`, { step: '0.01', min: 0, unit: '%', decimals: 2 })}</span>
         </div>
         <div class="bond-info-row" style="background:#fff0f0; padding:6px 16px; margin:0 -16px 0;">
           <span class="label"><strong>年質借成本 (TWD)</strong></span>
           <span class="value" style="color:var(--danger); font-weight:600;">-${fmt(b.pledgeCostTwd)}</span>
         </div>
-        ${i > 0 && b._autoCalc ? `<div style="font-size:0.75rem; color:${b._underMin ? 'var(--danger)' : 'var(--text-light)'}; padding:4px 0 0; text-align:right;">
-          ${b._underMin ? '⚠️ 面額不足 200,000，已設為最低限額' : '✦ 面額依前檔質借金額自動計算'}
+        ${i > 0 ? `<div class="slot-inline-note ${b._underMin ? 'warn' : ''}">
+          ${b._autoCalc
+            ? (b._underMin ? '面額試算不足 200,000，已套用最低面額 200,000。' : '本檔面額會依前一檔質借金額自動續算。')
+            : '此檔已改為手動輸入，後續檔次會依本檔質借金額續算。'}
         </div>` : ''}` : ''}
         <div class="bond-info-row" style="background:#f0f8ff; margin:4px -16px -14px; padding:8px 16px; border-radius:0 0 12px 12px;">
           <span class="label"><strong>年配息 (TWD)</strong></span>
@@ -3661,41 +5243,56 @@ function renderFundSlots() {
   }
 
   const isPledgedFund = state.investmentModes?.fund === 'pledged';
+  const currencyOptions = [
+    { value: 'TWD', label: 'TWD' },
+    { value: 'USD', label: 'USD' }
+  ];
+  const dividendFrequencyOptions = [
+    { value: '12', label: '月配' },
+    { value: '4', label: '季配' },
+    { value: '2', label: '半年配' },
+    { value: '1', label: '年配' },
+    { value: '0', label: '不配息' }
+  ];
   container.innerHTML = state.funds.map((f, i) => `
     <div class="bond-slot">
       <div class="bond-slot-header">
         <span class="slot-num">第 ${i + 1} 檔基金</span>
-        <span>
-          <button class="inline-btn" onclick="editFund(${i})" style="margin-right:4px;"><i class="fas fa-edit"></i></button>
+        <span class="bond-slot-actions">
+          <button class="inline-btn" onclick="moveFund(${i}, -1)" ${i === 0 ? 'disabled' : ''} title="上移"><i class="fas fa-arrow-up"></i></button>
+          <button class="inline-btn" onclick="moveFund(${i}, 1)" ${i === state.funds.length - 1 ? 'disabled' : ''} title="下移"><i class="fas fa-arrow-down"></i></button>
+          <button class="inline-btn" onclick="editFund(${i})" title="編輯"><i class="fas fa-edit"></i></button>
           <button class="inline-btn danger" onclick="deleteFund(${i})"><i class="fas fa-trash"></i></button>
         </span>
       </div>
       <div class="bond-slot-body">
-        <div class="bond-info-row"><span class="label">代碼</span><span class="value">${f.code}</span></div>
+        <div class="bond-info-row ${isPledgedFund ? 'editable' : ''}"><span class="label">代碼</span><span class="value">${isPledgedFund ? renderInlineFundSearchInput(i, 'code', f.code, 'md') : f.code}</span></div>
         <div class="bond-info-row"><span class="label">投資方式</span><span class="value">${fundModeLabel}</span></div>
-        <div class="bond-info-row"><span class="label">名稱</span><span class="value">${f.name}</span></div>
-        <div class="bond-info-row"><span class="label">幣別</span><span class="value">${f.currency}</span></div>
-        <div class="bond-info-row"><span class="label">投資金額</span><span class="value">${fmt(f.investmentAmountTwd)} TWD</span></div>
-        <div class="bond-info-row"><span class="label">年化配息率</span><span class="value">${fmtDec(f.dividendRate, 2)}%</span></div>
-        <div class="bond-info-row"><span class="label">配息頻率</span><span class="value">${formatDividendFrequency(f.dividendFrequency)}</span></div>
+        <div class="bond-info-row ${isPledgedFund ? 'editable' : ''}"><span class="label">名稱</span><span class="value">${isPledgedFund ? renderInlineFundSearchInput(i, 'name', f.name) : f.name}</span></div>
+        <div class="bond-info-row ${isPledgedFund ? 'editable' : ''}"><span class="label">幣別</span><span class="value">${isPledgedFund ? renderInlineSelect(f.currency || 'TWD', `updateFundInlineField(${i}, 'currency', this.value)`, currencyOptions, 'sm') : f.currency}</span></div>
+        <div class="bond-info-row ${isPledgedFund ? 'editable' : ''}"><span class="label">投資金額</span><span class="value">${isPledgedFund ? renderInlineNumberInput(f.investmentAmountTwd, `updateFundInlineField(${i}, 'investmentAmountTwd', this.value)`, { step: '1000', min: 0, unit: 'TWD', inputmode: 'numeric' }) : `${fmt(f.investmentAmountTwd)} TWD`}</span></div>
+        <div class="bond-info-row ${isPledgedFund ? 'editable' : ''}"><span class="label">年化配息率</span><span class="value">${isPledgedFund ? renderInlineNumberInput(f.dividendRate, `updateFundInlineField(${i}, 'dividendRate', this.value)`, { step: '0.01', min: 0, unit: '%', decimals: 2 }) : `${fmtDec(f.dividendRate, 2)}%`}</span></div>
+        <div class="bond-info-row ${isPledgedFund ? 'editable' : ''}"><span class="label">配息頻率</span><span class="value">${isPledgedFund ? renderInlineSelect(f.dividendFrequency === 0 ? '0' : String(f.dividendFrequency || 12), `updateFundInlineField(${i}, 'dividendFrequency', this.value)`, dividendFrequencyOptions) : formatDividendFrequency(f.dividendFrequency)}</span></div>
         ${isPledgedFund ? `
-        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:4px -16px 0;">
+        <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:4px -16px 0;">
           <span class="label">質借成數</span>
-          <span class="value">${Math.round((f.loanRatio ?? 0.72) * 100)}%</span>
+          <span class="value">${renderInlineNumberInput(Math.round((f.loanRatio ?? 0.72) * 10000) / 100, `updateFundInlineField(${i}, 'loanRatioPct', this.value)`, { step: '0.01', min: 0, max: 100, unit: '%', decimals: 2 })}</span>
         </div>
-        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+        <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
           <span class="label"><strong>質借金額</strong></span>
-          <span class="value" style="color:var(--warning); font-weight:600;">${fmt(f.loanAmountTwd)} TWD</span>
+          <span class="value" style="color:var(--warning); font-weight:600;">${renderInlineNumberInput(f.loanAmountTwd, `updateFundInlineField(${i}, 'loanAmountTwd', this.value)`, { step: '1000', min: 0, unit: 'TWD', inputmode: 'numeric' })}</span>
         </div>
-        <div class="bond-info-row" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
+        <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
           <span class="label">質押利率</span>
-          <span class="value">${fmtDec(f.pledgeRate ?? 2.38, 2)}%</span>
+          <span class="value">${renderInlineNumberInput(f.pledgeRate ?? 2.38, `updateFundInlineField(${i}, 'pledgeRate', this.value)`, { step: '0.01', min: 0, unit: '%', decimals: 2 })}</span>
         </div>
         <div class="bond-info-row" style="background:#fff0f0; padding:6px 16px; margin:0 -16px 0;">
           <span class="label"><strong>年質借成本 (TWD)</strong></span>
           <span class="value" style="color:var(--danger); font-weight:600;">-${fmt(f.pledgeCostTwd)}</span>
         </div>
-        ${i > 0 && f._autoCalc ? `<div style="font-size:0.75rem; color:var(--text-light); padding:4px 0 0; text-align:right;">✦ 投資金額依前檔質借金額自動計算</div>` : ''}` : ''}
+        ${i > 0 ? `<div class="slot-inline-note">
+          ${f._autoCalc ? '本檔投資金額會依前一檔質借金額自動續算。' : '此檔已改為手動輸入，後續檔次會依本檔質借金額續算。'}
+        </div>` : ''}` : ''}
         <div class="bond-info-row" style="background:#f0f8ff; margin:4px -16px -14px; padding:8px 16px; border-radius:0 0 12px 12px;">
           <span class="label"><strong>年配息 (TWD)</strong></span>
           <span class="value" style="color:var(--accent);">${fmt(f.annualDividendTwd)}</span>
@@ -3769,6 +5366,7 @@ function updateInvestmentModeUI() {
   document.getElementById('bondModePledged').classList.toggle('active', bondMode === 'pledged');
   document.getElementById('fundModeSingle').classList.toggle('active', fundMode === 'single');
   document.getElementById('fundModePledged').classList.toggle('active', fundMode === 'pledged');
+  document.getElementById('fundPresetToolbar').classList.toggle('hidden', fundMode !== 'pledged');
 }
 
 function updateBondSummary() {
@@ -3781,7 +5379,7 @@ function updateBondSummary() {
   const totalStructuredInvTwd = state.structuredProducts.reduce((s, p) => s + p.investmentAmountTwd, 0);
   const totalInvTwd = totalBondInvTwd + totalFundInvTwd + totalStructuredInvTwd;
   const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const mainFinCost = state.financingAmount * (state.financingRate / 100);
+  const mainFinCost = state.selectedProduct ? state.financingAmount * (state.financingRate / 100) : 0;
   const isPledgedBond = state.investmentModes?.bond === 'pledged';
   const isPledgedFund = state.investmentModes?.fund === 'pledged';
   const totalPledgeCost = (isPledgedBond ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
@@ -3794,7 +5392,7 @@ function updateBondSummary() {
   document.getElementById('totalFinCost').textContent = fmt(finCost) + ' TWD';
   document.getElementById('totalPolicyLoanCost').textContent = fmt(mainFinCost) + ' TWD';
   document.getElementById('totalPledgeLoanCost').textContent = fmt(totalPledgeCost) + ' TWD';
-  document.getElementById('subRowPledgeLoan').style.display = (isPledgedBond && totalPledgeCost > 0) ? '' : 'none';
+  document.getElementById('subRowPledgeLoan').style.display = ((isPledgedBond || isPledgedFund) && totalPledgeCost > 0) ? '' : 'none';
   document.getElementById('netIncome').textContent = fmt(net) + ' TWD';
 
   document.getElementById('allocationWarning').classList.toggle('hidden', totalInvTwd <= state.financingAmount * 1.01);
@@ -3854,7 +5452,7 @@ function importSelectedBonds() {
   }
 
   const beforeCount = state.bonds.length;
-  state.bonds = [...state.bonds, ...merged].slice(0, 5).sort((a, b) => b.maturityYears - a.maturityYears);
+  state.bonds = [...state.bonds, ...merged].slice(0, 5);
   const importedCount = Math.max(0, state.bonds.length - Math.min(beforeCount, 5));
   localStorage.removeItem(IMPORT_BONDS_KEY);
   recalcPledgedChain();
@@ -3882,6 +5480,65 @@ function clearFunds() {
   saveState();
 }
 
+function applySelectedFundPreset() {
+  if ((state.investmentModes?.fund || 'single') !== 'pledged') {
+    alert('請先切換到基金的「質押投資」模式');
+    return;
+  }
+
+  const presetSelect = document.getElementById('fundPresetSelect');
+  const presetId = presetSelect ? presetSelect.value : '';
+  const preset = PLEDGED_FUND_PRESETS.find(item => item.id === presetId);
+  if (!preset) {
+    alert('找不到預設基金資料');
+    return;
+  }
+
+  const remainingAmount = Math.max(
+    0,
+    Math.round(
+      (Number(state.financingAmount) || 0)
+      - state.bonds.reduce((sum, bond) => sum + (Number(bond.investmentTwd) || 0), 0)
+      - state.structuredProducts.reduce((sum, product) => sum + (Number(product.investmentAmountTwd) || 0), 0)
+    )
+  );
+
+  if (remainingAmount <= 0) {
+    alert('目前沒有可用的剩餘配置金額，請先確認融資金額或其他投資配置');
+    return;
+  }
+
+  if (state.funds.length > 0 && !confirm('是否清除目前基金配置，改為帶入預設五檔基金？')) {
+    return;
+  }
+
+  state.funds = Array.from({ length: 5 }, (_, index) => calculateFundAmounts({
+    code: preset.code,
+    name: preset.name,
+    currency: inferFundCurrency(preset.name),
+    investmentAmountTwd: index === 0 ? remainingAmount : 0,
+    dividendRate: preset.dividendRate,
+    dividendFrequency: preset.dividendFrequency,
+    loanRatio: preset.loanRatio,
+    pledgeRate: preset.pledgeRate,
+    _manualInvestmentAmount: index === 0
+  }));
+
+  recalcPledgedFundChain();
+  renderFundSlots();
+  updateBondSummary();
+  saveState();
+  alert(`已帶入預設五檔基金：${preset.name}`);
+}
+
+function openConfigManager() {
+  goToStep(3, true);
+  refreshSavedConfigUI();
+  applySuggestedConfigName(false);
+  const nameInput = document.getElementById('configNameInput');
+  if (nameInput) nameInput.focus();
+}
+
 function openBondScreeningTool() {
   saveState();
   if (canUseStorage()) {
@@ -3900,12 +5557,17 @@ function resetScenario() {
     productScenarioCache: {},
     insuranceAge: 19,
     insuredGender: 'male',
+    xindeliPayPeriod: '2',
+    xumanxinPayPeriod: '2',
     sumInsured: 0,
     premium: 0,
     policyValue: 0,
+    amountInputMode: 'premium',
     coverageYear: 20,
     financingRate: 2.38,
     usdTwdRate: DEFAULT_EXCHANGE_RATES.USD,
+    premiumLoanRatio: 0.85,
+    crossCurrencyLoanRatio: 0.9,
     ltvRatio: 85,
     usdDiscount: 90,
     financingAmount: 0,
@@ -3922,9 +5584,13 @@ function resetScenario() {
     editingBondIndex: -1,
     editingFundIndex: -1,
     editingStructuredIndex: -1,
+    insuranceSummaryExpanded: true,
+    resultOverrides: createDefaultResultOverrides()
   };
   clearSavedState();
   document.getElementById('productSearch').value = '';
+  document.getElementById('configNameInput').value = '';
+  setConfigExchangeText('');
   document.getElementById('selectedProductInfo').classList.add('hidden');
   document.querySelectorAll('.type-card').forEach(card => card.classList.remove('selected'));
   applyStateToForm();
@@ -3933,15 +5599,40 @@ function resetScenario() {
   renderFundSlots();
   renderStructuredSlots();
   updateBondSummary();
+  refreshSavedConfigUI();
+  applySuggestedConfigName(false);
   goToStep(1);
 }
 
 // === Step 4: Results ===
+function updateInsuranceSummaryToggle() {
+  const content = document.getElementById('insuranceSummaryContent');
+  const toggle = document.getElementById('insuranceSummaryToggle');
+  if (!content || !toggle) return;
+  const expanded = state.insuranceSummaryExpanded !== false;
+  content.classList.toggle('hidden', !expanded);
+  toggle.setAttribute('aria-expanded', String(expanded));
+  toggle.innerHTML = expanded
+    ? '<i class="fas fa-chevron-up"></i> 隱藏'
+    : '<i class="fas fa-chevron-down"></i> 展開';
+}
+
+function toggleInsuranceSummary() {
+  state.insuranceSummaryExpanded = state.insuranceSummaryExpanded === false;
+  updateInsuranceSummaryToggle();
+  saveState();
+}
+
 function renderResults() {
   const p = state.selectedProduct;
-  const isUsd = p && p.currency === 'USD';
-  const currSuffix = isUsd ? ' USD' : ' TWD';
+  const productCurrency = p && p.currency ? p.currency : 'TWD';
+  const isUsd = productCurrency === 'USD';
+  const currSuffix = ` ${productCurrency}`;
   const isPremiumResult = state.financingType === 'premium';
+
+  const summarySection = document.getElementById('insuranceSummarySection');
+  summarySection.classList.toggle('hidden', !p);
+  updateInsuranceSummaryToggle();
 
   document.querySelectorAll('.result-premium-only').forEach(el => {
     el.classList.toggle('hidden', !isPremiumResult);
@@ -3949,7 +5640,7 @@ function renderResults() {
   document.querySelectorAll('.result-policy-only').forEach(el => {
     el.classList.toggle('hidden', isPremiumResult);
   });
-  document.getElementById('resultSummaryTitle').innerHTML = isPremiumResult
+  document.getElementById('resultSummaryTitleLabel').innerHTML = isPremiumResult
     ? '<i class="fas fa-shield-halved"></i> 保費融資摘要'
     : '<i class="fas fa-file-invoice-dollar"></i> 保單融資摘要';
 
@@ -3957,10 +5648,13 @@ function renderResults() {
   document.getElementById('resProduct').textContent = p ? p.shortName : '-';
   document.getElementById('resSumInsured').textContent = fmt(state.sumInsured) + currSuffix;
   document.getElementById('resPremium').textContent = fmt(state.premium) + currSuffix;
+  document.getElementById('resSelfFund').textContent = fmt(state.selfFundAmount) + currSuffix;
+  document.getElementById('resLoanOriginal').textContent = fmt(state.financingOriginalAmount) + currSuffix;
   document.getElementById('resPolicyValue').textContent = fmt(state.policyValue) + currSuffix;
   document.getElementById('resFinancing').textContent = fmt(state.financingAmount);
+  document.getElementById('resFinancingFx').textContent = `參考匯率：USD/TWD ${fmtDec(state.usdTwdRate, 2)}`;
   document.getElementById('resRate').textContent = fmtDec(state.financingRate) + '%';
-  document.getElementById('resCoverageYear').textContent = (state.coverageYear || 20) + ' 年';
+  setEditableCoverageYearField(state.coverageYear || 20, !isPremiumResult);
 
   const tbody = document.getElementById('resultBondBody');
   tbody.innerHTML = state.bonds.length > 0
@@ -4002,7 +5696,7 @@ function renderResults() {
     : '<tr><td colspan="5" class="result-empty">尚未配置 FCN / ELI，故無相關收益明細。</td></tr>';
 
   const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const mainFinCostRes = state.financingAmount * (state.financingRate / 100);
+  const mainFinCostRes = p ? state.financingAmount * (state.financingRate / 100) : 0;
   const isPledgedBondRes = state.investmentModes?.bond === 'pledged';
   const isPledgedFundRes = state.investmentModes?.fund === 'pledged';
   const totalPledgeCostRes = (isPledgedBondRes ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
@@ -4021,8 +5715,8 @@ function renderResults() {
   if (!isPremiumResult) {
     setEditableResultField('resProjectedBenefitInput', 'resProjectedBenefitUnit', null, '', true);
     setEditableResultField('resPolicyCashValueInput', 'resPolicyCashValueUnit', null, '', true);
-    document.getElementById('resCovBefore').textContent = '-';
-    document.getElementById('resCovAfter').textContent = '-';
+    applyCoverageComparison(null, '', true);
+    renderPremiumGrowthMetrics(null, '', true);
     saveState();
     return;
   }
@@ -4069,14 +5763,22 @@ function renderResults() {
   );
 
   applyCoverageComparison(displayProjectedBenefitAmount, displayProjectedBenefitCurrency);
+  renderPremiumGrowthMetrics(
+    displayProjectedCashValueAmount,
+    displayProjectedCashValueCurrency,
+    !displayProjectedCashValueCurrency
+  );
   saveState();
 }
 
 // === Init ===
 document.addEventListener('DOMContentLoaded', function() {
   loadState();
+  loadSavedConfigLibrary();
   applyStateToForm();
   updateInvestmentModeUI();
+  recalcPledgedChain();
+  recalcPledgedFundChain();
   renderBondSlots();
   renderFundSlots();
   renderStructuredSlots();
@@ -4084,6 +5786,9 @@ document.addEventListener('DOMContentLoaded', function() {
   updateImportButtonState();
   updatePledgeFundImportStatus();
   setupFundSelectors();
+  initPledgedFundPresetOptions();
+  refreshSavedConfigUI();
+  applySuggestedConfigName(false);
   document.getElementById('typeCardPremium').addEventListener('click', function() { selectType('premium'); });
   document.getElementById('typeCardPolicy').addEventListener('click', function() { selectType('policy'); });
   document.getElementById('prevBtn').addEventListener('click', function() {
@@ -4105,6 +5810,17 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   resProjectedBenefitInput.addEventListener('input', handleProjectedBenefitEdit);
   resPolicyCashValueInput.addEventListener('input', handlePolicyCashValueEdit);
+  const resCoverageYearInput = document.getElementById('resCoverageYearInput');
+  resCoverageYearInput.addEventListener('focus', handleCoverageYearResultFocus);
+  resCoverageYearInput.addEventListener('blur', handleCoverageYearResultBlur);
+  resCoverageYearInput.addEventListener('change', handleCoverageYearResultChange);
+  const resCovBeforeInput = document.getElementById('resCovBeforeInput');
+  const resCovAfterInput = document.getElementById('resCovAfterInput');
+  [resCovBeforeInput, resCovAfterInput].forEach(input => {
+    input.addEventListener('focus', handleEditableMultiplierFocus);
+    input.addEventListener('blur', handleEditableMultiplierBlur);
+    input.addEventListener('input', handleCoverageMultiplierEdit);
+  });
   goToStep(state.currentStep || 1);
   fetchRate();
   try {
