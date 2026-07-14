@@ -3358,7 +3358,7 @@ function applyStateToForm() {
   document.getElementById('audTwdRate').value = state.exchangeRates.AUD ?? DEFAULT_EXCHANGE_RATES.AUD;
   document.getElementById('eurTwdRate').value = state.exchangeRates.EUR ?? DEFAULT_EXCHANGE_RATES.EUR;
   document.getElementById('gbpTwdRate').value = state.exchangeRates.GBP ?? DEFAULT_EXCHANGE_RATES.GBP;
-  document.getElementById('premiumLoanRatio').value = state.premiumLoanRatio ?? 0.85;
+  document.getElementById('premiumLoanRatio').value = state.selectedProduct ? (state.premiumLoanRatio ?? 0.85) : 0;
   document.getElementById('crossCurrencyLoanRatio').value = state.crossCurrencyLoanRatio ?? 0.9;
   document.getElementById('ltvRatio').value = state.ltvRatio ?? 85;
   document.getElementById('usdDiscount').value = state.usdDiscount ?? 90;
@@ -3518,6 +3518,7 @@ function updateFinancingUI() {
     return;
   }
   const isPremium = state.financingType === 'premium';
+  const premiumLoanRatioInput = document.getElementById('premiumLoanRatio');
   document.getElementById('financingCardTitle').textContent = isPremium ? '保費融資設定' : '保單融資設定';
   document.getElementById('premiumSettingsPanel').classList.toggle('hidden', !isPremium);
   document.getElementById('policySettingsPanel').classList.toggle('hidden', isPremium);
@@ -3529,6 +3530,9 @@ function updateFinancingUI() {
   document.getElementById('policyValueGroup').classList.toggle('hidden', isPremium);
   document.getElementById('usdDiscountGroup').classList.toggle('hidden', isPremium);
   document.getElementById('premiumRatioSettingsRow').classList.toggle('hidden', !isPremium);
+  // 未選商品即為不做保單融資；比例固定顯示 0%，選到商品後才恢復可調整。
+  premiumLoanRatioInput.readOnly = isPremium && !state.selectedProduct;
+  premiumLoanRatioInput.value = state.selectedProduct ? (state.premiumLoanRatio ?? 0.85) : 0;
   document.getElementById('crossCurrencyLoanRatioGroup').classList.toggle('hidden', !(isPremium && state.selectedProduct && state.selectedProduct.currency === 'USD'));
   document.getElementById('multiCurrencyRateGrid').classList.add('hidden');
   document.getElementById('ltvRatioLabel').textContent = isPremium ? '融資成數（自動）' : '保價金成數';
@@ -4454,8 +4458,10 @@ function recalcFinancing(source = '') {
   const gbpRate = parseFloat(document.getElementById('gbpTwdRate').value) || DEFAULT_EXCHANGE_RATES.GBP;
   const inputLtv = parseFloat(document.getElementById('ltvRatio').value) || 85;
   const discount = parseFloat(document.getElementById('usdDiscount').value) || 90;
-  const premiumLoanRatio = sanitizeFinancingFactor(document.getElementById('premiumLoanRatio').value, 0.85);
+  const requestedPremiumLoanRatio = sanitizeFinancingFactor(document.getElementById('premiumLoanRatio').value, 0.85);
   const crossCurrencyLoanRatio = sanitizeFinancingFactor(document.getElementById('crossCurrencyLoanRatio').value, 0.9);
+  const hasInsuranceProduct = Boolean(state.selectedProduct);
+  const premiumLoanRatio = hasInsuranceProduct ? requestedPremiumLoanRatio : 0;
 
   state.policyValue = pv;
   state.insuranceAge = Math.max(0, Math.min(110, insuranceAge));
@@ -4516,7 +4522,6 @@ function recalcFinancing(source = '') {
     }
   }
 
-  const hasInsuranceProduct = Boolean(state.selectedProduct);
   const isUsd = hasInsuranceProduct && state.selectedProduct.currency === 'USD';
   const originalCurrency = hasInsuranceProduct ? state.selectedProduct.currency : 'TWD';
   const isPremium = state.financingType === 'premium';
