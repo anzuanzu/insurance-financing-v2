@@ -459,6 +459,21 @@
       line-height: 1.4;
     }
     .stat-card.full { grid-column: 1 / -1; }
+    .cashflow-cost-breakdown {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+      text-align: left;
+      font-size: 0.76rem;
+      color: var(--text-light);
+    }
+    .cashflow-cost-breakdown div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+    .cashflow-cost-breakdown strong { color: var(--primary); font-variant-numeric: tabular-nums; }
+    .cashflow-mortgage-card { text-align: left; }
+    .cashflow-mortgage-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    .cashflow-mortgage-inputs label { color: var(--text-light); font-size: 0.78rem; font-weight: 600; }
+    .cashflow-mortgage-inputs .form-input { margin-top: 5px; }
+    .cashflow-mortgage-note { margin-top: 8px; color: var(--text-light); font-size: 0.76rem; }
     .editable-stat-value {
       display: flex;
       align-items: center;
@@ -1157,6 +1172,10 @@
           <span>└ 投資借款</span>
           <span class="val sub-val" id="totalPledgeLoanCost">0</span>
         </div>
+        <div class="row sub-row" id="subRowMortgageInterest" style="display:none;">
+          <span>└ 房貸利息</span>
+          <span class="val sub-val" id="totalMortgageInterest">0</span>
+        </div>
         <div class="row net">
           <span>年度淨息收</span>
           <span class="val" id="netIncome">0</span>
@@ -1311,7 +1330,27 @@
       <div class="result-section-title"><i class="fas fa-coins"></i> 現金流分析</div>
       <div class="stat-grid">
         <div class="stat-card"><div class="stat-label">年度配息收入</div><div class="stat-value" id="resCoupon">-</div></div>
-        <div class="stat-card"><div class="stat-label">年度融資成本</div><div class="stat-value" id="resCost">-</div></div>
+        <div class="stat-card">
+          <div class="stat-label">年度融資成本</div>
+          <div class="stat-value" id="resCost">-</div>
+          <div class="cashflow-cost-breakdown" aria-label="年度融資成本結構">
+            <div><span>保單借款</span><strong id="resPolicyLoanCost">-</strong></div>
+            <div><span>投資質借</span><strong id="resPledgeLoanCost">-</strong></div>
+            <div><span>房貸利息</span><strong id="resMortgageInterest">-</strong></div>
+          </div>
+        </div>
+        <div class="stat-card full cashflow-mortgage-card">
+          <div class="stat-label">房貸成本設定</div>
+          <div class="cashflow-mortgage-inputs">
+            <label>房貸金額 (TWD)
+              <input type="number" class="form-input" id="resMortgageAmount" inputmode="numeric" min="0" step="100000" placeholder="留空視為 0" oninput="updateMortgageCashFlow()">
+            </label>
+            <label>房貸利率 (%)
+              <input type="number" class="form-input" id="resMortgageRate" inputmode="decimal" min="0" step="0.01" placeholder="2.60" oninput="updateMortgageCashFlow()">
+            </label>
+          </div>
+          <div class="cashflow-mortgage-note">年度房貸利息會納入年度融資成本，並自年度淨息收扣除。</div>
+        </div>
         <div class="stat-card full" id="resNetCard">
           <div class="stat-label">年度淨息收</div>
           <div class="stat-value" id="resNet">-</div>
@@ -2158,6 +2197,8 @@ let state = {
   financingAmount: 0,
   financingOriginalAmount: 0,
   selfFundAmount: 0,
+  mortgageAmount: 0,
+  mortgageRate: 2.6,
   exchangeRates: { ...DEFAULT_EXCHANGE_RATES },
   investmentModes: {
     bond: 'single',
@@ -2214,6 +2255,8 @@ function createDefaultProductScenario() {
     financingAmount: 0,
     financingOriginalAmount: 0,
     selfFundAmount: 0,
+    mortgageAmount: 0,
+    mortgageRate: 2.6,
     exchangeRates: { ...DEFAULT_EXCHANGE_RATES },
     investmentModes: {
       bond: 'single',
@@ -2253,6 +2296,8 @@ function saveCurrentProductScenarioSnapshot() {
     financingAmount: state.financingAmount,
     financingOriginalAmount: state.financingOriginalAmount,
     selfFundAmount: state.selfFundAmount,
+    mortgageAmount: state.mortgageAmount,
+    mortgageRate: state.mortgageRate,
     exchangeRates: { ...state.exchangeRates },
     investmentModes: { ...(state.investmentModes || { bond: 'single', fund: 'single' }) },
     bonds: Array.isArray(state.bonds) ? JSON.parse(JSON.stringify(state.bonds)) : [],
@@ -2300,6 +2345,8 @@ function restoreProductScenarioSnapshot(product) {
   state.financingAmount = next.financingAmount;
   state.financingOriginalAmount = next.financingOriginalAmount;
   state.selfFundAmount = next.selfFundAmount;
+  state.mortgageAmount = next.mortgageAmount ?? 0;
+  state.mortgageRate = next.mortgageRate ?? 2.6;
   state.exchangeRates = { ...DEFAULT_EXCHANGE_RATES, ...next.exchangeRates };
   state.investmentModes = { bond: 'single', fund: 'single', ...next.investmentModes };
   state.bonds = JSON.parse(JSON.stringify(next.bonds));
@@ -2372,6 +2419,8 @@ function createSanitizedScenarioState(source = state) {
     financingAmount: Number(source?.financingAmount) || 0,
     financingOriginalAmount: Number(source?.financingOriginalAmount) || 0,
     selfFundAmount: Number(source?.selfFundAmount) || 0,
+    mortgageAmount: Math.max(0, Number(source?.mortgageAmount) || 0),
+    mortgageRate: Math.max(0, readNumeric(source?.mortgageRate, 2.6)),
     exchangeRates,
     investmentModes: {
       bond: 'single',
@@ -5419,7 +5468,61 @@ function updateInvestmentModeUI() {
   document.getElementById('fundPresetToolbar').classList.toggle('hidden', fundMode !== 'pledged');
 }
 
-function updateBondSummary() {
+function getCashFlowAnalysis() {
+  const totalCoupon = state.bonds.reduce((sum, bond) => sum + (bond.annualCouponTwd || 0), 0)
+    + state.funds.reduce((sum, fund) => sum + (fund.annualDividendTwd || 0), 0)
+    + state.structuredProducts.reduce((sum, product) => sum + (product.annualIncomeTwd || 0), 0);
+  const policyLoanCost = hasActiveInsuranceFinancing()
+    ? (Number(state.financingAmount) || 0) * ((Number(state.financingRate) || 0) / 100)
+    : 0;
+  const isPledgedBond = state.investmentModes?.bond === 'pledged';
+  const isPledgedFund = state.investmentModes?.fund === 'pledged';
+  const pledgeLoanCost = (isPledgedBond ? state.bonds.reduce((sum, bond) => sum + (bond.pledgeCostTwd || 0), 0) : 0)
+    + (isPledgedFund ? state.funds.reduce((sum, fund) => sum + (fund.pledgeCostTwd || 0), 0) : 0);
+  const mortgageAmount = Math.max(0, Number(state.mortgageAmount) || 0);
+  const mortgageRate = Math.max(0, Number(state.mortgageRate) || 0);
+  const mortgageInterest = Math.round(mortgageAmount * (mortgageRate / 100));
+  const financingCost = policyLoanCost + pledgeLoanCost + mortgageInterest;
+
+  return {
+    totalCoupon,
+    policyLoanCost,
+    pledgeLoanCost,
+    mortgageInterest,
+    financingCost,
+    netIncome: totalCoupon - financingCost,
+    hasPledgeLoan: (isPledgedBond || isPledgedFund) && pledgeLoanCost > 0
+  };
+}
+
+function renderResultCashFlow(cashFlow = getCashFlowAnalysis(), syncInputs = false) {
+  document.getElementById('resCoupon').textContent = fmt(cashFlow.totalCoupon);
+  document.getElementById('resCost').textContent = fmt(cashFlow.financingCost);
+  document.getElementById('resPolicyLoanCost').textContent = fmt(cashFlow.policyLoanCost);
+  document.getElementById('resPledgeLoanCost').textContent = fmt(cashFlow.pledgeLoanCost);
+  document.getElementById('resMortgageInterest').textContent = fmt(cashFlow.mortgageInterest);
+  document.getElementById('resNet').textContent = fmt(cashFlow.netIncome);
+  const netCard = document.getElementById('resNetCard');
+  netCard.classList.toggle('positive', cashFlow.netIncome >= 0);
+  netCard.classList.toggle('negative', cashFlow.netIncome < 0);
+  document.getElementById('resNetMonthly').textContent = '每月約 ' + fmt(cashFlow.netIncome / 12) + ' TWD';
+
+  if (syncInputs) {
+    document.getElementById('resMortgageAmount').value = state.mortgageAmount || '';
+    document.getElementById('resMortgageRate').value = state.mortgageRate ?? 2.6;
+  }
+}
+
+function updateMortgageCashFlow() {
+  state.mortgageAmount = Math.max(0, parseFloat(document.getElementById('resMortgageAmount').value) || 0);
+  state.mortgageRate = Math.max(0, parseFloat(document.getElementById('resMortgageRate').value) || 0);
+  const cashFlow = getCashFlowAnalysis();
+  updateBondSummary(cashFlow);
+  renderResultCashFlow(cashFlow);
+  saveState();
+}
+
+function updateBondSummary(cashFlow = getCashFlowAnalysis()) {
   const hasInvestments = state.bonds.length > 0 || state.funds.length > 0 || state.structuredProducts.length > 0;
   document.getElementById('bondSummary').classList.toggle('hidden', !hasInvestments);
   if (!hasInvestments) return;
@@ -5428,22 +5531,15 @@ function updateBondSummary() {
   const totalFundInvTwd = state.funds.reduce((s, f) => s + f.investmentAmountTwd, 0);
   const totalStructuredInvTwd = state.structuredProducts.reduce((s, p) => s + p.investmentAmountTwd, 0);
   const totalInvTwd = totalBondInvTwd + totalFundInvTwd + totalStructuredInvTwd;
-  const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const mainFinCost = hasActiveInsuranceFinancing() ? state.financingAmount * (state.financingRate / 100) : 0;
-  const isPledgedBond = state.investmentModes?.bond === 'pledged';
-  const isPledgedFund = state.investmentModes?.fund === 'pledged';
-  const totalPledgeCost = (isPledgedBond ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
-    + (isPledgedFund ? state.funds.reduce((s, f) => s + (f.pledgeCostTwd || 0), 0) : 0);
-  const finCost = mainFinCost + totalPledgeCost;
-  const net = totalCoupon - finCost;
-
   document.getElementById('totalAllocated').textContent = fmt(totalInvTwd) + ' TWD';
-  document.getElementById('totalCoupon').textContent = fmt(totalCoupon) + ' TWD';
-  document.getElementById('totalFinCost').textContent = fmt(finCost) + ' TWD';
-  document.getElementById('totalPolicyLoanCost').textContent = fmt(mainFinCost) + ' TWD';
-  document.getElementById('totalPledgeLoanCost').textContent = fmt(totalPledgeCost) + ' TWD';
-  document.getElementById('subRowPledgeLoan').style.display = ((isPledgedBond || isPledgedFund) && totalPledgeCost > 0) ? '' : 'none';
-  document.getElementById('netIncome').textContent = fmt(net) + ' TWD';
+  document.getElementById('totalCoupon').textContent = fmt(cashFlow.totalCoupon) + ' TWD';
+  document.getElementById('totalFinCost').textContent = fmt(cashFlow.financingCost) + ' TWD';
+  document.getElementById('totalPolicyLoanCost').textContent = fmt(cashFlow.policyLoanCost) + ' TWD';
+  document.getElementById('totalPledgeLoanCost').textContent = fmt(cashFlow.pledgeLoanCost) + ' TWD';
+  document.getElementById('totalMortgageInterest').textContent = fmt(cashFlow.mortgageInterest) + ' TWD';
+  document.getElementById('subRowPledgeLoan').style.display = cashFlow.hasPledgeLoan ? '' : 'none';
+  document.getElementById('subRowMortgageInterest').style.display = cashFlow.mortgageInterest > 0 ? '' : 'none';
+  document.getElementById('netIncome').textContent = fmt(cashFlow.netIncome) + ' TWD';
 
   document.getElementById('allocationWarning').classList.toggle('hidden', totalInvTwd <= state.financingAmount * 1.01);
   saveState();
@@ -5620,6 +5716,8 @@ function resetScenario() {
     financingAmount: 0,
     financingOriginalAmount: 0,
     selfFundAmount: 0,
+    mortgageAmount: 0,
+    mortgageRate: 2.6,
     exchangeRates: { ...DEFAULT_EXCHANGE_RATES },
     investmentModes: {
       bond: 'single',
@@ -5742,22 +5840,7 @@ function renderResults() {
   `).join('')
     : '<tr><td colspan="5" class="result-empty">尚未配置 FCN / ELI，故無相關收益明細。</td></tr>';
 
-  const totalCoupon = state.bonds.reduce((s, b) => s + b.annualCouponTwd, 0) + state.funds.reduce((s, f) => s + f.annualDividendTwd, 0) + state.structuredProducts.reduce((s, p) => s + p.annualIncomeTwd, 0);
-  const mainFinCostRes = hasActiveInsuranceFinancing() ? state.financingAmount * (state.financingRate / 100) : 0;
-  const isPledgedBondRes = state.investmentModes?.bond === 'pledged';
-  const isPledgedFundRes = state.investmentModes?.fund === 'pledged';
-  const totalPledgeCostRes = (isPledgedBondRes ? state.bonds.reduce((s, b) => s + (b.pledgeCostTwd || 0), 0) : 0)
-    + (isPledgedFundRes ? state.funds.reduce((s, f) => s + (f.pledgeCostTwd || 0), 0) : 0);
-  const finCost = mainFinCostRes + totalPledgeCostRes;
-  const net = totalCoupon - finCost;
-
-  document.getElementById('resCoupon').textContent = fmt(totalCoupon);
-  document.getElementById('resCost').textContent = fmt(finCost);
-  document.getElementById('resNet').textContent = fmt(net);
-  const netCard = document.getElementById('resNetCard');
-  netCard.classList.toggle('positive', net >= 0);
-  netCard.classList.toggle('negative', net < 0);
-  document.getElementById('resNetMonthly').textContent = '每月約 ' + fmt(net / 12) + ' TWD';
+  renderResultCashFlow(getCashFlowAnalysis(), true);
 
   if (!isPremiumResult) {
     setEditableResultField('resProjectedBenefitInput', 'resProjectedBenefitUnit', null, '', true);
