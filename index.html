@@ -1520,7 +1520,7 @@
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">質借成數 (%)</label>
-          <input type="number" class="form-input" id="fundLoanRatio" inputmode="decimal" step="1" value="72" min="1" max="100">
+          <input type="number" class="form-input" id="fundLoanRatio" inputmode="decimal" step="1" value="60" min="1" max="100">
         </div>
         <div class="form-group">
           <label class="form-label">質押利率 (%)</label>
@@ -1765,7 +1765,7 @@ const PLEDGED_FUND_PRESETS = [
     name: '貝萊德全球智慧數據股票入息基金B6-美元-穩定月配息',
     dividendRate: 7,
     dividendFrequency: 12,
-    loanRatio: 0.7,
+    loanRatio: 0.6,
     pledgeRate: 2.38
   },
   {
@@ -1774,7 +1774,7 @@ const PLEDGED_FUND_PRESETS = [
     name: '富達基金-全球動能多元基金(B股C月配息美元)',
     dividendRate: 9,
     dividendFrequency: 12,
-    loanRatio: 0.7,
+    loanRatio: 0.6,
     pledgeRate: 2.38
   }
 ];
@@ -4750,7 +4750,7 @@ function calculateFundAmounts(rawFund) {
   const investmentAmountTwd = Math.round(parseFloat(rawFund.investmentAmountTwd) || 0);
   const dividendRate = parseFloat(rawFund.dividendRate) || 0;
   const annualDividendTwd = Math.round(investmentAmountTwd * (dividendRate / 100));
-  const loanRatio = rawFund.loanRatio != null ? parseFloat(rawFund.loanRatio) : 0.72;
+  const loanRatio = rawFund.loanRatio != null ? parseFloat(rawFund.loanRatio) : 0.6;
   const loanAmountTwd = Math.round(investmentAmountTwd * loanRatio);
   const pledgeRate = rawFund.pledgeRate != null ? parseFloat(rawFund.pledgeRate) : 2.38;
   const pledgeCostTwd = Math.round(loanAmountTwd * (pledgeRate / 100));
@@ -4851,7 +4851,7 @@ function openAddFundModal() {
   document.getElementById('fundName').value = '';
   document.getElementById('fundDividendRate').value = '';
   document.getElementById('fundDividendFrequency').value = '12';
-  document.getElementById('fundLoanRatio').value = '72';
+  document.getElementById('fundLoanRatio').value = '60';
   document.getElementById('fundPledgeRate').value = '2.38';
   const isPledged = state.investmentModes?.fund === 'pledged';
   document.getElementById('fundLoanRatioGroup').style.display = isPledged ? '' : 'none';
@@ -5098,7 +5098,7 @@ function saveFund() {
   }
 
   const isPledgedFund = state.investmentModes?.fund === 'pledged';
-  const loanRatio = isPledgedFund ? (parseFloat(document.getElementById('fundLoanRatio').value) || 72) / 100 : 0;
+  const loanRatio = isPledgedFund ? (parseFloat(document.getElementById('fundLoanRatio').value) || 60) / 100 : 0;
   const pledgeRate = isPledgedFund ? (parseFloat(document.getElementById('fundPledgeRate').value) || 2.38) : 0;
 
   const fund = calculateFundAmounts({
@@ -5175,7 +5175,7 @@ function editFund(index) {
   document.getElementById('fundInvestmentAmount').value = fund.investmentAmountTwd;
   document.getElementById('fundDividendRate').value = fund.dividendRate;
   document.getElementById('fundDividendFrequency').value = fund.dividendFrequency;
-  document.getElementById('fundLoanRatio').value = Math.round((fund.loanRatio ?? 0.72) * 100);
+  document.getElementById('fundLoanRatio').value = Math.round((fund.loanRatio ?? 0.6) * 100);
   document.getElementById('fundPledgeRate').value = fmtDec(fund.pledgeRate ?? 2.38, 2);
   const isPledged = state.investmentModes?.fund === 'pledged';
   document.getElementById('fundLoanRatioGroup').style.display = isPledged ? '' : 'none';
@@ -5375,7 +5375,7 @@ function renderFundSlots() {
         ${isPledgedFund ? `
         <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:4px -16px 0;">
           <span class="label">質借成數</span>
-          <span class="value">${renderInlineNumberInput(Math.round((f.loanRatio ?? 0.72) * 10000) / 100, `updateFundInlineField(${i}, 'loanRatioPct', this.value)`, { step: '0.01', min: 0, max: 100, unit: '%', decimals: 2 })}</span>
+          <span class="value">${renderInlineNumberInput(Math.round((f.loanRatio ?? 0.6) * 10000) / 100, `updateFundInlineField(${i}, 'loanRatioPct', this.value)`, { step: '0.01', min: 0, max: 100, unit: '%', decimals: 2 })}</span>
         </div>
         <div class="bond-info-row editable" style="background:#fff8e6; padding:6px 16px; margin:0 -16px 0;">
           <span class="label"><strong>質借金額</strong></span>
