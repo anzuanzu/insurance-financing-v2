@@ -2180,6 +2180,7 @@ const FINANCING_RATE_DEFAULTS = {
 };
 const BOND_PLEDGE_RATE_DEFAULT = 2.65;
 const FUND_PLEDGE_RATE_DEFAULT = 2.5;
+const RATE_DEFAULTS_VERSION = 2;
 
 function getFinancingRateDefault(type) {
   return type === 'policy'
@@ -2187,8 +2188,26 @@ function getFinancingRateDefault(type) {
     : FINANCING_RATE_DEFAULTS.premium;
 }
 
+function migrateLegacyRateDefaults(nextState) {
+  if (!nextState || Number(nextState.rateDefaultsVersion) >= RATE_DEFAULTS_VERSION) return false;
+
+  const migrateRate = (scenario, financingType) => {
+    if (Number(scenario?.financingRate) === 2.38) {
+      scenario.financingRate = getFinancingRateDefault(financingType);
+    }
+  };
+
+  migrateRate(nextState, nextState.financingType);
+  Object.entries(nextState.productScenarioCache || {}).forEach(([key, scenario]) => {
+    migrateRate(scenario, key.split(':', 1)[0]);
+  });
+  nextState.rateDefaultsVersion = RATE_DEFAULTS_VERSION;
+  return true;
+}
+
 let state = {
   currentStep: 1,
+  rateDefaultsVersion: RATE_DEFAULTS_VERSION,
   financingType: null, // 'premium' or 'policy'
   selectedProduct: null,
   productScenarioCache: {},
@@ -2411,6 +2430,7 @@ function createSanitizedScenarioState(source = state) {
   };
   return {
     currentStep: Math.max(1, Math.min(4, parseInt(source?.currentStep, 10) || 1)),
+    rateDefaultsVersion: Number(source?.rateDefaultsVersion) || 1,
     financingType: source?.financingType === 'premium' || source?.financingType === 'policy' ? source.financingType : null,
     selectedProduct: source?.selectedProduct ? cloneJsonData(source.selectedProduct, null) : null,
     productScenarioCache: cloneJsonData(source?.productScenarioCache, {}) || {},
@@ -2610,6 +2630,7 @@ function refreshSavedConfigUI() {
 
 function applyScenarioState(nextState) {
   state = createSanitizedScenarioState(nextState);
+  migrateLegacyRateDefaults(state);
   applyStateToForm();
   updateInvestmentModeUI();
   recalcPledgedChain();
@@ -3250,6 +3271,7 @@ function loadState() {
     state = {
       ...state,
       ...parsed,
+      rateDefaultsVersion: Number(parsed.rateDefaultsVersion) || 1,
       productScenarioCache: parsed.productScenarioCache || {},
       resultOverrides: {
         ...createDefaultResultOverrides(),
@@ -3265,6 +3287,7 @@ function loadState() {
       funds: Array.isArray(parsed.funds) ? parsed.funds : [],
       structuredProducts: Array.isArray(parsed.structuredProducts) ? parsed.structuredProducts : [],
     };
+    if (migrateLegacyRateDefaults(state)) saveState();
     return true;
   } catch (e) {
     return false;
@@ -5712,6 +5735,7 @@ function resetScenario() {
   if (!confirm('要清除目前整份試算內容並回到第一步嗎？')) return;
   state = {
     currentStep: 1,
+    rateDefaultsVersion: RATE_DEFAULTS_VERSION,
     financingType: null,
     selectedProduct: null,
     productScenarioCache: {},
