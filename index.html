@@ -938,6 +938,52 @@
       .step-dot .num { width: 30px; height: 30px; font-size: 0.8rem; }
       .step-line { width: 40px; }
     }
+
+    /* Tablet layouts are selected by available viewport width rather than a
+       device name, so portrait/landscape and small/large tablets adapt automatically. */
+    @media (min-width:600px) and (max-width:767px) {
+      .main-content { max-width:760px; padding:20px 24px; padding-bottom:108px; }
+      .workspace-nav { width:calc(100% - 32px); align-items:stretch; flex-direction:column; }
+      .workspace-nav__toggle { display:none; }
+      .workspace-nav__links { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:5px; }
+      .workspace-nav__links.is-open { display:grid; }
+      .workspace-nav__links a { min-height:44px; justify-content:center; padding:8px 6px; font-size:.75rem; text-align:center; }
+      .type-cards, .form-row { grid-template-columns:1fr 1fr; }
+      .rate-grid { grid-template-columns:repeat(3, 1fr); }
+      .config-toolbar { grid-template-columns:minmax(0, 1fr) auto; align-items:end; }
+      .modal-overlay { align-items:center; }
+      .modal-sheet { border-radius:16px; max-height:80vh; }
+    }
+
+    @media (min-width:768px) and (max-width:1023px) {
+      .main-content { max-width:1000px; padding:24px 32px; padding-bottom:112px; }
+      .workspace-nav { width:calc(100% - 40px); align-items:stretch; flex-direction:column; }
+      .workspace-nav__links { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:5px; }
+      .workspace-nav__links a { min-height:46px; justify-content:center; padding:9px 8px; font-size:.8rem; text-align:center; }
+      .stat-grid { gap:14px; }
+      .stat-card { padding:18px; }
+      .bottom-nav { padding-left:24px; padding-right:24px; }
+    }
+
+    @media (min-width:900px) and (max-width:1023px) {
+      .workspace-nav__links { grid-template-columns:repeat(6, minmax(0, 1fr)); }
+      .workspace-nav__links a { font-size:.73rem; }
+    }
+
+    @media (min-width:768px) and (max-width:899px) {
+      .stat-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    }
+
+    /* Larger touch-first tablets, such as an iPad Pro in portrait, retain the
+       tablet layout without changing a similarly sized mouse/keyboard desktop. */
+    @media (min-width:1024px) and (max-width:1199px) and (pointer:coarse) {
+      .main-content { max-width:1100px; padding:28px 40px; padding-bottom:116px; }
+      .workspace-nav { width:calc(100% - 48px); align-items:stretch; flex-direction:column; }
+      .workspace-nav__links { display:grid; grid-template-columns:repeat(6, minmax(0, 1fr)); gap:5px; }
+      .workspace-nav__links a { min-height:46px; justify-content:center; padding:9px 8px; font-size:.78rem; text-align:center; }
+      .bottom-nav { padding-left:32px; padding-right:32px; }
+      body .live-presence { bottom:calc(84px + env(safe-area-inset-bottom)); pointer-events:none; }
+    }
   </style>
   <script defer src="https://anzuanzu.github.io/tools/presence.js" data-tool="insurance"></script>
 </head>
