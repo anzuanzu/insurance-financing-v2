@@ -27,7 +27,9 @@ gcloud run deploy insurance-financing-api \
   --image "$IMAGE" \
   --region "$REGION" \
   --allow-unauthenticated \
-  --max-instances 1 \
+  --max-instances 3 \
+  --min-instances 0 \
+  --concurrency 1 \
   --memory 1Gi \
   --timeout 60 \
   --set-env-vars "INSURANCE_DATA_DIR=/data,CORS_ALLOWED_ORIGINS=https://anzuanzu.github.io" \
@@ -36,7 +38,9 @@ gcloud run deploy insurance-financing-api \
   --add-volume-mount "volume=product-data,mount-path=/data"
 ```
 
-`--max-instances 1` 在目前 JSON 商品清單的檔案式儲存模型下避免同時匯入造成衝突。若未來需大量同時匯入，應把商品清單與版本紀錄改存至交易式資料庫。
+每個 Cloud Run 執行個體一次只處理一筆請求（`--concurrency 1`），避免 LibreOffice Calc 在同一容器內互相干擾；最多三個執行個體可平行處理三筆不同的新條件試算。`--min-instances 0` 不會產生待命執行個體費用，但首次請求可能有冷啟動時間。
+
+每一筆完成的試算結果會以獨立資料檔發布，並在下一次讀取時合併為商品的共用快速資料；因此多個執行個體可以安全地同時發布不同條件的結果。管理者匯入建議書仍應一次只進行一筆，避免兩個管理者同時更新同一商品。
 
 部署後取得 Cloud Run HTTPS URL，填入根目錄 `app-config.js`：
 

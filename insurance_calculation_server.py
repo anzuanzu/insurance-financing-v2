@@ -90,15 +90,55 @@ def quote_cache_key(quote: dict[str, Any]) -> str:
     ))
 
 
+def quote_record_path(profile_id: str, quote: dict[str, Any]) -> Path:
+    """Return the independent shared-record path for an exact quote.
+
+    A quote is stored separately from the product manifest.  This lets Cloud
+    Run instances publish different calculations concurrently without one
+    instance overwriting another instance's in-memory manifest revision.
+    """
+    digest = hashlib.sha256(quote_cache_key(quote).encode("utf-8")).hexdigest()
+    return PUBLISHED_QUOTES_DIR / profile_id / f"{digest}.json"
+
+
+def disk_cached_quotes(profile: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Read independently published quotes for the current source workbook."""
+    directory = PUBLISHED_QUOTES_DIR / profile["id"]
+    if not directory.exists():
+        return {}
+    quotes: dict[str, dict[str, Any]] = {}
+    try:
+        paths = list(directory.glob("*.json"))
+    except OSError:
+        return {}
+    for path in paths:
+        try:
+            record = json.loads(path.read_text("utf-8"))
+            quote = record.get("quote") if isinstance(record, dict) else None
+            if not isinstance(quote, dict) or quote.get("sourceHash") != profile.get("sourceHash"):
+                continue
+            quotes[quote_cache_key(quote)] = quote
+        except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError):
+            # A concurrent publisher can briefly expose an incomplete FUSE
+            # directory listing.  Ignore that one record and use the next
+            # request to pick it up once published.
+            continue
+    return quotes
+
+
 def quote_data_payload(profile: dict[str, Any]) -> dict[str, Any]:
     """Public, exact Calc results that the browser may use without a quote call."""
     cache = profile.get("quoteCache") or {}
-    quotes = [
-        item["quote"]
+    quotes_by_key = {
+        quote_cache_key(item["quote"]): item["quote"]
         for item in cache.values()
         if isinstance(item, dict) and isinstance(item.get("quote"), dict)
         and item["quote"].get("sourceHash") == profile.get("sourceHash")
-    ]
+    }
+    # Disk entries take precedence because they are the latest exact results
+    # published by any Cloud Run instance.
+    quotes_by_key.update(disk_cached_quotes(profile))
+    quotes = list(quotes_by_key.values())
     quotes.sort(key=lambda item: (item.get("age", 0), item.get("gender", ""), item.get("faceAmount", 0), item.get("declaredRate", 0)))
     return {
         "schemaVersion": 1,
@@ -617,6 +657,15 @@ class ProfileStore:
         PUBLISHED_QUOTES_DIR.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._profiles = self._load()
+        self._manifest_marker = self._current_manifest_marker()
+
+    @staticmethod
+    def _current_manifest_marker() -> tuple[int, int] | None:
+        try:
+            metadata = MANIFEST_PATH.stat()
+            return metadata.st_mtime_ns, metadata.st_size
+        except OSError:
+            return None
 
     def _load(self) -> list[dict[str, Any]]:
         if not MANIFEST_PATH.exists():
@@ -628,9 +677,34 @@ class ProfileStore:
             return []
 
     def _save(self) -> None:
-        temporary = MANIFEST_PATH.with_suffix(".tmp")
+        # A unique temporary name avoids cross-instance collisions on the
+        # Cloud Storage FUSE mount.  Manifest writes are reserved for product
+        # imports; ordinary quotation cache writes never touch this file.
+        temporary = MANIFEST_PATH.with_name(f"{MANIFEST_PATH.name}.{uuid.uuid4().hex}.tmp")
         temporary.write_text(json.dumps({"schemaVersion": 1, "products": self._profiles}, ensure_ascii=False, indent=2) + "\n", "utf-8")
         os.replace(temporary, MANIFEST_PATH)
+        self._manifest_marker = self._current_manifest_marker()
+
+    def refresh_if_changed(self) -> None:
+        """Pick up an administrator's import made by another Cloud Run instance."""
+        marker = self._current_manifest_marker()
+        if marker == self._manifest_marker:
+            return
+        with self._lock:
+            # Check again after taking the local lock so quote writes do not
+            # replace a freshly loaded manifest in this process.
+            marker = self._current_manifest_marker()
+            if marker == self._manifest_marker:
+                return
+            latest = self._load()
+            # If an import completed while we were reading, retry once so the
+            # marker and parsed JSON are from the same completed revision.
+            after_read = self._current_manifest_marker()
+            if after_read != marker:
+                latest = self._load()
+                after_read = self._current_manifest_marker()
+            self._profiles = latest
+            self._manifest_marker = after_read
 
     def _seed_default_quote_cache(self, profile: dict[str, Any]) -> bool:
         """Make every source-default Calc result available as a browser data file."""
@@ -649,7 +723,7 @@ class ProfileStore:
         """Atomically publish the non-sensitive browser JS data for one product."""
         PUBLISHED_QUOTES_DIR.mkdir(parents=True, exist_ok=True)
         target = PUBLISHED_QUOTES_DIR / f"{profile['id']}.js"
-        temporary = target.with_suffix(".tmp")
+        temporary = target.with_name(f"{target.name}.{uuid.uuid4().hex}.tmp")
         temporary.write_text(quote_data_javascript(profile), "utf-8")
         os.replace(temporary, target)
 
@@ -663,21 +737,25 @@ class ProfileStore:
                 self._save()
 
     def bootstrap_workspace_sources(self) -> None:
+        changed = False
         for path in sorted(ROOT.glob("*.xlsx")):
             if not has_financing_filename(path.name):
                 continue
             try:
                 profile = extract_profile(path)
-                self.upsert(profile, persist=False)
+                _, action = self.upsert(profile, persist=False)
+                changed = changed or action != "unchanged"
             except CalculationError:
                 continue
-        self._save()
+        if changed:
+            self._save()
         self.publish_all()
 
     def upsert(self, profile: dict[str, Any], persist: bool = True) -> tuple[dict[str, Any], str]:
         # Keep the manifest independent from a caller that reuses and edits its
         # extraction dictionary for a subsequent same-name upload.
         profile = copy.deepcopy(profile)
+        self.refresh_if_changed()
         with self._lock:
             matches = [item for item in self._profiles if item.get("normalizedName") == profile["normalizedName"]]
             if matches:
@@ -731,18 +809,19 @@ class ProfileStore:
             profile = next((item for item in self._profiles if item.get("id") == profile_id), None)
             if not profile or quote.get("sourceHash") != profile.get("sourceHash"):
                 return
-            cache = profile.setdefault("quoteCache", {})
-            key = quote_cache_key(quote)
-            cache[key] = {"quote": copy.deepcopy(quote), "cachedAt": utc_now(), "kind": "requested"}
-            if len(cache) > MAX_SHARED_QUOTES_PER_PRODUCT:
-                protected = quote_cache_key(profile["defaultQuote"]) if isinstance(profile.get("defaultQuote"), dict) else None
-                removable = sorted(
-                    (item for item in cache.items() if item[0] != protected),
-                    key=lambda item: item[1].get("cachedAt", "") if isinstance(item[1], dict) else "",
-                )
-                for stale_key, _ in removable[:max(0, len(cache) - MAX_SHARED_QUOTES_PER_PRODUCT)]:
-                    cache.pop(stale_key, None)
-            self._save()
+            # Keep user-requested results outside products.json.  With this
+            # design, independent Cloud Run instances can publish different
+            # quotes in parallel without a read-modify-write race.
+            target = quote_record_path(profile_id, quote)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temporary = target.with_name(f"{target.name}.{uuid.uuid4().hex}.tmp")
+            temporary.write_text(json.dumps({
+                "schemaVersion": 1,
+                "cacheKey": quote_cache_key(quote),
+                "cachedAt": utc_now(),
+                "quote": quote,
+            }, ensure_ascii=False, separators=(",", ":")), "utf-8")
+            os.replace(temporary, target)
             self._publish_profile_locked(profile)
 
     def import_file(self, stream: io.BufferedReader, filename: str) -> tuple[dict[str, Any], str]:
@@ -783,6 +862,7 @@ class ProfileStore:
         return self.upsert(profile)
 
     def get(self, profile_id: str) -> dict[str, Any] | None:
+        self.refresh_if_changed()
         with self._lock:
             return next((item for item in self._profiles if item.get("id") == profile_id), None)
 
@@ -792,6 +872,7 @@ class ProfileStore:
             "defaultAge", "defaultGender", "defaultFaceAmount", "defaultPremium", "version", "sourceFilename", "sourceHash",
             "rateByGender", "discountTiers", "dividendOption", "defaultQuote",
         }
+        self.refresh_if_changed()
         with self._lock:
             public: list[dict[str, Any]] = []
             for item in self._profiles:
