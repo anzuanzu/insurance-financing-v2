@@ -4009,7 +4009,10 @@ function loadPublishedQuoteData(product) {
       const data = window[PUBLISHED_QUOTE_DATA_GLOBAL] && window[PUBLISHED_QUOTE_DATA_GLOBAL][product.quoteProfileId];
       if (data && data.sourceHash === product.sourceHash) product.publishedQuoteData = data;
       product.quoteDataLoaded = true;
-      if (state.selectedProduct && state.selectedProduct.quoteProfileId === product.quoteProfileId) updateDeclaredRateUI();
+      if (state.selectedProduct && state.selectedProduct.quoteProfileId === product.quoteProfileId) {
+        updateDeclaredRateUI();
+        restoreResultFromPublishedQuote(product);
+      }
       resolve(product.publishedQuoteData || null);
     };
     script.onerror = () => {
@@ -4020,6 +4023,25 @@ function loadPublishedQuoteData(product) {
   });
   publishedQuoteDataPromises.set(product.quoteProfileId, promise);
   return promise;
+}
+
+function restoreResultFromPublishedQuote(product = state.selectedProduct) {
+  // Returning from the bond screener reloads this page.  The selected product
+  // and inputs are restored from local storage, but the calculated workbook
+  // response lives in the central published quote data.  Reapply its exact,
+  // source-version-matched result once that data script has loaded.
+  if (state.currentStep !== 4 || !isLiveQuoteProduct(product)) return false;
+  const sharedQuote = getMatchingPublishedQuote(product);
+  if (sharedQuote) {
+    applyVerifiedQuote(sharedQuote, 'shared');
+    renderResults();
+    return true;
+  }
+  if (hasMatchingVerifiedDefaultQuote(product)) {
+    renderResults();
+    return true;
+  }
+  return false;
 }
 
 function getDeclaredRatePercent(product = state.selectedProduct) {
@@ -4147,7 +4169,10 @@ async function initializeQuoteProducts() {
     if (state.selectedProduct && state.financingType === 'premium') {
       const currentName = normalizeProductName(state.selectedProduct.name);
       const refreshed = getProducts().find(product => normalizeProductName(product.name) === currentName || product.code === state.selectedProduct.code);
-      if (refreshed) selectProduct(refreshed, { restoreScenario: false });
+      if (refreshed) {
+        selectProduct(refreshed, { restoreScenario: false });
+        loadPublishedQuoteData(refreshed).then(() => restoreResultFromPublishedQuote(refreshed));
+      }
     }
     updateDeclaredRateUI();
   } catch (error) {
