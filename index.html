@@ -617,6 +617,11 @@
       body .live-presence { right:12px; bottom:calc(84px + env(safe-area-inset-bottom)); max-width:calc(100vw - 24px); pointer-events:none; }
     }
 
+    /* Tablets keep their multi-column layout, but share the fixed bottom navigation. */
+    @media (min-width:721px) and (max-width:1023px) {
+      body .live-presence { bottom:calc(84px + env(safe-area-inset-bottom)); pointer-events:none; }
+    }
+
     /* Live proposal recalculation progress */
     .calculation-progress-overlay {
       display: none; position: fixed; inset: 0; z-index: 180;
