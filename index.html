@@ -1677,6 +1677,7 @@ let liveQuoteQueued = false;
 let liveQuoteRetryKey = '';
 let liveQuoteProgressVisible = false;
 let liveQuoteProgressCompletionTimer = null;
+let liveQuoteNavigationPending = false;
 
 const POLICY_FINANCING_PRODUCTS = [
   {code:"ABA",name:"國泰人壽美添增鑽利率變動型美元終身壽險",shortName:"美添增鑽美元利變壽險",currency:"USD"},
@@ -3579,7 +3580,7 @@ function hasUnresolvedLiveQuote() {
 }
 
 function isLiveQuoteNavigationLocked() {
-  return liveQuoteProgressVisible || hasUnresolvedLiveQuote();
+  return liveQuoteProgressVisible || liveQuoteNavigationPending;
 }
 
 function updateStepAvailability() {
@@ -3631,7 +3632,12 @@ function completeLiveQuoteProgress(message) {
     overlay.classList.add('complete');
     overlay.querySelector('[role="progressbar"]')?.setAttribute('aria-valuetext', '重新計算完成');
   }
-  liveQuoteProgressCompletionTimer = window.setTimeout(hideLiveQuoteProgress, 420);
+  liveQuoteProgressCompletionTimer = window.setTimeout(() => {
+    const shouldAdvance = liveQuoteNavigationPending;
+    liveQuoteNavigationPending = false;
+    hideLiveQuoteProgress();
+    if (shouldAdvance) goToStep(state.currentStep + 1);
+  }, 420);
 }
 
 function getMaxAccessibleStep() {
@@ -3701,6 +3707,11 @@ function nextStep() {
   if (state.currentStep === 2) {
     recalcFinancing();
     if (state.selectedProduct && state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
+    if (hasUnresolvedLiveQuote()) {
+      liveQuoteNavigationPending = true;
+      scheduleLiveQuote();
+      return;
+    }
   }
   goToStep(state.currentStep + 1);
 }
@@ -4061,6 +4072,10 @@ function scheduleLiveQuote() {
   if (state.liveQuote && state.liveQuote.requestKey === requestKey) {
     hideLiveQuoteProgress();
     setDeclaredRateStatus(`已依 ${fmtDec(state.liveQuote.declaredRate, 2)}% 完成重算。`, 'ok');
+    if (liveQuoteNavigationPending) {
+      liveQuoteNavigationPending = false;
+      goToStep(state.currentStep + 1);
+    }
     return;
   }
   if (liveQuoteInFlight) {
@@ -4145,6 +4160,7 @@ function scheduleLiveQuote() {
       } else if (quoteCompleted) {
         completeLiveQuoteProgress('保單條件已更新，現在可以進入下一步。');
       } else {
+        liveQuoteNavigationPending = false;
         hideLiveQuoteProgress();
       }
     }
@@ -5257,7 +5273,10 @@ function recalcFinancing(source = '') {
   if (state.bonds.length > 0) renderBondSlots();
   if (state.funds.length > 0) renderFundSlots();
   if (state.bonds.length > 0 || state.funds.length > 0 || state.structuredProducts.length > 0) updateBondSummary();
-  if (source !== 'liveQuote') scheduleLiveQuote();
+  const quoteInputChanged = ['profile', 'declaredRate', 'sumInsured', 'sumInsuredFinal', 'premium'].includes(source);
+  if (quoteInputChanged && isLiveQuoteProduct(state.selectedProduct)) {
+    setDeclaredRateStatus('條件已變更，請按「下一步」重新計算保單條件。');
+  }
   updateStepAvailability();
   if ((state.currentStep || 1) === 4) {
     renderResults();
