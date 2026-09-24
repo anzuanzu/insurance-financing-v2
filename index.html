@@ -1616,6 +1616,9 @@ const RUNTIME_IMPORTED_PREMIUM_PRODUCTS = [];
 let calculationServiceAvailable = false;
 let liveQuoteTimer = null;
 let liveQuoteRequestKey = '';
+let liveQuoteInFlight = false;
+let liveQuoteQueued = false;
+let liveQuoteRetryKey = '';
 
 const POLICY_FINANCING_PRODUCTS = [
   {code:"ABA",name:"國泰人壽美添增鑽利率變動型美元終身壽險",shortName:"美添增鑽美元利變壽險",currency:"USD"},
@@ -3911,6 +3914,15 @@ function getMatchingLiveQuote(productCode, year, insuranceAge, sumInsuredAmount,
   return { quote, index };
 }
 
+function isTransientLiveQuoteError(error) {
+  return /load failed|failed to fetch|networkerror|network request failed/i.test(String(error?.message || error || ''));
+}
+
+function getLiveQuoteErrorMessage(error) {
+  if (isTransientLiveQuoteError(error)) return '暫時無法連線至試算服務，請稍後再試。';
+  return error?.message || '保單重算失敗。';
+}
+
 function scheduleLiveQuote() {
   const product = state.selectedProduct;
   if (!isLiveQuoteProduct(product)) return;
@@ -3923,11 +3935,27 @@ function scheduleLiveQuote() {
     setDeclaredRateStatus(`已依 ${fmtDec(state.liveQuote.declaredRate, 2)}% 完成重算。`, 'ok');
     return;
   }
+  if (liveQuoteInFlight) {
+    liveQuoteQueued = true;
+    setDeclaredRateStatus('正在等待前一筆重算完成…');
+    return;
+  }
   if (liveQuoteRequestKey === requestKey) return;
   window.clearTimeout(liveQuoteTimer);
   liveQuoteRequestKey = requestKey;
   setDeclaredRateStatus('正在以 LibreOffice Calc 重算保單條件…');
   liveQuoteTimer = window.setTimeout(async () => {
+    if (requestKey !== getLiveQuoteKey()) {
+      if (liveQuoteRequestKey === requestKey) liveQuoteRequestKey = '';
+      scheduleLiveQuote();
+      return;
+    }
+    if (liveQuoteInFlight) {
+      liveQuoteQueued = true;
+      return;
+    }
+    liveQuoteInFlight = true;
+    let shouldRetry = false;
     try {
       const apiBase = getCalculationApiBase();
       if (apiBase === null) throw new Error(getCalculationServiceHint());
@@ -3942,19 +3970,41 @@ function scheduleLiveQuote() {
           declaredRate: getDeclaredRatePercent(product)
         })
       });
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error(response.ok ? '試算服務回應格式無效。' : '試算服務暫時無法使用。');
+      }
       if (!response.ok) throw new Error(data.error || '保單重算失敗。');
       if (requestKey !== getLiveQuoteKey()) return;
       state.liveQuote = { ...data.quote, requestKey };
+      liveQuoteRetryKey = '';
       state.premium = Number(data.quote.premium) || state.premium;
       document.getElementById('premium').value = state.premium ? Math.round(state.premium) : '';
       setDeclaredRateStatus(`已依 ${fmtDec(data.quote.declaredRate, 2)}% 完成重算。`, 'ok');
       recalcFinancing('liveQuote');
     } catch (error) {
       if (requestKey !== getLiveQuoteKey()) return;
-      setDeclaredRateStatus(error.message || '保單重算失敗。', 'error');
+      if (isTransientLiveQuoteError(error) && liveQuoteRetryKey !== requestKey) {
+        liveQuoteRetryKey = requestKey;
+        shouldRetry = true;
+        setDeclaredRateStatus('連線暫時失敗，正在自動重試一次…');
+      } else {
+        setDeclaredRateStatus(getLiveQuoteErrorMessage(error), 'error');
+      }
     } finally {
+      liveQuoteInFlight = false;
       if (liveQuoteRequestKey === requestKey) liveQuoteRequestKey = '';
+      const needsLatestQuote = liveQuoteQueued || requestKey !== getLiveQuoteKey();
+      liveQuoteQueued = false;
+      if (needsLatestQuote) {
+        scheduleLiveQuote();
+      } else if (shouldRetry) {
+        liveQuoteTimer = window.setTimeout(() => {
+          if (getLiveQuoteKey() === requestKey) scheduleLiveQuote();
+        }, 800);
+      }
     }
   }, 350);
 }
@@ -3967,6 +4017,7 @@ function handleDeclaredRateInput() {
   }
   state.declaredRate = rate;
   state.liveQuote = null;
+  liveQuoteRetryKey = '';
   recalcFinancing('declaredRate');
 }
 
