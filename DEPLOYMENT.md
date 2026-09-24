@@ -44,12 +44,12 @@ gcloud run deploy insurance-financing-api \
 window.INSURANCE_API_BASE_URL = "https://your-api-url";
 ```
 
-提交並推送此設定後，GitHub Pages 使用者將讀取中央 API 的商品清單與即時計算結果。管理者上傳時會被要求輸入上傳金鑰；該金鑰只會暫存於瀏覽器 session，不會寫入 GitHub Pages。
+提交並推送此設定後，GitHub Pages 使用者將讀取中央 API 的商品清單與即時計算結果。管理者上傳時會被要求輸入管理上傳密碼；該密碼只會暫存於瀏覽器 session，不會寫入 GitHub Pages。
 
 ## 首次商品匯入
 
 1. 開啟 GitHub Pages 網站並確認中央 API 的 `/api/health` 可回應。
-2. 使用具上傳金鑰的管理者帳號，逐一上傳五份檔名含「保費融資」的建議書。
+2. 使用具管理上傳密碼的管理者帳號，逐一上傳五份檔名含「保費融資」的建議書。
 3. API 會把來源檔與 `products.json` 存到私有 bucket。
 4. 所有使用者重新整理頁面後，即會讀取相同的商品版本。
 

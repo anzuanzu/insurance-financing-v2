@@ -723,7 +723,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
         if ADMIN_UPLOAD_TOKEN:
             provided = self.headers.get("X-Insurance-Admin-Token", "")
             if not hmac.compare_digest(provided, ADMIN_UPLOAD_TOKEN):
-                raise PermissionError("未授權匯入。請輸入管理者上傳金鑰。")
+                raise PermissionError("未授權匯入。請輸入管理上傳密碼。")
         content_type = self.headers.get("Content-Type", "")
         if "multipart/form-data" not in content_type:
             raise CalculationError("匯入要求必須使用 multipart/form-data。")
@@ -763,4 +763,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

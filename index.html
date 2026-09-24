@@ -3867,7 +3867,7 @@ async function importProposalWorkbook(event) {
     });
     let response = await createRequest(sessionStorage.getItem('insuranceAdminUploadToken') || '');
     if (response.status === 401) {
-      const token = window.prompt('請輸入管理者上傳金鑰：');
+      const token = window.prompt('請輸入管理上傳密碼：');
       if (!token) throw new Error('未授權匯入。');
       sessionStorage.setItem('insuranceAdminUploadToken', token);
       response = await createRequest(token);
