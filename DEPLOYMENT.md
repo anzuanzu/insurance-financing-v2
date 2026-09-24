@@ -1,5 +1,7 @@
 # GitHub Pages 與中央試算 API 部署
 
+正式容器使用 Debian 映像檔提供的 `/usr/bin/soffice` 執行 LibreOffice Calc。
+
 GitHub Pages 只發布前端。建議書、商品版本與 LibreOffice 重算服務必須部署在私有的中央 API。
 
 ## 資料安全
@@ -59,4 +61,3 @@ curl https://your-api-url/api/products
 ```
 
 確認網站可讀取商品後，以 ABA 預設條件試算，應顯示「第7年起持續增購保額」及第 20 年保障 216,607 USD。
-
