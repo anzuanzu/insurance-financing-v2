@@ -567,6 +567,52 @@
     .nav-btn.next { background: var(--primary); color: white; }
     .nav-btn.next:active { background: var(--primary-light); }
     .nav-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .step-dot[aria-disabled="true"] { opacity: 0.55; }
+
+    /* Live proposal recalculation progress */
+    .calculation-progress-overlay {
+      display: none; position: fixed; inset: 0; z-index: 180;
+      align-items: center; justify-content: center; padding: 24px;
+      background: rgba(13, 37, 62, 0.42); backdrop-filter: blur(3px);
+    }
+    .calculation-progress-overlay.show { display: flex; }
+    .calculation-progress-card {
+      width: min(100%, 390px); padding: 24px; border-radius: 18px;
+      background: var(--card); box-shadow: 0 22px 50px rgba(13, 37, 62, 0.24);
+      text-align: center; animation: calculationProgressEnter 0.28s ease-out;
+    }
+    .calculation-progress-icon {
+      width: 48px; height: 48px; margin: 0 auto 14px; border-radius: 50%;
+      display: grid; place-items: center; color: var(--primary); font-size: 1.2rem;
+      background: rgba(26, 58, 92, 0.1);
+    }
+    .calculation-progress-title { margin: 0; color: var(--primary); font-size: 1.08rem; }
+    .calculation-progress-message { min-height: 2.8em; margin: 8px 0 16px; color: var(--text-light); font-size: 0.88rem; line-height: 1.45; }
+    .calculation-progress-track {
+      position: relative; height: 9px; overflow: hidden; border-radius: 999px;
+      background: rgba(26, 58, 92, 0.13);
+    }
+    .calculation-progress-track::before {
+      content: ''; position: absolute; inset: 0 auto 0 0; width: 38%; border-radius: inherit;
+      background: linear-gradient(90deg, var(--primary), var(--accent), var(--primary));
+      animation: calculationProgressMove 1.15s ease-in-out infinite;
+    }
+    .calculation-progress-overlay.complete .calculation-progress-track::before {
+      width: 100%; transform: translateX(0); background: var(--success); animation: none;
+    }
+    .calculation-progress-note { margin: 14px 0 0; color: var(--text-light); font-size: 0.78rem; line-height: 1.45; }
+    @keyframes calculationProgressEnter {
+      from { opacity: 0; transform: translateY(12px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes calculationProgressMove {
+      0% { transform: translateX(-115%); }
+      100% { transform: translateX(295%); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .calculation-progress-card, .calculation-progress-track::before { animation: none; }
+      .calculation-progress-track::before { width: 56%; transform: translateX(36%); }
+    }
 
     /* Modal */
     .modal-overlay {
@@ -1419,6 +1465,16 @@
   </button>
 </nav>
 
+<div class="calculation-progress-overlay" id="calculationProgressOverlay" role="dialog" aria-modal="true" aria-labelledby="calculationProgressTitle" aria-describedby="calculationProgressMessage calculationProgressNote" aria-hidden="true">
+  <div class="calculation-progress-card">
+    <div class="calculation-progress-icon" aria-hidden="true"><i class="fas fa-calculator"></i></div>
+    <h2 class="calculation-progress-title" id="calculationProgressTitle">正在重新計算保單條件</h2>
+    <p class="calculation-progress-message" id="calculationProgressMessage" aria-live="polite">正在準備來源建議書…</p>
+    <div class="calculation-progress-track" role="progressbar" aria-label="保單條件重新計算進度" aria-valuetext="重新計算中"></div>
+    <p class="calculation-progress-note" id="calculationProgressNote">請稍候，條件更新完成後才能進入下一步。</p>
+  </div>
+</div>
+
 <!-- Add Bond Modal -->
 <div class="modal-overlay" id="bondModal">
   <div class="modal-sheet">
@@ -1619,6 +1675,8 @@ let liveQuoteRequestKey = '';
 let liveQuoteInFlight = false;
 let liveQuoteQueued = false;
 let liveQuoteRetryKey = '';
+let liveQuoteProgressVisible = false;
+let liveQuoteProgressCompletionTimer = null;
 
 const POLICY_FINANCING_PRODUCTS = [
   {code:"ABA",name:"國泰人壽美添增鑽利率變動型美元終身壽險",shortName:"美添增鑽美元利變壽險",currency:"USD"},
@@ -3513,10 +3571,67 @@ function applyStateToForm() {
   }
 }
 
+function hasUnresolvedLiveQuote() {
+  const product = state.selectedProduct;
+  if (!isLiveQuoteProduct(product)) return false;
+  const requestKey = getLiveQuoteKey();
+  return Boolean(requestKey) && (!state.liveQuote || state.liveQuote.requestKey !== requestKey);
+}
+
+function isLiveQuoteNavigationLocked() {
+  return liveQuoteProgressVisible || hasUnresolvedLiveQuote();
+}
+
 function updateStepAvailability() {
+  const navigationLocked = isLiveQuoteNavigationLocked();
   document.querySelectorAll('.step-dot').forEach(dot => {
-    dot.style.cursor = parseInt(dot.dataset.step, 10) <= getMaxAccessibleStep() ? 'pointer' : 'default';
+    const accessible = parseInt(dot.dataset.step, 10) <= getMaxAccessibleStep();
+    dot.style.cursor = !navigationLocked && accessible ? 'pointer' : 'default';
+    dot.setAttribute('aria-disabled', String(navigationLocked || !accessible));
   });
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  if (prevBtn) prevBtn.disabled = navigationLocked || state.currentStep === 1;
+  if (nextBtn) nextBtn.disabled = navigationLocked;
+}
+
+function showLiveQuoteProgress(message) {
+  window.clearTimeout(liveQuoteProgressCompletionTimer);
+  liveQuoteProgressVisible = true;
+  const overlay = document.getElementById('calculationProgressOverlay');
+  const messageEl = document.getElementById('calculationProgressMessage');
+  if (overlay) {
+    overlay.classList.add('show');
+    overlay.classList.remove('complete');
+    overlay.setAttribute('aria-hidden', 'false');
+    overlay.querySelector('[role="progressbar"]')?.setAttribute('aria-valuetext', message);
+  }
+  if (messageEl) messageEl.textContent = message;
+  document.querySelector('main')?.setAttribute('aria-busy', 'true');
+  updateStepAvailability();
+}
+
+function hideLiveQuoteProgress() {
+  window.clearTimeout(liveQuoteProgressCompletionTimer);
+  liveQuoteProgressVisible = false;
+  const overlay = document.getElementById('calculationProgressOverlay');
+  if (overlay) {
+    overlay.classList.remove('show', 'complete');
+    overlay.setAttribute('aria-hidden', 'true');
+  }
+  document.querySelector('main')?.setAttribute('aria-busy', 'false');
+  updateStepAvailability();
+}
+
+function completeLiveQuoteProgress(message) {
+  const overlay = document.getElementById('calculationProgressOverlay');
+  const messageEl = document.getElementById('calculationProgressMessage');
+  if (messageEl) messageEl.textContent = message;
+  if (overlay) {
+    overlay.classList.add('complete');
+    overlay.querySelector('[role="progressbar"]')?.setAttribute('aria-valuetext', '重新計算完成');
+  }
+  liveQuoteProgressCompletionTimer = window.setTimeout(hideLiveQuoteProgress, 420);
 }
 
 function getMaxAccessibleStep() {
@@ -3535,6 +3650,7 @@ function hasActiveInsuranceFinancing() {
 // === Step Navigation ===
 function goToStep(step, force = false) {
   if (step < 1 || step > 4) return;
+  if (!force && isLiveQuoteNavigationLocked() && step !== state.currentStep) return;
   if (!force && step > getMaxAccessibleStep()) return;
   state.currentStep = step;
   document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
@@ -3568,6 +3684,10 @@ function goToStep(step, force = false) {
 }
 
 function nextStep() {
+  if (isLiveQuoteNavigationLocked()) {
+    setDeclaredRateStatus('保單條件重算完成後才能進入下一步。');
+    return;
+  }
   if (state.currentStep === 1 && !state.financingType) {
     const premiumSelected = document.getElementById('typeCardPremium').classList.contains('selected');
     const policySelected = document.getElementById('typeCardPolicy').classList.contains('selected');
@@ -3585,7 +3705,10 @@ function nextStep() {
   goToStep(state.currentStep + 1);
 }
 
-function prevStep() { goToStep(state.currentStep - 1); }
+function prevStep() {
+  if (isLiveQuoteNavigationLocked()) return;
+  goToStep(state.currentStep - 1);
+}
 
 // === Step 1: Type Selection ===
 function selectType(type, options = {}) {
@@ -3925,24 +4048,34 @@ function getLiveQuoteErrorMessage(error) {
 
 function scheduleLiveQuote() {
   const product = state.selectedProduct;
-  if (!isLiveQuoteProduct(product)) return;
+  if (!isLiveQuoteProduct(product)) {
+    hideLiveQuoteProgress();
+    return;
+  }
   const requestKey = getLiveQuoteKey();
   if (!requestKey) {
+    hideLiveQuoteProgress();
     setDeclaredRateStatus('請先輸入保額，才能重算保單條件。');
     return;
   }
   if (state.liveQuote && state.liveQuote.requestKey === requestKey) {
+    hideLiveQuoteProgress();
     setDeclaredRateStatus(`已依 ${fmtDec(state.liveQuote.declaredRate, 2)}% 完成重算。`, 'ok');
     return;
   }
   if (liveQuoteInFlight) {
     liveQuoteQueued = true;
+    showLiveQuoteProgress('正在等待前一筆重算完成，接著會更新最新條件…');
     setDeclaredRateStatus('正在等待前一筆重算完成…');
     return;
   }
-  if (liveQuoteRequestKey === requestKey) return;
+  if (liveQuoteRequestKey === requestKey) {
+    showLiveQuoteProgress('正在準備來源建議書…');
+    return;
+  }
   window.clearTimeout(liveQuoteTimer);
   liveQuoteRequestKey = requestKey;
+  showLiveQuoteProgress('正在準備來源建議書…');
   setDeclaredRateStatus('正在以 LibreOffice Calc 重算保單條件…');
   liveQuoteTimer = window.setTimeout(async () => {
     if (requestKey !== getLiveQuoteKey()) {
@@ -3952,11 +4085,14 @@ function scheduleLiveQuote() {
     }
     if (liveQuoteInFlight) {
       liveQuoteQueued = true;
+      showLiveQuoteProgress('正在等待前一筆重算完成，接著會更新最新條件…');
       return;
     }
     liveQuoteInFlight = true;
     let shouldRetry = false;
+    let quoteCompleted = false;
     try {
+      showLiveQuoteProgress('正在以 LibreOffice Calc 重新計算保單條件…');
       const apiBase = getCalculationApiBase();
       if (apiBase === null) throw new Error(getCalculationServiceHint());
       const response = await fetch(`${apiBase}/api/quote`, {
@@ -3984,6 +4120,7 @@ function scheduleLiveQuote() {
       document.getElementById('premium').value = state.premium ? Math.round(state.premium) : '';
       setDeclaredRateStatus(`已依 ${fmtDec(data.quote.declaredRate, 2)}% 完成重算。`, 'ok');
       recalcFinancing('liveQuote');
+      quoteCompleted = true;
     } catch (error) {
       if (requestKey !== getLiveQuoteKey()) return;
       if (isTransientLiveQuoteError(error) && liveQuoteRetryKey !== requestKey) {
@@ -4001,9 +4138,14 @@ function scheduleLiveQuote() {
       if (needsLatestQuote) {
         scheduleLiveQuote();
       } else if (shouldRetry) {
+        showLiveQuoteProgress('連線暫時失敗，正在自動重試一次…');
         liveQuoteTimer = window.setTimeout(() => {
           if (getLiveQuoteKey() === requestKey) scheduleLiveQuote();
         }, 800);
+      } else if (quoteCompleted) {
+        completeLiveQuoteProgress('保單條件已更新，現在可以進入下一步。');
+      } else {
+        hideLiveQuoteProgress();
       }
     }
   }, 350);
