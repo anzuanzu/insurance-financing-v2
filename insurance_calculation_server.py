@@ -42,6 +42,7 @@ DATA_DIR = Path(os.environ.get("INSURANCE_DATA_DIR", str(ROOT / "data"))).resolv
 SOURCES_DIR = DATA_DIR / "product_sources"
 MANIFEST_PATH = DATA_DIR / "products.json"
 SOFFICE = os.environ.get("SOFFICE_PATH", "/opt/homebrew/bin/soffice")
+CALCULATION_TIMEOUT_SECONDS = int(os.environ.get("CALCULATION_TIMEOUT_SECONDS", "150"))
 ADMIN_UPLOAD_TOKEN = os.environ.get("ADMIN_UPLOAD_TOKEN", "")
 CORS_ALLOWED_ORIGINS = {
     origin.strip().rstrip("/")
@@ -453,11 +454,17 @@ def recalculate_with_libreoffice(source: Path, workspace: Path) -> Path:
         str(source),
     ]
     try:
-        completed = subprocess.run(command, capture_output=True, text=True, timeout=60, check=False)
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=CALCULATION_TIMEOUT_SECONDS,
+            check=False,
+        )
     except FileNotFoundError as exc:
         raise CalculationError("找不到 LibreOffice。請確認 soffice 已安裝並設定 SOFFICE_PATH。") from exc
     except subprocess.TimeoutExpired as exc:
-        raise CalculationError("LibreOffice 重算逾時。") from exc
+        raise CalculationError(f"LibreOffice 重算逾時（{CALCULATION_TIMEOUT_SECONDS} 秒）。") from exc
     result = out_dir / source.name
     if completed.returncode != 0 or not result.exists():
         details = (completed.stderr or completed.stdout or "未知錯誤").strip()
