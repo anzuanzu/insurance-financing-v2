@@ -1044,7 +1044,7 @@
       </div>
       <div class="form-row hidden" id="declaredRateGroup">
         <div class="form-group">
-          <label class="form-label">宣告利率 (%) <span class="hint">(預設值快速試算；調整後以來源建議書重算)</span></label>
+          <label class="form-label">宣告利率 (%) <span class="hint">(來源預設條件可快速試算；變更後以來源建議書重算)</span></label>
           <input type="number" class="form-input" id="declaredRate" inputmode="decimal" min="0" max="20" step="0.01" oninput="handleDeclaredRateInput()">
           <div class="exchange-info" id="declaredRateStatus" style="margin-top:8px;"><i class="fas fa-calculator"></i><span class="status"></span></div>
         </div>
@@ -1656,6 +1656,7 @@
 <script src="wus_coverage_data.js?v=20260522-3"></script>
 <script src="cash_value_data.js?v=20260522-2"></script>
 <script src="reference_cash_value_data.js?v=20260612-1"></script>
+<script src="default_quote_cache_data.js?v=20260924-1"></script>
 <script src="app-config.js"></script>
 <script>
 // === Product Data ===
@@ -2481,6 +2482,7 @@ function restoreProductScenarioSnapshot(product) {
     ...createDefaultResultOverrides(),
     ...(next.resultOverrides || {})
   };
+  return Boolean(snapshot);
 }
 
 // === Formatting ===
@@ -3707,9 +3709,9 @@ function nextStep() {
   if (state.currentStep === 2) {
     recalcFinancing();
     if (state.selectedProduct && state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
-    if (isLiveQuoteProduct(state.selectedProduct) && isUsingProductDefaultDeclaredRate()) {
+    if (hasMatchingVerifiedDefaultQuote()) {
       state.liveQuote = null;
-      setDeclaredRateStatus('已使用商品預設宣告利率完成快速試算。', 'ok');
+      setDeclaredRateStatus('已使用已驗證的來源建議書預設條件完成快速試算。', 'ok');
     } else if (hasUnresolvedLiveQuote()) {
       liveQuoteNavigationPending = true;
       scheduleLiveQuote();
@@ -3918,9 +3920,12 @@ function updateDeclaredRateUI() {
   document.getElementById('declaredRate').value = Number.isFinite(rate) ? rate.toFixed(2) : '';
   const dividendText = product.dividendOption ? `；增值回饋分享金：${product.dividendOption}` : '';
   source.textContent = `預定利率 ${fmtDec(Number(product.scheduledRate || 0) * 100, 2)}%；來源：${product.sourceFilename || '已匯入建議書'}；版本 ${product.sourceVersion || 1}${dividendText}`;
+  const fastModeAvailable = hasMatchingVerifiedDefaultQuote(product);
   setDeclaredRateStatus(
     calculationServiceAvailable
-      ? '預設宣告利率採快速試算；調整利率後，按下一步才會以 LibreOffice Calc 重算。'
+      ? fastModeAvailable
+        ? '目前符合已驗證的來源預設條件，按下一步採快速試算。'
+        : '已變更來源建議書預設條件，按下一步將以 LibreOffice Calc 重算。'
       : '本機重算服務未連線，請以 run_local.sh 開啟。',
     calculationServiceAvailable ? '' : 'error'
   );
@@ -3939,7 +3944,12 @@ function registerQuoteProduct(profile) {
     sourceHash: profile.sourceHash,
     sourceVersion: profile.version,
     unitSize: Number(profile.unitSize),
-    dividendOption: profile.dividendOption || ''
+    dividendOption: profile.dividendOption || '',
+    defaultAge: Number(profile.defaultAge),
+    defaultGender: profile.defaultGender === 'female' ? 'female' : 'male',
+    defaultFaceAmount: Number(profile.defaultFaceAmount),
+    defaultPremium: Number(profile.defaultPremium),
+    defaultQuote: profile.defaultQuote || null
   };
   if (product) {
     Object.assign(product, productFields);
@@ -4025,7 +4035,7 @@ async function importProposalWorkbook(event) {
     });
     let response = await createRequest(sessionStorage.getItem('insuranceAdminUploadToken') || '');
     if (response.status === 401) {
-      const token = window.prompt('請輸入管理上傳密碼：');
+      const token = window.prompt('請輸入管理者上傳金鑰：');
       if (!token) throw new Error('未授權匯入。');
       sessionStorage.setItem('insuranceAdminUploadToken', token);
       response = await createRequest(token);
@@ -4065,6 +4075,46 @@ function getMatchingLiveQuote(productCode, year, insuranceAge, sumInsuredAmount,
   const expectedFace = normalizeProductFaceAmount(productCode, sumInsuredAmount);
   const expectedRate = getDeclaredRatePercent(state.selectedProduct);
   if (quote.age !== Number(insuranceAge) || quote.gender !== insuredGender || Math.abs(Number(quote.faceAmount) - expectedFace) > 0.0001 || Math.abs(Number(quote.declaredRate) - expectedRate) > 0.0001) return null;
+  const index = Math.max(1, Math.min(100, parseInt(year, 10) || 1)) - 1;
+  return { quote, index };
+}
+
+function getVerifiedDefaultQuote(product = state.selectedProduct) {
+  if (!product || !product.quoteProfileId) return null;
+  const cache = product.defaultQuote
+    || (window.DEFAULT_POLICY_QUOTE_CACHE_BY_PRODUCT && window.DEFAULT_POLICY_QUOTE_CACHE_BY_PRODUCT[product.code]);
+  if (!cache || cache.webCode !== product.code) return null;
+  if (cache.sourceHash !== product.sourceHash || cache.dividendOption !== '第7年起持續增購保額') return null;
+  const productRate = getProductDefaultDeclaredRatePercent(product);
+  if (!Number.isFinite(Number(cache.declaredRate)) || Math.abs(Number(cache.declaredRate) - productRate) > 0.00005) return null;
+  if (!Array.isArray(cache.benefitByYear) || !Array.isArray(cache.cashValueByYear)) return null;
+  return cache;
+}
+
+function getMatchingVerifiedDefaultQuote(product = state.selectedProduct) {
+  if (!isLiveQuoteProduct(product) || !isUsingProductDefaultDeclaredRate(product)) return null;
+  const quote = getVerifiedDefaultQuote(product);
+  if (!quote) return null;
+  const faceAmount = normalizeProductFaceAmount(product.code, state.sumInsured);
+  if (Number(state.insuranceAge) !== Number(quote.age)
+      || state.insuredGender !== quote.gender
+      || Math.abs(faceAmount - Number(quote.faceAmount)) > 0.0001) return null;
+  return quote;
+}
+
+function hasMatchingVerifiedDefaultQuote(product = state.selectedProduct) {
+  return Boolean(getMatchingVerifiedDefaultQuote(product));
+}
+
+function getMatchingFastDefaultQuote(productCode, year, insuranceAge, sumInsuredAmount, insuredGender) {
+  const product = state.selectedProduct;
+  if (!product || product.code !== productCode) return null;
+  const quote = getMatchingVerifiedDefaultQuote(product);
+  if (!quote) return null;
+  const expectedFace = normalizeProductFaceAmount(productCode, sumInsuredAmount);
+  if (Number(insuranceAge) !== Number(quote.age)
+      || insuredGender !== quote.gender
+      || Math.abs(expectedFace - Number(quote.faceAmount)) > 0.0001) return null;
   const index = Math.max(1, Math.min(100, parseInt(year, 10) || 1)) - 1;
   return { quote, index };
 }
@@ -4368,8 +4418,14 @@ function selectProduct(product, options = {}) {
   if (state.financingType === 'premium' && isXumanxinProduct(product) && !state.xumanxinPayPeriod) {
     state.xumanxinPayPeriod = '2';
   }
-  if (restoreScenario) {
-    restoreProductScenarioSnapshot(product);
+  const restoredScenario = restoreScenario ? restoreProductScenarioSnapshot(product) : true;
+  if (restoreScenario && !restoredScenario && product.quoteProfileId) {
+    state.insuranceAge = Number.isFinite(Number(product.defaultAge)) ? Number(product.defaultAge) : state.insuranceAge;
+    state.insuredGender = product.defaultGender === 'female' ? 'female' : 'male';
+    state.sumInsured = Number(product.defaultFaceAmount) || 0;
+    state.premium = Number(product.defaultPremium) || 0;
+    state.amountInputMode = 'sumInsured';
+    state.declaredRate = Number(product.declaredRate || 0) * 100;
   }
   state.liveQuote = null;
   if (product.quoteProfileId) {
@@ -4913,6 +4969,14 @@ function getProjectedDeathBenefit(productCode, premiumAmount, year, insuranceAge
       amount: Number(live.quote.benefitByYear[live.index])
     };
   }
+  const fast = getMatchingFastDefaultQuote(productCode, year, insuranceAge, sumInsuredAmount, insuredGender);
+  if (fast && Number.isFinite(Number(fast.quote.benefitByYear[fast.index]))) {
+    return {
+      year: fast.index + 1,
+      currency: fast.quote.currency,
+      amount: Number(fast.quote.benefitByYear[fast.index])
+    };
+  }
   const model = PRODUCT_COVERAGE_MODELS[productCode];
   if (!model) return null;
   const normalizedYear = Math.max(1, Math.min(100, parseInt(year, 10) || 1));
@@ -4977,6 +5041,14 @@ function getProjectedPolicyCashValue(productCode, premiumAmount, year, insurance
       year: live.index + 1,
       currency: live.quote.currency,
       amount: Number(live.quote.cashValueByYear[live.index])
+    };
+  }
+  const fast = getMatchingFastDefaultQuote(productCode, year, insuranceAge, sumInsuredAmount, insuredGender);
+  if (fast && Number.isFinite(Number(fast.quote.cashValueByYear[fast.index]))) {
+    return {
+      year: fast.index + 1,
+      currency: fast.quote.currency,
+      amount: Number(fast.quote.cashValueByYear[fast.index])
     };
   }
   const modeledCashValue = getAgeGenderModeledCashValue(productCode, year, insuranceAge, insuredGender);
@@ -5079,6 +5151,21 @@ function getProjectedReferenceCashValue(productCode, premiumAmount, insuranceAge
       age: Number(live.quote.age),
       scheduledRate: Number(state.selectedProduct?.scheduledRate || 0),
       mode: 'source-recalculated'
+    };
+  }
+  const fast = getMatchingFastDefaultQuote(productCode, 1, insuranceAge, sumInsuredAmount, insuredGender);
+  if (fast && Number.isFinite(Number(fast.quote.referenceCashValue))) {
+    return {
+      currency: fast.quote.currency,
+      amount: Number(fast.quote.referenceCashValue),
+      baseAmount: Number(fast.quote.referenceCashValue),
+      baseFaceAmount: Number(fast.quote.faceAmount),
+      faceAmountUsed: Number(fast.quote.faceAmount),
+      faceAmountSource: 'source-verified-fast-cache',
+      scale: 1,
+      age: Number(fast.quote.age),
+      scheduledRate: Number(state.selectedProduct?.scheduledRate || 0),
+      mode: 'source-verified-fast-cache'
     };
   }
   const modeled = getAgeGenderModeledReferenceCashValue(productCode, insuranceAge, insuredGender);
@@ -5297,9 +5384,11 @@ function recalcFinancing(source = '') {
   const quoteInputChanged = ['profile', 'declaredRate', 'sumInsured', 'sumInsuredFinal', 'premium'].includes(source);
   if (quoteInputChanged && isLiveQuoteProduct(state.selectedProduct)) {
     setDeclaredRateStatus(
-      isUsingProductDefaultDeclaredRate()
-        ? '宣告利率維持商品預設值，按下一步將採快速試算。'
-        : '宣告利率已調整，請按「下一步」以 LibreOffice Calc 重新計算。'
+      hasMatchingVerifiedDefaultQuote()
+        ? '目前符合已驗證的來源預設條件，按下一步採快速試算。'
+        : isUsingProductDefaultDeclaredRate()
+          ? '已變更來源建議書預設條件，請按「下一步」以 LibreOffice Calc 重新計算。'
+          : '宣告利率已調整，請按「下一步」以 LibreOffice Calc 重新計算。'
     );
   }
   updateStepAvailability();

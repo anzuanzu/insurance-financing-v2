@@ -535,6 +535,28 @@ def calculate_quote(profile: dict[str, Any], request: dict[str, Any]) -> dict[st
     }
 
 
+def build_default_quote_cache(profile: dict[str, Any]) -> dict[str, Any]:
+    """Calculate the exact source-workbook scenario used by fast mode.
+
+    The browser may only use this response when every source condition matches.
+    Keeping the source hash and the complete Calc output together prevents a
+    newly declared rate from accidentally reusing an older static table.
+    """
+    quote = calculate_quote(profile, {
+        "profileId": profile["id"],
+        "age": profile["defaultAge"],
+        "gender": profile["defaultGender"],
+        "faceAmount": profile["defaultFaceAmount"],
+        "declaredRate": float(profile["declaredRate"]) * 100,
+    })
+    fields = (
+        "sourceHash", "webCode", "currency", "age", "gender", "faceAmount",
+        "declaredRate", "premium", "tablePremium", "referenceCashValue",
+        "dividendOption", "benefitByYear", "cashValueByYear",
+    )
+    return {key: quote[key] for key in fields}
+
+
 class ProfileStore:
     def __init__(self) -> None:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -590,6 +612,9 @@ class ProfileStore:
                     if "dividendOption" not in existing_inputs:
                         existing_inputs["dividendOption"] = profile["inputCells"]["dividendOption"]
                         enriched = True
+                    if profile.get("defaultQuote") and existing.get("defaultQuote") != profile["defaultQuote"]:
+                        existing["defaultQuote"] = profile["defaultQuote"]
+                        enriched = True
                     if enriched and persist:
                         self._save()
                     return existing, "unchanged"
@@ -638,6 +663,13 @@ class ProfileStore:
         profile["sourceStorage"] = "imported"
         profile["storedFilename"] = stored_filename
         profile.pop("sourcePath", None)
+        try:
+            profile["defaultQuote"] = build_default_quote_cache(profile)
+        except Exception:
+            # A proposal is not accepted unless its source-default fast quote is
+            # independently recalculated.  Remove its staged copy on failure.
+            target.unlink(missing_ok=True)
+            raise
         return self.upsert(profile)
 
     def get(self, profile_id: str) -> dict[str, Any] | None:
@@ -648,7 +680,7 @@ class ProfileStore:
         fields = {
             "id", "name", "sourceCode", "webCode", "shortName", "currency", "declaredRate", "scheduledRate", "unitSize",
             "defaultAge", "defaultGender", "defaultFaceAmount", "defaultPremium", "version", "sourceFilename", "sourceHash",
-            "rateByGender", "discountTiers", "dividendOption",
+            "rateByGender", "discountTiers", "dividendOption", "defaultQuote",
         }
         with self._lock:
             return [{key: value for key, value in item.items() if key in fields} for item in self._profiles]
@@ -730,7 +762,7 @@ class RequestHandler(SimpleHTTPRequestHandler):
         if ADMIN_UPLOAD_TOKEN:
             provided = self.headers.get("X-Insurance-Admin-Token", "")
             if not hmac.compare_digest(provided, ADMIN_UPLOAD_TOKEN):
-                raise PermissionError("未授權匯入。請輸入管理上傳密碼。")
+                raise PermissionError("未授權匯入。請輸入管理者上傳金鑰。")
         content_type = self.headers.get("Content-Type", "")
         if "multipart/form-data" not in content_type:
             raise CalculationError("匯入要求必須使用 multipart/form-data。")
