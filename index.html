@@ -1044,7 +1044,7 @@
       </div>
       <div class="form-row hidden" id="declaredRateGroup">
         <div class="form-group">
-          <label class="form-label">宣告利率 (%) <span class="hint">(以來源建議書即時重算)</span></label>
+          <label class="form-label">宣告利率 (%) <span class="hint">(預設值快速試算；調整後以來源建議書重算)</span></label>
           <input type="number" class="form-input" id="declaredRate" inputmode="decimal" min="0" max="20" step="0.01" oninput="handleDeclaredRateInput()">
           <div class="exchange-info" id="declaredRateStatus" style="margin-top:8px;"><i class="fas fa-calculator"></i><span class="status"></span></div>
         </div>
@@ -3707,7 +3707,10 @@ function nextStep() {
   if (state.currentStep === 2) {
     recalcFinancing();
     if (state.selectedProduct && state.financingType === 'policy' && (!state.policyValue || state.policyValue <= 0)) { alert('請輸入保價金'); return; }
-    if (hasUnresolvedLiveQuote()) {
+    if (isLiveQuoteProduct(state.selectedProduct) && isUsingProductDefaultDeclaredRate()) {
+      state.liveQuote = null;
+      setDeclaredRateStatus('已使用商品預設宣告利率完成快速試算。', 'ok');
+    } else if (hasUnresolvedLiveQuote()) {
       liveQuoteNavigationPending = true;
       scheduleLiveQuote();
       return;
@@ -3885,7 +3888,20 @@ function getDeclaredRatePercent(product = state.selectedProduct) {
   if (Number.isFinite(inputRate) && inputRate >= 0) return inputRate;
   const savedRate = getOptionalNumber(state.declaredRate);
   if (savedRate !== null) return savedRate;
+  return getProductDefaultDeclaredRatePercent(product);
+}
+
+function getProductDefaultDeclaredRatePercent(product = state.selectedProduct) {
   return Number(product?.declaredRate || 0) * 100;
+}
+
+function isUsingProductDefaultDeclaredRate(product = state.selectedProduct) {
+  if (!isLiveQuoteProduct(product)) return false;
+  const currentRate = getDeclaredRatePercent(product);
+  const defaultRate = getProductDefaultDeclaredRatePercent(product);
+  return Number.isFinite(currentRate)
+    && Number.isFinite(defaultRate)
+    && Math.abs(currentRate - defaultRate) < 0.00005;
 }
 
 function updateDeclaredRateUI() {
@@ -3902,7 +3918,12 @@ function updateDeclaredRateUI() {
   document.getElementById('declaredRate').value = Number.isFinite(rate) ? rate.toFixed(2) : '';
   const dividendText = product.dividendOption ? `；增值回饋分享金：${product.dividendOption}` : '';
   source.textContent = `預定利率 ${fmtDec(Number(product.scheduledRate || 0) * 100, 2)}%；來源：${product.sourceFilename || '已匯入建議書'}；版本 ${product.sourceVersion || 1}${dividendText}`;
-  setDeclaredRateStatus(calculationServiceAvailable ? '等待輸入條件後以 LibreOffice Calc 重算。' : '本機重算服務未連線，請以 run_local.sh 開啟。', calculationServiceAvailable ? '' : 'error');
+  setDeclaredRateStatus(
+    calculationServiceAvailable
+      ? '預設宣告利率採快速試算；調整利率後，按下一步才會以 LibreOffice Calc 重算。'
+      : '本機重算服務未連線，請以 run_local.sh 開啟。',
+    calculationServiceAvailable ? '' : 'error'
+  );
 }
 
 function registerQuoteProduct(profile) {
@@ -5275,7 +5296,11 @@ function recalcFinancing(source = '') {
   if (state.bonds.length > 0 || state.funds.length > 0 || state.structuredProducts.length > 0) updateBondSummary();
   const quoteInputChanged = ['profile', 'declaredRate', 'sumInsured', 'sumInsuredFinal', 'premium'].includes(source);
   if (quoteInputChanged && isLiveQuoteProduct(state.selectedProduct)) {
-    setDeclaredRateStatus('條件已變更，請按「下一步」重新計算保單條件。');
+    setDeclaredRateStatus(
+      isUsingProductDefaultDeclaredRate()
+        ? '宣告利率維持商品預設值，按下一步將採快速試算。'
+        : '宣告利率已調整，請按「下一步」以 LibreOffice Calc 重新計算。'
+    );
   }
   updateStepAvailability();
   if ((state.currentStep || 1) === 4) {
