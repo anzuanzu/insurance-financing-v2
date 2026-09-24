@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>亞灣專區 - 保費融資 / 保單融資試算</title>
+  <link rel="icon" href="data:,">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -912,6 +913,14 @@
         <div style="margin-top:4px;"><span id="selProductCurrencyBadge" class="search-option currency-tag"></span></div>
         <div class="hidden" id="selProductDividendOption" style="margin-top:6px; color:var(--text-light);"></div>
       </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">匯入保費融資建議書 <span class="hint">(檔名必須包含「保費融資」)</span></label>
+        <div class="action-row" style="justify-content:flex-start; margin-top:0;">
+          <button class="inline-btn" type="button" onclick="openProposalImport()"><i class="fas fa-file-import"></i> 上傳並新增／更新商品</button>
+          <input type="file" id="proposalFileInput" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel.sheet.macroEnabled.12" class="hidden" onchange="importProposalWorkbook(event)">
+        </div>
+        <div class="exchange-info" id="proposalImportStatus" style="display:none; margin-top:8px;"><i class="fas fa-info-circle"></i><span class="status"></span></div>
+      </div>
       <div class="form-group hidden" id="xindeliPayPeriodGroup">
         <label class="form-label">鑫得利繳費年期</label>
         <select class="form-input" id="xindeliPayPeriod" onchange="handleXindeliPayPeriodChange()">
@@ -985,6 +994,17 @@
             <input type="number" class="form-input" id="coverageYear" inputmode="numeric" value="20" min="1" max="100" step="1" oninput="recalcFinancing()">
             <span class="input-suffix">年</span>
           </div>
+        </div>
+      </div>
+      <div class="form-row hidden" id="declaredRateGroup">
+        <div class="form-group">
+          <label class="form-label">宣告利率 (%) <span class="hint">(以來源建議書即時重算)</span></label>
+          <input type="number" class="form-input" id="declaredRate" inputmode="decimal" min="0" max="20" step="0.01" oninput="handleDeclaredRateInput()">
+          <div class="exchange-info" id="declaredRateStatus" style="margin-top:8px;"><i class="fas fa-calculator"></i><span class="status"></span></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">來源條件</label>
+          <div id="declaredRateSource" style="font-size:0.85rem; color:var(--text-light); line-height:1.55;"></div>
         </div>
       </div>
       <div class="form-row hidden" id="premiumRatioSettingsRow">
@@ -1580,6 +1600,7 @@
 <script src="wus_coverage_data.js?v=20260522-3"></script>
 <script src="cash_value_data.js?v=20260522-2"></script>
 <script src="reference_cash_value_data.js?v=20260612-1"></script>
+<script src="app-config.js"></script>
 <script>
 // === Product Data ===
 const PREMIUM_FINANCING_PRODUCTS = [
@@ -1591,6 +1612,10 @@ const PREMIUM_FINANCING_PRODUCTS = [
   { code: "WSH", name: "國泰人壽旭滿鑫利率變動型終身壽險(定期給付型)", shortName: "旭滿鑫", currency: "TWD", aliases: ["WSI", "旭滿鑫", "躉繳", "兩年期"] },
   { code: "WJA", name: "國泰人壽鑽美鑫利率變動型美元終身壽險(定期給付型)", shortName: "鑽美鑫", currency: "USD" },
 ];
+const RUNTIME_IMPORTED_PREMIUM_PRODUCTS = [];
+let calculationServiceAvailable = false;
+let liveQuoteTimer = null;
+let liveQuoteRequestKey = '';
 
 const POLICY_FINANCING_PRODUCTS = [
   {code:"ABA",name:"國泰人壽美添增鑽利率變動型美元終身壽險",shortName:"美添增鑽美元利變壽險",currency:"USD"},
@@ -2211,6 +2236,8 @@ let state = {
   financingType: null, // 'premium' or 'policy'
   selectedProduct: null,
   productScenarioCache: {},
+  declaredRate: null,
+  liveQuote: null,
   insuranceAge: 19,
   insuredGender: 'male',
   xindeliPayPeriod: '2',
@@ -2271,6 +2298,7 @@ function createDefaultProductScenario() {
   return {
     insuranceAge: 19,
     insuredGender: 'male',
+    declaredRate: null,
     xindeliPayPeriod: '2',
     xumanxinPayPeriod: '2',
     sumInsured: 0,
@@ -2312,6 +2340,7 @@ function saveCurrentProductScenarioSnapshot() {
   state.productScenarioCache[key] = {
     insuranceAge: state.insuranceAge,
     insuredGender: state.insuredGender,
+    declaredRate: state.declaredRate,
     xindeliPayPeriod: state.xindeliPayPeriod || '2',
     xumanxinPayPeriod: state.xumanxinPayPeriod || '2',
     sumInsured: state.sumInsured,
@@ -2361,6 +2390,8 @@ function restoreProductScenarioSnapshot(product) {
 
   state.insuranceAge = next.insuranceAge;
   state.insuredGender = next.insuredGender;
+  state.declaredRate = getOptionalNumber(next.declaredRate);
+  state.liveQuote = null;
   state.xindeliPayPeriod = next.xindeliPayPeriod || '2';
   state.xumanxinPayPeriod = next.xumanxinPayPeriod || '2';
   state.sumInsured = next.sumInsured;
@@ -2434,6 +2465,8 @@ function createSanitizedScenarioState(source = state) {
     financingType: source?.financingType === 'premium' || source?.financingType === 'policy' ? source.financingType : null,
     selectedProduct: source?.selectedProduct ? cloneJsonData(source.selectedProduct, null) : null,
     productScenarioCache: cloneJsonData(source?.productScenarioCache, {}) || {},
+    declaredRate: getOptionalNumber(source?.declaredRate),
+    liveQuote: null,
     insuranceAge: Number.isFinite(Number(source?.insuranceAge)) ? Number(source.insuranceAge) : 19,
     insuredGender: source?.insuredGender === 'female' ? 'female' : 'male',
     xindeliPayPeriod: source?.xindeliPayPeriod || '2',
@@ -3095,7 +3128,7 @@ function computeCoverageComparison(projectedBenefitAmount, projectedBenefitCurre
   const ownCapitalTwd = state.selectedProduct && state.selectedProduct.currency === 'USD'
     ? (Number(state.selfFundAmount) || 0) * (Number(state.usdTwdRate) || 0)
     : (Number(state.selfFundAmount) || 0);
-  const annualLoanRate = 0.0238;
+  const annualLoanRate = Math.max(0, Number(state.financingRate) || 0) / 100;
   const netBenefitAfterFinancing = projectedBenefitTwd - (coverageYear * loanAmountTwd * annualLoanRate) - loanAmountTwd;
   const covAfter = ownCapitalTwd > 0 ? (netBenefitAfterFinancing / ownCapitalTwd) : 0;
 
@@ -3571,6 +3604,8 @@ function selectType(type, options = {}) {
   document.getElementById('typeCardPolicy').classList.toggle('selected', type === 'policy');
   if (!preserveInputs) {
     state.selectedProduct = null;
+    state.declaredRate = null;
+    state.liveQuote = null;
     state.sumInsured = 0;
     state.premium = 0;
     state.policyValue = 0;
@@ -3595,9 +3630,10 @@ function selectType(type, options = {}) {
     document.getElementById('productDropdown').classList.remove('show');
   }
 
-  const label = type === 'premium' ? `保費融資（${PREMIUM_FINANCING_PRODUCTS.length} 檔商品）` : '保單融資（163 檔商品）';
+  const label = type === 'premium' ? `保費融資（${getProducts().length} 檔商品）` : '保單融資（163 檔商品）';
   document.getElementById('selectedTypeDisplay').textContent = label;
   updateFinancingUI();
+  updateDeclaredRateUI();
   updateStepAvailability();
   if ((state.currentStep || 1) === 4) {
     renderResults();
@@ -3660,8 +3696,282 @@ function updateFinancingUI() {
 }
 
 // === Step 2: Product Search ===
+function getOptionalNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function normalizeProductName(value) {
+  return String(value || '').normalize('NFKC').replace(/\s+/g, '').toLocaleLowerCase('zh-TW');
+}
+
+function getCalculationApiBase() {
+  const configured = String(window.INSURANCE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+  if (configured) return configured;
+  const isLocal = window.location.protocol === 'file:' || ['localhost', '127.0.0.1'].includes(window.location.hostname);
+  return isLocal ? 'http://127.0.0.1:8765' : null;
+}
+
+function getCalculationServiceHint() {
+  return getCalculationApiBase() === null
+    ? '中央試算服務尚未設定。請由管理者在 app-config.js 填入 API 網址。'
+    : '試算服務未連線。請確認中央 API 或本機 run_local.sh 已啟動。';
+}
+
+function setProposalImportStatus(message, type = '') {
+  const box = document.getElementById('proposalImportStatus');
+  if (!box) return;
+  box.style.display = message ? 'flex' : 'none';
+  const text = box.querySelector('.status');
+  if (text) text.textContent = message || '';
+  box.querySelector('i').className = type === 'error' ? 'fas fa-exclamation-circle' : type === 'ok' ? 'fas fa-check-circle' : 'fas fa-info-circle';
+  box.classList.toggle('error', type === 'error');
+}
+
+function setDeclaredRateStatus(message, type = '') {
+  const box = document.getElementById('declaredRateStatus');
+  if (!box) return;
+  const text = box.querySelector('.status');
+  if (text) text.textContent = message || '';
+  box.querySelector('i').className = type === 'error' ? 'fas fa-exclamation-circle' : type === 'ok' ? 'fas fa-check-circle' : 'fas fa-calculator';
+  box.classList.toggle('error', type === 'error');
+}
+
+function isLiveQuoteProduct(product = state.selectedProduct) {
+  return Boolean(product && product.quoteProfileId && state.financingType === 'premium');
+}
+
+function getDeclaredRatePercent(product = state.selectedProduct) {
+  const input = document.getElementById('declaredRate');
+  const inputRate = input ? Number(input.value) : NaN;
+  if (Number.isFinite(inputRate) && inputRate >= 0) return inputRate;
+  const savedRate = getOptionalNumber(state.declaredRate);
+  if (savedRate !== null) return savedRate;
+  return Number(product?.declaredRate || 0) * 100;
+}
+
+function updateDeclaredRateUI() {
+  const group = document.getElementById('declaredRateGroup');
+  const source = document.getElementById('declaredRateSource');
+  const product = state.selectedProduct;
+  const show = isLiveQuoteProduct(product);
+  group.classList.toggle('hidden', !show);
+  if (!show) return;
+  const savedRate = getOptionalNumber(state.declaredRate);
+  const rate = savedRate !== null
+    ? savedRate
+    : Number(product.declaredRate || 0) * 100;
+  document.getElementById('declaredRate').value = Number.isFinite(rate) ? rate.toFixed(2) : '';
+  const dividendText = product.dividendOption ? `；增值回饋分享金：${product.dividendOption}` : '';
+  source.textContent = `預定利率 ${fmtDec(Number(product.scheduledRate || 0) * 100, 2)}%；來源：${product.sourceFilename || '已匯入建議書'}；版本 ${product.sourceVersion || 1}${dividendText}`;
+  setDeclaredRateStatus(calculationServiceAvailable ? '等待輸入條件後以 LibreOffice Calc 重算。' : '本機重算服務未連線，請以 run_local.sh 開啟。', calculationServiceAvailable ? '' : 'error');
+}
+
+function registerQuoteProduct(profile) {
+  if (!profile || !profile.id || !profile.name || !profile.webCode) return null;
+  const profileName = normalizeProductName(profile.name);
+  let product = PREMIUM_FINANCING_PRODUCTS.find(item => normalizeProductName(item.name) === profileName)
+    || RUNTIME_IMPORTED_PREMIUM_PRODUCTS.find(item => item.quoteProfileId === profile.id || normalizeProductName(item.name) === profileName);
+  const productFields = {
+    quoteProfileId: profile.id,
+    declaredRate: Number(profile.declaredRate),
+    scheduledRate: Number(profile.scheduledRate),
+    sourceFilename: profile.sourceFilename,
+    sourceHash: profile.sourceHash,
+    sourceVersion: profile.version,
+    unitSize: Number(profile.unitSize),
+    dividendOption: profile.dividendOption || ''
+  };
+  if (product) {
+    Object.assign(product, productFields);
+  } else {
+    product = {
+      code: profile.webCode,
+      name: profile.name,
+      shortName: profile.shortName || profile.webCode,
+      currency: profile.currency,
+      ...productFields
+    };
+    RUNTIME_IMPORTED_PREMIUM_PRODUCTS.push(product);
+  }
+
+  if (profile.rateByGender && profile.unitSize) {
+    PRODUCT_SUM_INSURED_ESTIMATORS[product.code] = {
+      currency: profile.currency,
+      unitSize: Number(profile.unitSize),
+      treatPremiumAsFirstYearPaid: true,
+      discountTiers: Array.isArray(profile.discountTiers) ? profile.discountTiers : [{ minTablePremium: 0, discount: 0 }],
+      rateByGender: profile.rateByGender
+    };
+  }
+  PRODUCT_COVERAGE_MODELS[product.code] = {
+    premiumBase: Number(profile.defaultPremium || 0),
+    faceAmountBase: Number(profile.defaultFaceAmount || 0),
+    currency: profile.currency,
+    deathBenefitByYear: {}
+  };
+  return product;
+}
+
+async function initializeQuoteProducts() {
+  try {
+    const apiBase = getCalculationApiBase();
+    if (apiBase === null) throw new Error(getCalculationServiceHint());
+    const response = await fetch(`${apiBase}/api/products`);
+    if (!response.ok) throw new Error('products endpoint unavailable');
+    const data = await response.json();
+    (data.products || []).forEach(registerQuoteProduct);
+    calculationServiceAvailable = true;
+    if (state.selectedProduct && state.financingType === 'premium') {
+      const currentName = normalizeProductName(state.selectedProduct.name);
+      const refreshed = getProducts().find(product => normalizeProductName(product.name) === currentName || product.code === state.selectedProduct.code);
+      if (refreshed) selectProduct(refreshed, { restoreScenario: false });
+    }
+    updateDeclaredRateUI();
+  } catch (error) {
+    calculationServiceAvailable = false;
+    updateDeclaredRateUI();
+    setProposalImportStatus(error.message || getCalculationServiceHint(), 'error');
+  }
+}
+
+function openProposalImport() {
+  if (!calculationServiceAvailable) {
+    setProposalImportStatus(getCalculationServiceHint(), 'error');
+    return;
+  }
+  document.getElementById('proposalFileInput').click();
+}
+
+async function importProposalWorkbook(event) {
+  const input = event.target;
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const normalizedFilename = file.name.normalize('NFKC');
+  if (!normalizedFilename.includes('保費融資')) {
+    setProposalImportStatus('未匯入：檔名必須包含「保費融資」。', 'error');
+    input.value = '';
+    return;
+  }
+  setProposalImportStatus(`正在驗證並匯入 ${file.name}…`);
+  try {
+    const apiBase = getCalculationApiBase();
+    if (apiBase === null) throw new Error(getCalculationServiceHint());
+    const form = new FormData();
+    form.append('proposal', file, file.name);
+    const createRequest = (token = '') => fetch(`${apiBase}/api/import`, {
+      method: 'POST',
+      body: form,
+      headers: token ? { 'X-Insurance-Admin-Token': token } : {}
+    });
+    let response = await createRequest(sessionStorage.getItem('insuranceAdminUploadToken') || '');
+    if (response.status === 401) {
+      const token = window.prompt('請輸入管理者上傳金鑰：');
+      if (!token) throw new Error('未授權匯入。');
+      sessionStorage.setItem('insuranceAdminUploadToken', token);
+      response = await createRequest(token);
+    }
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || '匯入失敗。');
+    const product = registerQuoteProduct(data.product);
+    if (!product) throw new Error('匯入結果缺少商品資料。');
+    calculationServiceAvailable = true;
+    const actionText = data.action === 'updated'
+      ? '已更新同名既有商品條件'
+      : data.action === 'unchanged'
+        ? '來源條件未變更，保留既有商品'
+        : '已新增商品';
+    setProposalImportStatus(`${actionText}：${product.name}。`, 'ok');
+    if (state.financingType === 'premium') selectProduct(product);
+    renderProductOptions(document.getElementById('productSearch').value);
+  } catch (error) {
+    setProposalImportStatus(error.message || '匯入失敗。', 'error');
+  } finally {
+    input.value = '';
+  }
+}
+
+function getLiveQuoteKey() {
+  const product = state.selectedProduct;
+  if (!isLiveQuoteProduct(product)) return '';
+  const faceAmount = normalizeProductFaceAmount(product.code, state.sumInsured);
+  const declaredRate = getDeclaredRatePercent(product);
+  if (!(faceAmount > 0) || !Number.isFinite(declaredRate)) return '';
+  return [product.quoteProfileId, state.insuranceAge, state.insuredGender, faceAmount, declaredRate.toFixed(4)].join('|');
+}
+
+function getMatchingLiveQuote(productCode, year, insuranceAge, sumInsuredAmount, insuredGender) {
+  const quote = state.liveQuote;
+  if (!quote || !state.selectedProduct || quote.webCode !== productCode) return null;
+  const expectedFace = normalizeProductFaceAmount(productCode, sumInsuredAmount);
+  const expectedRate = getDeclaredRatePercent(state.selectedProduct);
+  if (quote.age !== Number(insuranceAge) || quote.gender !== insuredGender || Math.abs(Number(quote.faceAmount) - expectedFace) > 0.0001 || Math.abs(Number(quote.declaredRate) - expectedRate) > 0.0001) return null;
+  const index = Math.max(1, Math.min(100, parseInt(year, 10) || 1)) - 1;
+  return { quote, index };
+}
+
+function scheduleLiveQuote() {
+  const product = state.selectedProduct;
+  if (!isLiveQuoteProduct(product)) return;
+  const requestKey = getLiveQuoteKey();
+  if (!requestKey) {
+    setDeclaredRateStatus('請先輸入保額，才能重算保單條件。');
+    return;
+  }
+  if (state.liveQuote && state.liveQuote.requestKey === requestKey) {
+    setDeclaredRateStatus(`已依 ${fmtDec(state.liveQuote.declaredRate, 2)}% 完成重算。`, 'ok');
+    return;
+  }
+  if (liveQuoteRequestKey === requestKey) return;
+  window.clearTimeout(liveQuoteTimer);
+  liveQuoteRequestKey = requestKey;
+  setDeclaredRateStatus('正在以 LibreOffice Calc 重算保單條件…');
+  liveQuoteTimer = window.setTimeout(async () => {
+    try {
+      const apiBase = getCalculationApiBase();
+      if (apiBase === null) throw new Error(getCalculationServiceHint());
+      const response = await fetch(`${apiBase}/api/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileId: product.quoteProfileId,
+          age: state.insuranceAge,
+          gender: state.insuredGender,
+          faceAmount: state.sumInsured,
+          declaredRate: getDeclaredRatePercent(product)
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || '保單重算失敗。');
+      if (requestKey !== getLiveQuoteKey()) return;
+      state.liveQuote = { ...data.quote, requestKey };
+      state.premium = Number(data.quote.premium) || state.premium;
+      document.getElementById('premium').value = state.premium ? Math.round(state.premium) : '';
+      setDeclaredRateStatus(`已依 ${fmtDec(data.quote.declaredRate, 2)}% 完成重算。`, 'ok');
+      recalcFinancing('liveQuote');
+    } catch (error) {
+      if (requestKey !== getLiveQuoteKey()) return;
+      setDeclaredRateStatus(error.message || '保單重算失敗。', 'error');
+    } finally {
+      if (liveQuoteRequestKey === requestKey) liveQuoteRequestKey = '';
+    }
+  }, 350);
+}
+
+function handleDeclaredRateInput() {
+  const rate = Number(document.getElementById('declaredRate').value);
+  if (!Number.isFinite(rate) || rate < 0 || rate > 20) {
+    setDeclaredRateStatus('宣告利率必須介於 0% 與 20% 之間。', 'error');
+    return;
+  }
+  state.declaredRate = rate;
+  state.liveQuote = null;
+  recalcFinancing('declaredRate');
+}
+
 function getProducts() {
-  return state.financingType === 'premium' ? PREMIUM_FINANCING_PRODUCTS : POLICY_FINANCING_PRODUCTS;
+  return state.financingType === 'premium' ? [...PREMIUM_FINANCING_PRODUCTS, ...RUNTIME_IMPORTED_PREMIUM_PRODUCTS] : POLICY_FINANCING_PRODUCTS;
 }
 
 function canonicalizeProductForFinancing(product) {
@@ -3831,6 +4141,12 @@ function selectProduct(product, options = {}) {
   if (restoreScenario) {
     restoreProductScenarioSnapshot(product);
   }
+  state.liveQuote = null;
+  if (product.quoteProfileId) {
+    if (getOptionalNumber(state.declaredRate) === null) state.declaredRate = Number(product.declaredRate || 0) * 100;
+  } else {
+    state.declaredRate = null;
+  }
   document.getElementById('productSearch').value = product.code + ' - ' + product.shortName;
   document.getElementById('selectedProductInfo').classList.remove('hidden');
   document.getElementById('selProductCode').textContent = product.code;
@@ -3839,9 +4155,9 @@ function selectProduct(product, options = {}) {
   badge.textContent = product.currency;
   badge.className = 'search-option currency-tag ' + product.currency.toLowerCase();
   const dividendOption = document.getElementById('selProductDividendOption');
-  const isWusPremium = state.financingType === 'premium' && getEffectiveProductCode(product) === 'WUS';
-  dividendOption.textContent = isWusPremium ? '增值回饋分享金：第7年起持續增購保額' : '';
-  dividendOption.classList.toggle('hidden', !isWusPremium);
+  const showDividendOption = state.financingType === 'premium' && Boolean(product.dividendOption);
+  dividendOption.textContent = showDividendOption ? `增值回饋分享金：${product.dividendOption}（試算固定）` : '';
+  dividendOption.classList.toggle('hidden', !showDividendOption);
   updateXindeliPayPeriodUI();
 
   const isUsd = product.currency === 'USD';
@@ -3865,6 +4181,7 @@ function selectProduct(product, options = {}) {
   document.getElementById('exchangeRateGroup').classList.toggle('hidden', state.financingType === 'premium' && !isUsd);
   document.getElementById('dispExchangeRow').classList.toggle('hidden', !isUsd);
   updateFinancingUI();
+  updateDeclaredRateUI();
 
   recalcFinancing();
   renderBondSlots();
@@ -4358,6 +4675,14 @@ function getAgeGenderModeledDeathBenefit(productCode, year, insuranceAge, insure
 }
 
 function getProjectedDeathBenefit(productCode, premiumAmount, year, insuranceAge, sumInsuredAmount, insuredGender = 'male') {
+  const live = getMatchingLiveQuote(productCode, year, insuranceAge, sumInsuredAmount, insuredGender);
+  if (live && Number.isFinite(Number(live.quote.benefitByYear[live.index]))) {
+    return {
+      year: live.index + 1,
+      currency: live.quote.currency,
+      amount: Number(live.quote.benefitByYear[live.index])
+    };
+  }
   const model = PRODUCT_COVERAGE_MODELS[productCode];
   if (!model) return null;
   const normalizedYear = Math.max(1, Math.min(100, parseInt(year, 10) || 1));
@@ -4416,6 +4741,14 @@ function getAgeGenderModeledCashValue(productCode, year, insuranceAge, insuredGe
 }
 
 function getProjectedPolicyCashValue(productCode, premiumAmount, year, insuranceAge, sumInsuredAmount, insuredGender = 'male') {
+  const live = getMatchingLiveQuote(productCode, year, insuranceAge, sumInsuredAmount, insuredGender);
+  if (live && Number.isFinite(Number(live.quote.cashValueByYear[live.index]))) {
+    return {
+      year: live.index + 1,
+      currency: live.quote.currency,
+      amount: Number(live.quote.cashValueByYear[live.index])
+    };
+  }
   const modeledCashValue = getAgeGenderModeledCashValue(productCode, year, insuranceAge, insuredGender);
   if (!modeledCashValue || !modeledCashValue.baseFaceAmount) return null;
   const explicitFaceAmount = normalizeProductFaceAmount(productCode, sumInsuredAmount);
@@ -4503,6 +4836,21 @@ function getAgeGenderModeledReferenceCashValue(productCode, insuranceAge, insure
 }
 
 function getProjectedReferenceCashValue(productCode, premiumAmount, insuranceAge, sumInsuredAmount, insuredGender = 'male') {
+  const live = getMatchingLiveQuote(productCode, 1, insuranceAge, sumInsuredAmount, insuredGender);
+  if (live && Number.isFinite(Number(live.quote.referenceCashValue))) {
+    return {
+      currency: live.quote.currency,
+      amount: Number(live.quote.referenceCashValue),
+      baseAmount: Number(live.quote.referenceCashValue),
+      baseFaceAmount: Number(live.quote.faceAmount),
+      faceAmountUsed: Number(live.quote.faceAmount),
+      faceAmountSource: 'source-recalculated',
+      scale: 1,
+      age: Number(live.quote.age),
+      scheduledRate: Number(state.selectedProduct?.scheduledRate || 0),
+      mode: 'source-recalculated'
+    };
+  }
   const modeled = getAgeGenderModeledReferenceCashValue(productCode, insuranceAge, insuredGender);
   if (!modeled || !modeled.baseFaceAmount) return null;
   const explicitFaceAmount = normalizeProductFaceAmount(productCode, sumInsuredAmount);
@@ -4716,6 +5064,7 @@ function recalcFinancing(source = '') {
   if (state.bonds.length > 0) renderBondSlots();
   if (state.funds.length > 0) renderFundSlots();
   if (state.bonds.length > 0 || state.funds.length > 0 || state.structuredProducts.length > 0) updateBondSummary();
+  if (source !== 'liveQuote') scheduleLiveQuote();
   updateStepAvailability();
   if ((state.currentStep || 1) === 4) {
     renderResults();
@@ -5994,6 +6343,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   goToStep(state.currentStep || 1);
   fetchRate();
+  initializeQuoteProducts();
   try {
     const params = new URLSearchParams(window.location.search);
     const shouldAutoImport = params.get('autoImportBonds') === '1' || localStorage.getItem(IMPORT_FLAG_KEY) === '1';

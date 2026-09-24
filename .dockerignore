@@ -1,0 +1,8 @@
+.git
+.playwright-cli
+__pycache__
+*.py[cod]
+*.xlsx
+*.xlsm
+data/
+

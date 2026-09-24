@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+.playwright-cli/
+data/
+*.xlsx
+*.xlsm
+.DS_Store
