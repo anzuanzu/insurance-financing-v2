@@ -1411,7 +1411,7 @@
       calculateAllStats();
       
       try {
-        localStorage.removeItem('selectedBonds');
+        localStorage.removeItem('insuranceFinancingV2SelectedBonds');
       } catch (e) {
         console.log('localStorage 不可用，跳過清除操作');
       }
@@ -1702,9 +1702,9 @@
         localStorage.setItem(testKey, testKey);
         localStorage.removeItem(testKey);
         
-        if (localStorage.getItem('selectedBonds')) {
+        if (localStorage.getItem('insuranceFinancingV2SelectedBonds')) {
           try {
-            const importedBondsFromFilterTool = JSON.parse(localStorage.getItem('selectedBonds'));
+            const importedBondsFromFilterTool = JSON.parse(localStorage.getItem('insuranceFinancingV2SelectedBonds'));
             if (importedBondsFromFilterTool && importedBondsFromFilterTool.length > 0) {
               document.getElementById('import-notification').style.display = 'flex'; 
               document.getElementById('notification-message').textContent = `發現 ${importedBondsFromFilterTool.length} 個從篩選工具匯出的債券，點擊右側按鈕導入。`;

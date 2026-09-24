@@ -2212,7 +2212,7 @@
         const returnUrl = getReturnUrl();
         if (returnUrl) {
           try {
-            localStorage.setItem('insuranceFinancingAutoImport', '1');
+            localStorage.setItem('insuranceFinancingV2AutoImport', '1');
           } catch (e) {}
           window.location.href = `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}autoImportBonds=1`;
           return;
@@ -2300,7 +2300,7 @@
         });
       });
       
-      localStorage.setItem('selectedBonds', JSON.stringify(selectedBonds));
+      localStorage.setItem('insuranceFinancingV2SelectedBonds', JSON.stringify(selectedBonds));
       const returnUrl = getReturnUrl();
       
       const hotCount = selectedBonds.filter(b => b.source === '熱門債券').length;
@@ -2308,7 +2308,7 @@
 
       if (returnUrl) {
         try {
-          localStorage.setItem('insuranceFinancingAutoImport', '1');
+          localStorage.setItem('insuranceFinancingV2AutoImport', '1');
         } catch (e) {}
         window.location.href = `${returnUrl}${returnUrl.includes('?') ? '&' : '?'}autoImportBonds=1`;
         return;

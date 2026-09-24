@@ -1831,12 +1831,14 @@ const POLICY_FINANCING_PRODUCTS = [
   {code:"WJA",name:"國泰人壽鑽美鑫利率變動型美元終身壽險(定期給付型)",shortName:"鑽美鑫利變美元",currency:"USD"},
 ];
 
-const STORAGE_KEY = 'insuranceFinancingScenario';
-const SAVED_CONFIGS_KEY = 'insuranceFinancingSavedConfigs';
-const IMPORT_BONDS_KEY = 'selectedBonds';
-const IMPORT_FLAG_KEY = 'insuranceFinancingAutoImport';
-const IMPORT_RETURN_STEP_KEY = 'insuranceFinancingImportReturnStep';
-const PLEDGE_FUND_PRODUCTS_KEY = 'pledgeFundProducts';
+// GitHub Pages localStorage is shared by every path on anzuanzu.github.io.
+// Keep this application's browser state isolated from insurance-financing-pro.
+const STORAGE_KEY = 'insuranceFinancingV2Scenario';
+const SAVED_CONFIGS_KEY = 'insuranceFinancingV2SavedConfigs';
+const IMPORT_BONDS_KEY = 'insuranceFinancingV2SelectedBonds';
+const IMPORT_FLAG_KEY = 'insuranceFinancingV2AutoImport';
+const IMPORT_RETURN_STEP_KEY = 'insuranceFinancingV2ImportReturnStep';
+const PLEDGE_FUND_PRODUCTS_KEY = 'insuranceFinancingV2PledgeFundProducts';
 const CONFIG_TEXT_TYPE = 'insurance-financing-config';
 const MAX_SAVED_CONFIGS = 10;
 const fundProducts = typeof externalFundProducts !== 'undefined' ? externalFundProducts : [];
