@@ -612,6 +612,9 @@
       .result-bond-table td.result-empty::before { display:none; }
       .bottom-nav { padding:10px 12px max(10px, env(safe-area-inset-bottom)); gap:10px; }
       .bottom-nav .nav-btn { min-height:48px; padding:12px 10px; }
+      /* The shared live-presence widget is fixed by tools/presence.js.  Keep it
+         above this app's fixed navigation so it never covers the next button. */
+      body .live-presence { right:12px; bottom:calc(84px + env(safe-area-inset-bottom)); max-width:calc(100vw - 24px); pointer-events:none; }
     }
 
     /* Live proposal recalculation progress */
