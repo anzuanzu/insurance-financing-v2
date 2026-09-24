@@ -41,6 +41,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("INSURANCE_DATA_DIR", str(ROOT / "data"))).resolve()
 SOURCES_DIR = DATA_DIR / "product_sources"
 MANIFEST_PATH = DATA_DIR / "products.json"
+PUBLISHED_QUOTES_DIR = DATA_DIR / "published_quotes"
 SOFFICE = os.environ.get("SOFFICE_PATH", "/opt/homebrew/bin/soffice")
 CALCULATION_TIMEOUT_SECONDS = int(os.environ.get("CALCULATION_TIMEOUT_SECONDS", "150"))
 ADMIN_UPLOAD_TOKEN = os.environ.get("ADMIN_UPLOAD_TOKEN", "")
@@ -55,6 +56,8 @@ CORS_ALLOWED_ORIGINS = {
 MAX_UPLOAD_BYTES = 40 * 1024 * 1024
 MAX_DECLARED_RATE = 0.20
 MAX_QUOTE_YEARS = 100
+MAX_SHARED_QUOTES_PER_PRODUCT = 160
+QUOTE_DATA_GLOBAL_NAME = "INSURANCE_PRODUCT_QUOTE_DATA_BY_PROFILE"
 DIVIDEND_OPTION_CONTINUE = "第7年起持續增購保額"
 DIVIDEND_OPTION_VALUES = {
     "第7年起儲存生息",
@@ -75,6 +78,56 @@ class CalculationError(ValueError):
 
 def utc_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+
+
+def quote_cache_key(quote: dict[str, Any]) -> str:
+    """Return a stable, source-version-independent browser lookup key."""
+    return "|".join((
+        str(int(quote["age"])),
+        "female" if quote.get("gender") == "female" else "male",
+        format(float(quote["faceAmount"]), ".4f"),
+        format(float(quote["declaredRate"]), ".4f"),
+    ))
+
+
+def quote_data_payload(profile: dict[str, Any]) -> dict[str, Any]:
+    """Public, exact Calc results that the browser may use without a quote call."""
+    cache = profile.get("quoteCache") or {}
+    quotes = [
+        item["quote"]
+        for item in cache.values()
+        if isinstance(item, dict) and isinstance(item.get("quote"), dict)
+        and item["quote"].get("sourceHash") == profile.get("sourceHash")
+    ]
+    quotes.sort(key=lambda item: (item.get("age", 0), item.get("gender", ""), item.get("faceAmount", 0), item.get("declaredRate", 0)))
+    return {
+        "schemaVersion": 1,
+        "profileId": profile["id"],
+        "webCode": profile["webCode"],
+        "sourceHash": profile["sourceHash"],
+        "productVersion": profile.get("version", 1),
+        "generatedAt": utc_now(),
+        "quotes": quotes,
+    }
+
+
+def quote_data_version(profile: dict[str, Any]) -> str:
+    payload = quote_data_payload(profile)
+    # generatedAt is informational and must not invalidate an unchanged browser cache.
+    payload.pop("generatedAt", None)
+    serialized = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(serialized).hexdigest()[:16]
+
+
+def quote_data_javascript(profile: dict[str, Any]) -> str:
+    payload = quote_data_payload(profile)
+    return (
+        "// Generated from the approved proposal workbook by LibreOffice Calc.\n"
+        f"window.{QUOTE_DATA_GLOBAL_NAME} = window.{QUOTE_DATA_GLOBAL_NAME} || Object.create(null);\n"
+        f"window.{QUOTE_DATA_GLOBAL_NAME}[{json.dumps(profile['id'], ensure_ascii=False)}] = Object.freeze("
+        + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+        + ");\n"
+    )
 
 
 def normalized_text(value: Any) -> str:
@@ -561,6 +614,7 @@ class ProfileStore:
     def __init__(self) -> None:
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         SOURCES_DIR.mkdir(parents=True, exist_ok=True)
+        PUBLISHED_QUOTES_DIR.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
         self._profiles = self._load()
 
@@ -578,6 +632,36 @@ class ProfileStore:
         temporary.write_text(json.dumps({"schemaVersion": 1, "products": self._profiles}, ensure_ascii=False, indent=2) + "\n", "utf-8")
         os.replace(temporary, MANIFEST_PATH)
 
+    def _seed_default_quote_cache(self, profile: dict[str, Any]) -> bool:
+        """Make every source-default Calc result available as a browser data file."""
+        quote = profile.get("defaultQuote")
+        if not isinstance(quote, dict) or quote.get("sourceHash") != profile.get("sourceHash"):
+            return False
+        cache = profile.setdefault("quoteCache", {})
+        key = quote_cache_key(quote)
+        existing = cache.get(key)
+        if isinstance(existing, dict) and existing.get("quote") == quote:
+            return False
+        cache[key] = {"quote": copy.deepcopy(quote), "cachedAt": utc_now(), "kind": "source-default"}
+        return True
+
+    def _publish_profile_locked(self, profile: dict[str, Any]) -> None:
+        """Atomically publish the non-sensitive browser JS data for one product."""
+        PUBLISHED_QUOTES_DIR.mkdir(parents=True, exist_ok=True)
+        target = PUBLISHED_QUOTES_DIR / f"{profile['id']}.js"
+        temporary = target.with_suffix(".tmp")
+        temporary.write_text(quote_data_javascript(profile), "utf-8")
+        os.replace(temporary, target)
+
+    def publish_all(self) -> None:
+        with self._lock:
+            changed = False
+            for profile in self._profiles:
+                changed = self._seed_default_quote_cache(profile) or changed
+                self._publish_profile_locked(profile)
+            if changed:
+                self._save()
+
     def bootstrap_workspace_sources(self) -> None:
         for path in sorted(ROOT.glob("*.xlsx")):
             if not has_financing_filename(path.name):
@@ -588,6 +672,7 @@ class ProfileStore:
             except CalculationError:
                 continue
         self._save()
+        self.publish_all()
 
     def upsert(self, profile: dict[str, Any], persist: bool = True) -> tuple[dict[str, Any], str]:
         # Keep the manifest independent from a caller that reuses and edits its
@@ -615,8 +700,11 @@ class ProfileStore:
                     if profile.get("defaultQuote") and existing.get("defaultQuote") != profile["defaultQuote"]:
                         existing["defaultQuote"] = profile["defaultQuote"]
                         enriched = True
+                    if self._seed_default_quote_cache(existing):
+                        enriched = True
                     if enriched and persist:
                         self._save()
+                        self._publish_profile_locked(existing)
                     return existing, "unchanged"
                 profile["id"] = existing["id"]
                 profile["webCode"] = existing.get("webCode") or profile["sourceCode"]
@@ -631,9 +719,31 @@ class ProfileStore:
                 profile["version"] = int(profile.get("version", 1))
                 self._profiles.append(profile)
                 action = "created"
+            self._seed_default_quote_cache(profile)
             if persist:
                 self._save()
+            self._publish_profile_locked(profile)
             return profile, action
+
+    def cache_quote(self, profile_id: str, quote: dict[str, Any]) -> None:
+        """Persist an exact Calc result so all later visitors can use it instantly."""
+        with self._lock:
+            profile = next((item for item in self._profiles if item.get("id") == profile_id), None)
+            if not profile or quote.get("sourceHash") != profile.get("sourceHash"):
+                return
+            cache = profile.setdefault("quoteCache", {})
+            key = quote_cache_key(quote)
+            cache[key] = {"quote": copy.deepcopy(quote), "cachedAt": utc_now(), "kind": "requested"}
+            if len(cache) > MAX_SHARED_QUOTES_PER_PRODUCT:
+                protected = quote_cache_key(profile["defaultQuote"]) if isinstance(profile.get("defaultQuote"), dict) else None
+                removable = sorted(
+                    (item for item in cache.items() if item[0] != protected),
+                    key=lambda item: item[1].get("cachedAt", "") if isinstance(item[1], dict) else "",
+                )
+                for stale_key, _ in removable[:max(0, len(cache) - MAX_SHARED_QUOTES_PER_PRODUCT)]:
+                    cache.pop(stale_key, None)
+            self._save()
+            self._publish_profile_locked(profile)
 
     def import_file(self, stream: io.BufferedReader, filename: str) -> tuple[dict[str, Any], str]:
         filename = safe_filename(filename)
@@ -683,7 +793,13 @@ class ProfileStore:
             "rateByGender", "discountTiers", "dividendOption", "defaultQuote",
         }
         with self._lock:
-            return [{key: value for key, value in item.items() if key in fields} for item in self._profiles]
+            public: list[dict[str, Any]] = []
+            for item in self._profiles:
+                profile = {key: value for key, value in item.items() if key in fields}
+                profile["quoteDataPath"] = f"/api/product-data/{item['id']}.js"
+                profile["quoteDataVersion"] = quote_data_version(item)
+                public.append(profile)
+            return public
 
 
 STORE = ProfileStore()
@@ -713,6 +829,16 @@ class RequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_javascript(self, contents: str, version: str) -> None:
+        data = contents.encode("utf-8")
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", "application/javascript; charset=utf-8")
+        self.send_header("Cache-Control", "public, max-age=31536000, immutable")
+        self.send_header("ETag", f'"{version}"')
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_OPTIONS(self) -> None:  # noqa: N802
         self.send_response(HTTPStatus.NO_CONTENT)
         self.end_headers()
@@ -724,6 +850,14 @@ class RequestHandler(SimpleHTTPRequestHandler):
             return
         if route == "/api/products":
             self.send_json({"products": STORE.public_profiles()})
+            return
+        match = re.fullmatch(r"/api/product-data/([A-Za-z0-9-]+)\.js", route)
+        if match:
+            profile = STORE.get(match.group(1))
+            if not profile:
+                self.send_json({"error": "找不到商品資料檔。"}, HTTPStatus.NOT_FOUND)
+                return
+            self.send_javascript(quote_data_javascript(profile), quote_data_version(profile))
             return
         super().do_GET()
 
@@ -756,7 +890,9 @@ class RequestHandler(SimpleHTTPRequestHandler):
         profile = STORE.get(profile_id)
         if not profile:
             raise CalculationError("找不到已匯入的商品來源。")
-        self.send_json({"quote": calculate_quote(profile, payload)})
+        quote = calculate_quote(profile, payload)
+        STORE.cache_quote(profile_id, quote)
+        self.send_json({"quote": quote})
 
     def handle_import(self) -> None:
         if ADMIN_UPLOAD_TOKEN:
@@ -789,6 +925,7 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
     STORE.bootstrap_workspace_sources()
+    STORE.publish_all()
     server = ThreadingHTTPServer((args.host, args.port), RequestHandler)
     print(f"Insurance calculator: http://{args.host}:{args.port}/index.html")
     print("Calculation engine: LibreOffice Calc")

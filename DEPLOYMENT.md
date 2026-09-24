@@ -7,7 +7,7 @@ GitHub Pages 只發布前端。建議書、商品版本與 LibreOffice 重算服
 ## 資料安全
 
 - 不要把建議書 `.xlsx`／`.xlsm` 上傳至此公開 repository。
-- 中央 API 將來源建議書存於私有 Cloud Storage bucket 掛載的 `/data`。
+- 中央 API 將來源建議書、商品版本與公開試算資料檔存於私有 Cloud Storage bucket 掛載的 `/data`。
 - `ADMIN_UPLOAD_TOKEN` 只設定在中央 API 的 Secret Manager，不可寫入 `app-config.js` 或 Git repository。
 
 ## Google Cloud Run 參考部署
@@ -50,8 +50,9 @@ window.INSURANCE_API_BASE_URL = "https://your-api-url";
 
 1. 開啟 GitHub Pages 網站並確認中央 API 的 `/api/health` 可回應。
 2. 使用具管理上傳密碼的管理者帳號，逐一上傳五份檔名含「保費融資」的建議書。
-3. API 會把來源檔與 `products.json` 存到私有 bucket。
-4. 所有使用者重新整理頁面後，即會讀取相同的商品版本。
+3. API 會以 LibreOffice Calc 驗證來源預設情境，將來源檔、`products.json` 與版本化商品資料 JS 存到私有 bucket。
+4. 所有使用者重新整理頁面後，網頁會在背景載入新版商品資料，直接顯示新條件的數字；不會下載任何檔案。
+5. 使用者第一次輸入尚未快取的特殊條件時，API 會重算一次並加入共用商品資料；之後相同條件的所有使用者會直接使用已驗證結果。
 
 ## 驗收
 

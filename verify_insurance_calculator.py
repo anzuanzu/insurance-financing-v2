@@ -92,6 +92,19 @@ def main() -> None:
         assert abs(aba["cashValueByYear"][19] - 222779.85) <= 0.01, "ABA 持續增購保額後的第 20 年現金價值不符"
         print("PASS ABA forced to 第7年起持續增購保額")
 
+        store.cache_quote(profiles["ABA"]["id"], aba)
+        shared_data = service.quote_data_payload(profiles["ABA"])
+        assert shared_data["sourceHash"] == profiles["ABA"]["sourceHash"], "共用商品資料來源版本不符"
+        shared_aba = next((item for item in shared_data["quotes"] if service.quote_cache_key(item) == service.quote_cache_key(aba)), None)
+        assert shared_aba is not None, "Calc 結果未加入共用商品資料"
+        assert_fast_cache_matches_quote("ABA shared", shared_aba, aba, profiles["ABA"])
+        javascript = service.quote_data_javascript(profiles["ABA"])
+        assert f'window.{service.QUOTE_DATA_GLOBAL_NAME}' in javascript, "商品資料 JS 未正確發布"
+        public_aba = next(item for item in store.public_profiles() if item["id"] == profiles["ABA"]["id"])
+        assert public_aba["quoteDataPath"].endswith(f'{profiles["ABA"]["id"]}.js'), "商品資料 JS 路徑不正確"
+        assert public_aba["quoteDataVersion"], "商品資料 JS 版本遺失"
+        print("PASS shared browser quote-data JS cache")
+
         wus = profiles["WUS"]
         higher = quote(wus, EXPECTED["WUS"], 4.30)
         lower = quote(wus, EXPECTED["WUS"], 4.20)
